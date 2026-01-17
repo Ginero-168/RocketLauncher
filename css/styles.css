@@ -1,0 +1,1346 @@
+:root {
+    --bg-color: #1e1e1e;
+    --surface-color: #2b2b2b;
+    --text-color: #f0f0f0;
+    --text-secondary: #aaaaaa;
+    --accent-color: #3771c8;
+    --accent-hover: #4a84db;
+    --border-color: #3e3e3e;
+    --input-bg: #252525;
+    --danger-color: #e81123;
+    --swift-color: #e74c3c;
+    --creative-color: #f1c40f;
+    --other-color: #9b59b6;
+    --hover-color: #3a3a3a;
+    /* Defined missing var */
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    padding: 0 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--text-color);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--accent-color);
+}
+
+/* Tab Specific Colors */
+.tab-btn[data-tab="swift"].active {
+    color: var(--swift-color);
+}
+
+.tab-btn[data-tab="swift"].active::after {
+    background-color: var(--swift-color);
+}
+
+.tab-btn[data-tab="creative"].active {
+    color: var(--creative-color);
+}
+
+.tab-btn[data-tab="creative"].active::after {
+    background-color: var(--creative-color);
+}
+
+.tab-btn[data-tab="other"].active {
+    color: var(--other-color);
+}
+
+.tab-btn[data-tab="other"].active::after {
+    background-color: var(--other-color);
+}
+
+
+
+/* simplified tab logic */
+.tab-content {
+    display: none !important;
+}
+
+.tab-content.active {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    /* Fill available space */
+    min-height: 0 !important;
+    /* Allow shrinking */
+    height: auto !important;
+    /* Stop forcing full height */
+    overflow-y: auto !important;
+    /* Container for internal scroll */
+}
+
+/* Force Creative specifc */
+#creative {
+    /* min-height: 500px !important; Removed */
+    /* border: 2px solid cyan !important; Removed */
+}
+
+/* Fix Scripts Tab Padding (ID is swift) */
+#swift {
+    padding: 10px;
+}
+
+/* Controls */
+.control-group {
+    margin-bottom: 12px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input[type="text"],
+input[type="number"] {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 6px 8px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+    font-size: 11px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.small-input {
+    flex: 0 0 auto !important;
+    width: 3.5em !important;
+    text-align: center;
+}
+
+.equal-split>* {
+    flex: 1 1 0 !important;
+    width: 0;
+    /* Ensures true 50/50 split */
+}
+
+/* Buttons */
+button {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 5px 12px;
+    /* Reduced padding */
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 8px;
+    /* Increased margin */
+    font-size: 12px;
+    /* Larger font */
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* Space between icon and text */
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    /* Inherit text color */
+    flex-shrink: 0;
+}
+
+button:hover {
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Tab Specific Button Hovers */
+#swift button:hover {
+    border-color: var(--swift-color);
+}
+
+#swift button:hover .icon {
+    fill: var(--swift-color);
+}
+
+#creative button:hover {
+    border-color: var(--creative-color);
+}
+
+#creative button:hover .icon {
+    fill: var(--creative-color);
+}
+
+#other button:hover {
+    border-color: var(--other-color);
+}
+
+#other button:hover .icon {
+    fill: var(--other-color);
+}
+
+/* Button Color Override Utilities - HOVER & ICON FIXES */
+
+
+/* HOVER STATES - Override Tab defaults */
+.btn-red:hover {
+    background-color: #e74c3c !important;
+    border-color: #a93226 !important;
+    color: white !important;
+}
+
+.btn-blue:hover {
+    background-color: #3498db !important;
+    border-color: #2573a7 !important;
+    color: white !important;
+}
+
+.btn-green:hover {
+    background-color: #27ae60 !important;
+    border-color: #219150 !important;
+    color: white !important;
+}
+
+.btn-yellow:hover {
+    background-color: #f1c40f !important;
+    border-color: #d68910 !important;
+    color: #1e1e1e !important;
+}
+
+.btn-purple:hover {
+    background-color: #8e44ad !important;
+    border-color: #7d3c98 !important;
+    color: white !important;
+}
+
+.btn-gray:hover {
+    background-color: #7f8c8d !important;
+    border-color: #616a6b !important;
+    color: white !important;
+}
+
+.btn-orange:hover {
+    background-color: #d35400 !important;
+    border-color: #a04000 !important;
+    color: white !important;
+}
+
+/* ICON HOVER FIX - Ensure icon turns white (or contrast) */
+.btn-red:hover .icon,
+.btn-blue:hover .icon,
+.btn-green:hover .icon,
+.btn-purple:hover .icon,
+.btn-gray:hover .icon,
+.btn-orange:hover .icon {
+    fill: white !important;
+}
+
+.btn-yellow:hover .icon {
+    fill: #1e1e1e !important;
+}
+
+/* HOTKEY OVERRIDES */
+/* Keep Hotkeys Colored (Status Indicators) or make them ghost too? 
+   User said "Color of the *button*... show color only on hover". 
+   Let's keep hotkeys colorful as they are distinct indicators. 
+   Or actually, consistency is usually better. 
+   Let's leave hotkeys as solid blocks for now unless requested otherwise, 
+   as they serve as "slots". But the previous code block included hotkey overrides. 
+   I will PRESERVE the hotkey overrides as solid colors because they look better as slots.
+*/
+.hotkey-slot.btn-red {
+    background-color: #e74c3c !important;
+    border-color: #c0392b !important;
+    color: white !important;
+}
+
+.hotkey-slot.btn-blue {
+    background-color: #3498db !important;
+    border-color: #2980b9 !important;
+    color: white !important;
+}
+
+.hotkey-slot.btn-green {
+    background-color: #2ecc71 !important;
+    border-color: #27ae60 !important;
+    color: white !important;
+}
+
+.hotkey-slot.btn-yellow {
+    background-color: #f1c40f !important;
+    border-color: #f39c12 !important;
+    color: #1e1e1e !important;
+}
+
+.hotkey-slot.btn-purple {
+    background-color: #9b59b6 !important;
+    border-color: #8e44ad !important;
+    color: white !important;
+}
+
+.hotkey-slot.btn-gray {
+    background-color: #95a5a6 !important;
+    border-color: #7f8c8d !important;
+    color: white !important;
+}
+
+.hotkey-slot.btn-orange {
+    background-color: #e67e22 !important;
+    border-color: #d35400 !important;
+    color: white !important;
+}
+
+/* Color Picker Swatches */
+.color-swatches {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+/* Icon Grid */
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 5px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 2px;
+    /* Avoid cutoff outline */
+}
+
+.icon-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+}
+
+.icon-option svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.icon-option:hover {
+    border-color: var(--text-color);
+    color: var(--text-color);
+    background: var(--surface-color);
+}
+
+.icon-option.selected {
+    border-color: var(--accent-color);
+    background: rgba(55, 113, 200, 0.2);
+    color: white;
+    box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    /* default border */
+    position: relative;
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+}
+
+.color-swatch.selected {
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+/* Specific colors mirroring the .btn- classes */
+.swatch-red {
+    background-color: #e74c3c;
+}
+
+/* Input Stepper */
+.input-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px;
+    width: fit-content;
+}
+
+.input-stepper button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.input-stepper button:hover {
+    background: var(--surface-color);
+}
+
+.input-stepper span {
+    min-width: 40px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.swatch-blue {
+    background-color: #3498db;
+}
+
+.swatch-green {
+    background-color: #2ecc71;
+}
+
+.swatch-yellow {
+    background-color: #f1c40f;
+}
+
+.swatch-purple {
+    background-color: #9b59b6;
+}
+
+.swatch-orange {
+    background-color: #e67e22;
+}
+
+.swatch-gray {
+    background-color: #95a5a6;
+}
+
+/* Radio Buttons */
+.radio-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.radio-option {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.radio-option:hover {
+    border-color: var(--text-color);
+    color: var(--text-color);
+}
+
+.radio-option.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+
+button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+button.primary {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+button.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+button.secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+button.secondary:hover {
+    border-color: var(--text-color);
+    color: var(--text-color);
+}
+
+/* Layout Helpers */
+.row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    min-height: 32px;
+    /* Ensure drop target exists even if empty */
+    border: 1px dashed transparent;
+    /* Placeholder for drag feedback */
+    border-radius: 4px;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    /* For drop indicators */
+}
+
+.row.drag-over {
+    border-color: var(--accent-color);
+    background: rgba(55, 113, 200, 0.1);
+    /* Accent with opacity */
+}
+
+/* Button Text Truncation */
+.btn-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    /* Flexbox truncation fix */
+}
+
+/* Drop Indicators */
+.drop-target-left {
+    box-shadow: -4px 0 0 var(--accent-color);
+    z-index: 10;
+}
+
+.drop-target-right {
+    box-shadow: 4px 0 0 var(--accent-color);
+    z-index: 10;
+}
+
+/* Force Disable Tab Interaction during Drag */
+body.dragging-mode .tab-btn {
+    pointer-events: none !important;
+    opacity: 1;
+}
+
+.hotkey-settings-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    font-size: 10px;
+    border: 1px solid transparent;
+}
+
+.hotkey-settings-btn:hover {
+    color: white;
+    background: var(--accent-color);
+}
+
+.row input {
+    flex: 1 1 auto;
+    min-width: 40px;
+}
+
+.row button {
+    width: auto;
+    margin-bottom: 0;
+    flex: 1;
+    position: relative;
+    /* For box-shadow relative to button */
+}
+
+/* Stepper Control */
+.stepper {
+    gap: 2px;
+    /* Tighter gap for stepper */
+}
+
+.stepper button {
+    flex: 0 0 24px;
+    /* Fixed small width */
+    padding: 0;
+    font-size: 14px;
+    /* Larger symbol */
+    font-weight: bold;
+    line-height: 1;
+}
+
+.stepper input {
+    flex: 1;
+    text-align: center;
+}
+
+.section {
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+.section:last-child {
+    border-bottom: none;
+}
+
+.section h3 {
+    margin: 0;
+}
+
+#task_list li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#task_list li:hover {
+    background: #333;
+}
+
+#task_list li.selected {
+    background: #357abd;
+    /* Darker blue */
+    color: white;
+}
+
+/* Footer for Run Script */
+.footer {
+    margin-top: auto;
+    padding-top: 0;
+    /* Removed padding */
+    border-top: none;
+    /* Removed border */
+    display: flex;
+    justify-content: center;
+    background: var(--bg-color);
+    /* Ensure opaque */
+    position: relative;
+    z-index: 100;
+    /* Ensure Top Layer */
+    flex-shrink: 0;
+    /* PREVENT SQUASHING */
+}
+
+#btn_toggle_height {
+    background: var(--input-bg);
+    /* Darker background */
+    border: none;
+    width: 100%;
+    height: 10px;
+    /* Slim height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0;
+    transition: background 0.2s;
+}
+
+#btn_toggle_height:hover {
+    background: var(--accent-color);
+    /* Highlight on hover */
+    color: white;
+}
+
+#btn_toggle_height .icon {
+    width: 12px;
+    /* Smaller icon */
+    height: 12px;
+}
+
+/* Hotkey Bar */
+#hotkey-bar {
+    padding: 8px;
+    gap: 8px;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    min-height: 40px;
+    /* Base height */
+    height: auto;
+    transition: height 0.2s;
+    /* GRID LAYOUT */
+    display: grid;
+    grid-template-columns: repeat(var(--col-count, 5), 1fr);
+    /* Default 5 cols */
+    position: relative;
+    z-index: 10;
+}
+
+.hotkey-slot {
+    width: 100%;
+    /* Fill Grid Cell */
+    box-sizing: border-box;
+    /* Include padding/border in width */
+
+    height: 32px;
+    background: var(--input-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    position: relative;
+    /* For absolute positioning of X */
+}
+
+.hotkey-slot:hover {
+    border-color: var(--text-color);
+}
+
+.hotkey-slot.drag-over {
+    border-color: var(--accent-color);
+    background: var(--surface-color);
+}
+
+.hotkey-slot.filled {
+    border-style: solid;
+    color: white;
+    font-weight: 500;
+}
+
+/* Remove Button (X) */
+.hotkey-remove {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom-left-radius: 4px;
+    cursor: pointer;
+    display: none;
+    transition: background 0.2s;
+}
+
+.hotkey-slot.filled:hover .hotkey-remove {
+    display: block;
+}
+
+.hotkey-remove:hover {
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+}
+
+/* Hotkey Colors */
+.hotkey-slot.swift {
+    background: var(--swift-color);
+    border-color: var(--swift-color);
+}
+
+.hotkey-slot.creative {
+    background: var(--creative-color);
+    border-color: var(--creative-color);
+    color: #1e1e1e;
+    /* Dark text for yellow */
+}
+
+.hotkey-slot.creative .hotkey-remove {
+    color: rgba(0, 0, 0, 0.6);
+    /* Darker X for yellow bg */
+}
+
+.hotkey-slot.other {
+    background: var(--other-color);
+    border-color: var(--other-color);
+}
+
+.hotkey-slot svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    pointer-events: none;
+    /* Let clicks pass through */
+}
+
+.hotkey-slot.dimension {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+/* Collapsed State */
+body.collapsed .tabs,
+body.collapsed .tab-content {
+    display: none;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ensure AI Modal is above Script Modal */
+#ai_prompt_modal {
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.7);
+    /* Slightly darker backdrop for focus */
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 16px;
+    width: 250px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+/* FAB Container */
+.fab-container {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    z-index: 900;
+}
+
+.fab-main {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, background 0.2s;
+    padding: 0;
+    margin: 0;
+}
+
+.fab-main:hover {
+    background: var(--accent-hover);
+    transform: scale(1.1);
+}
+
+.fab-mini {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-color);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, color 0.2s;
+    padding: 0;
+    margin: 0;
+}
+
+.fab-mini:hover {
+    color: var(--text-color);
+    transform: scale(1.1);
+    background: var(--hover-color);
+}
+
+/* Hide FABs and Content when collapsed */
+body.collapsed .fab-container,
+body.collapsed .tab-content {
+    display: none !important;
+}
+
+body.collapsed .footer {
+    margin-top: 0 !important;
+    border-top: 1px solid var(--border-color);
+}
+
+body.collapsed #btn_toggle_height {
+    height: 10px !important;
+    /* Force thin line */
+    min-height: 10px;
+    align-items: center;
+}
+
+/* Ensure Tabs stack correctly */
+.tabs {
+    position: relative;
+    z-index: 5;
+}
+
+/* Modal sizing */
+.modal-content.large-modal {
+    width: 320px;
+}
+
+/* Ensure AI Modal is above Script Modal */
+#ai_prompt_modal {
+    z-index: 2000;
+    /* Higher than standard modal (1000) */
+    background: rgba(0, 0, 0, 0.7);
+    /* Darker backdrop */
+}
+
+/* Spinner Animation */
+.spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--accent-color);
+    animation: spin 1s ease-in-out infinite;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* User Script Delete Button */
+.user-script-delete {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 14px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    /* Hidden by default */
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+button:hover .user-script-delete {
+    display: block;
+    /* Show on hover */
+}
+
+/* Fix Colors Tab Layout */
+#creative.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===========================================
+   ACCORDION SECTION CARD UI
+   =========================================== */
+.section-card {
+    background: transparent;
+    /* Card itself transparent */
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    border: none;
+    /* remove old border */
+}
+
+/* Header Base Style (Expanded by default) */
+.section-header {
+    background: #e0e0e0;
+    /* Light Gray/White for Active */
+    color: #222;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Push arrow to right */
+    user-select: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.section-header .icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    /* Adapt to text color */
+}
+
+/* Collapsed State Override */
+.section-card.collapsed .section-header {
+    background: #777;
+    /* Dark Gray for Inactive */
+    color: #eee;
+    border-radius: 4px;
+    /* Keep radius */
+}
+
+.section-content {
+    background: #1e1e1e;
+    /* Dark content bg */
+    padding: 10px;
+    margin-top: 4px;
+    /* gap between header and content */
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Specific Adjustment for Harmony List in Card */
+.section-card .harmony-list-container {
+    max-height: none;
+    /* Allow full growth */
+    overflow-y: visible;
+    /* No internal scroll */
+    border-radius: 4px;
+}
+
+/* Collapsible Logic */
+.section-card.collapsed .section-content {
+    display: none !important;
+}
+
+/* Chevron Rotation */
+.section-card .section-header .chevron {
+    transform: rotate(0deg);
+    /* Arrow Up (Expanded) */
+    transition: transform 0.2s;
+}
+
+.section-card.collapsed .section-header .chevron {
+    transform: rotate(180deg);
+    /* Arrow Down (Collapsed) */
+}
+
+/* ====================================================================================
+   ====================================   VALIDATION   =================================
+   ==================================================================================== */
+
+.validation-error {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 0 1px var(--danger-color) !important;
+}
+
+.validation-message {
+    display: none;
+    color: var(--danger-color);
+    font-size: 10px;
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+input.validation-error+.validation-message {
+    display: block;
+}
+
+/* ====================================================================================
+   ====================================   NOTIFICATIONS   ==============================
+   ====================================================================================*/
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* ====================================================================================
+   ====================================   VALIDATION RESULTS   =========================
+   ==================================================================================== */
+
+.validation-results,
+#validation_results {
+    margin: 10px 0;
+    padding: 0;
+}
+
+.validation-success {
+    background: rgba(52, 199, 89, 0.1);
+    border-left: 3px solid var(--success-color, #34c759);
+    padding: 12px;
+    border-radius: 4px;
+    color: var(--success-color, #34c759);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.validation-errors {
+    background: rgba(255, 59, 48, 0.1);
+    border-left: 3px solid var(--danger-color, #ff3b30);
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.validation-errors .error-header {
+    color: var(--danger-color, #ff3b30);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.validation-errors .validation-error {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text-color);
+    border-left: 2px solid var(--danger-color, #ff3b30);
+}
+
+.validation-warning {
+    background: rgba(255, 149, 0, 0.1);
+    border-left: 3px solid #ff9500;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 3px;
+    color: #ff9500;
+    font-size: 11px;
+}
+
+.warning-section {
+    margin-top: 10px;
+}
+
+.warning-section strong {
+    color: #ff9500;
+}
+
+.error-section ul,
+.warning-section ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.error-section li,
+.warning-section li {
+    margin: 3px 0;
+}
+
+/* Auto-Fix Button */
+.btn-auto-fix {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.btn-auto-fix:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-auto-fix:active {
+    transform: translateY(0);
+}
+
+/* Fix Explanation */
+.fix-explanation {
+    background: rgba(102, 126, 234, 0.1);
+    border-left: 3px solid #667eea;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-color);
+    line-height: 1.4;
+}
+
+.fix-explanation strong {
+    color: #667eea;
+}
+
+/* Infeasible Message */
+.validation-infeasible {
+    background: rgba(255, 149, 0, 0.1);
+    border-left: 3px solid #ff9500;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.validation-infeasible .error-header {
+    color: #ff9500;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.validation-infeasible p {
+    margin: 6px 0;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+.validation-infeasible strong {
+    color: #ff9500;
+}
+
+/* Progress Indicator */
+.validation-info {
+    background: rgba(0, 122, 255, 0.1);
+    border-left: 3px solid #007aff;
+    padding: 12px;
+    border-radius: 4px;
+    color: #007aff;
+    font-size: 12px;
+    font-weight: 500;
+}
