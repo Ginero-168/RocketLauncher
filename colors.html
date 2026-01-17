@@ -1,0 +1,275 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="css/styles.css" />
+	<!-- Custom Styles for Colors Panel -->
+	<style>
+		body {
+			padding: 10px;
+			background: #232323;
+			color: #ccc;
+			font-family: 'Segoe UI', sans-serif;
+			overflow-y: auto;
+		}
+
+		/* Overwrite shared styles if needed */
+		.section-card {
+			margin-bottom: 15px;
+		}
+	</style>
+	<title>TATA Colors</title>
+</head>
+
+<body>
+
+	<!-- 1. Saved Colors (Previously Explore) -->
+	<div class="section-card collapsed">
+		<div class="section-header" onclick="event.stopPropagation(); this.parentNode.classList.toggle('collapsed')"
+			style="cursor: pointer;">
+			<span>Saved Colors</span>
+			<svg class="icon chevron" viewBox="0 0 24 24">
+				<path d="M7 14l5-5 5 5z" />
+			</svg>
+		</div>
+		<div class="section-content">
+			<div id="saved_colors_list" style="display: flex; flex-direction: column; gap: 8px;">
+				<!-- Saved sets injected here -->
+				<div style="font-size: 11px; color: #888; text-align: center; padding: 10px;">
+					No saved palettes yet.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 2. Color Harmony (Default Expanded) -->
+	<div class="section-card">
+		<div class="section-header" onclick="event.stopPropagation(); this.parentNode.classList.toggle('collapsed')"
+			style="cursor: pointer;">
+			<span>Color Harmony</span>
+
+			<!-- Right Controls -->
+			<div style="display: flex; align-items: center; gap: 4px;">
+				<!-- Random Button -->
+				<button id="btn_dash_generate" title="Randomize Colors"
+					style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0;">
+					<svg class="icon" viewBox="0 0 24 24"
+						style="width: 14px; height: 14px; fill: #444; transform: translateY(1px);">
+						<path
+							d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+					</svg>
+				</button>
+				<svg class="icon chevron" viewBox="0 0 24 24">
+					<path d="M7 14l5-5 5 5z" />
+				</svg>
+			</div>
+		</div>
+
+		<div class="section-content">
+			<!-- Top Area: 2 Columns -->
+			<div style="display: flex; gap: 15px; align-items: flex-start;">
+
+				<!-- Left Column: Tools -->
+				<div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+
+					<!-- Recent Colors (Moved Top) -->
+					<div id="recent-colors-container">
+						<span style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Recent
+							Colors</span>
+						<div id="recent_list" style="display: flex; gap: 4px; height: auto; flex-wrap: wrap;">
+							<!-- Swatches injected via JS -->
+						</div>
+					</div>
+
+					<!-- Mini Hex Card (Dark Purple Style) -->
+					<div class="mini-hex-card"
+						style="background: #3E3B50; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #555;">
+						<input type="text" id="input_primary_hex" value="#41315D"
+							style="background: transparent; border: none; font-family: monospace; font-weight: bold; font-size: 14px; color: #fff; width: 80px; outline: none;">
+
+						<button id="btn_pick_primary" title="Pick Color"
+							style="background: transparent; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;">
+							<svg viewBox="0 0 24 24"
+								style="width: 18px; height: 18px; fill: #888; transform: translateY(1px);">
+								<path
+									d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM5.25 19H4.25v-1l8.92-8.92 1 1L5.25 19z" />
+							</svg>
+						</button>
+						<!-- Hidden element to keep logic safe if needed, though removed from view -->
+						<div id="primary_preview" style="display: none;"></div>
+					</div>
+
+					<!-- Lightness Slider -->
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: #666;">
+							<path
+								d="M20 15.31L23.31 12 20 8.69V6c0-1.1-.9-2-2-2h-2.69L12 .69 8.69 4H6c-1.1 0-2 .9-2 2v2.69L.69 12 4 15.31V18c0 1.1.9 2 2 2h2.69L12 23.31 15.31 20H18c1.1 0 2-.9 2-2v-2.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />
+						</svg>
+						<input type="range" id="input_lightness" min="0" max="100" value="50"
+							style="flex: 1; height: 6px; cursor: pointer; -webkit-appearance: none; background: linear-gradient(to right, black, white); border-radius: 3px; outline: none; border: 1px solid #444;">
+					</div>
+				</div>
+
+				<!-- Right Column: Wheel -->
+				<div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+					<!-- Increased Size -->
+					<div style="width: 110px; height: 110px; position: relative;">
+						<canvas id="color_wheel_canvas" width="110" height="110"
+							style="cursor: crosshair; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></canvas>
+						<div id="wheel_cursor"
+							style="position: absolute; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); top: 50%; left: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End Top Area -->
+
+			<!-- Generated Lists (Full Width below) -->
+			<div id="harmony_list" class="harmony-list-container" style="margin-top: 10px;">
+				<!-- Dynamic Rows injected via JS -->
+			</div>
+		</div>
+	</div>
+
+	<!-- 3. Contrast Checker (Collapsed) -->
+	<div class="section-card collapsed">
+		<div class="section-header" onclick="event.stopPropagation(); this.parentNode.classList.toggle('collapsed')"
+			style="cursor: pointer;">
+			<span>Contrast Checker</span>
+			<svg class="icon chevron" viewBox="0 0 24 24">
+				<path d="M7 14l5-5 5 5z" />
+			</svg>
+		</div>
+		<div class="section-content" style="padding: 10px; display: flex; flex-direction: column; gap: 12px;">
+
+			<!-- Tip of the Day (Designer's Life) -->
+			<div class="tip-card" onclick="updateRandomTip()" title="Click for new pain..."
+				style="background: #A8C5E5; padding: 15px; border-radius: 8px; text-align: center; color: #172A44; cursor: pointer; transition: transform 0.1s;">
+				<h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: bold;">Designer's Life</h3>
+				<p id="daily_tip_text"
+					style="margin: 0; font-size: 12px; font-style: italic; line-height: 1.4; opacity: 0.9;">
+					"Final_final_v2_REAL_FINAL.psd"
+				</p>
+			</div>
+
+			<!-- Inputs Row -->
+			<div class="contrast-inputs" style="display: flex; gap: 10px;">
+				<!-- Left: Foreground (Text) -->
+				<div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+					<label style="font-size: 10px; color: #888; font-weight: 600;">Foreground</label>
+					<div class="input-group"
+						style="background: #172A44; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1);">
+						<input type="text" id="cc_text_hex" value="#172A44"
+							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #fff;">
+						<!-- Custom Picker Trigger -->
+						<button id="btn_cc_text_pick" onclick="openCustomColorPicker('cc_text_hex')"
+							style="width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; cursor: pointer; background: linear-gradient(135deg, #FFB7B2, #FFDAC1, #E2F0CB, #B5EAD7, #C7CEEA); box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;"></button>
+					</div>
+				</div>
+
+				<!-- Swap Button -->
+				<div style="display: flex; align-items: flex-end; padding-bottom: 8px;">
+					<button onclick="swapContrastColors()" title="Swap Colors"
+						style="background: none; border: none; cursor: pointer; padding: 4px; opacity: 0.7; transition: opacity 0.2s;">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"
+							stroke-linecap="round" stroke-linejoin="round">
+							<path d="M7 16V4M7 4L3 8M7 4L11 8"></path>
+							<path d="M17 8v12M17 20l4-4M17 20l-4-4"></path>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Right: Background -->
+				<div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+					<label style="font-size: 10px; color: #888; font-weight: 600;">Background</label>
+					<div class="input-group"
+						style="background: #B2C7E2; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(0,0,0,0.1);">
+						<input type="text" id="cc_bg_hex" value="#B2C7E2"
+							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #000;">
+						<!-- Custom Picker Trigger -->
+						<button id="btn_cc_bg_pick" onclick="openCustomColorPicker('cc_bg_hex')"
+							style="width: 24px; height: 24px; border: 1px solid rgba(0,0,0,0.2); border-radius: 6px; cursor: pointer; background: linear-gradient(135deg, #FFB7B2, #FFDAC1, #E2F0CB, #B5EAD7, #C7CEEA); box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;"></button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Score Card -->
+			<div id="score_card"
+				style="background: #D4F7D4; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+				<!-- Header Region -->
+				<div
+					style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
+					<div class="score-number" id="cc_score_val"
+						style="font-size: 42px; font-weight: 900; line-height: 1;">8.36</div>
+					<div style="text-align: right;">
+						<div id="cc_score_text" style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">Very
+							good</div>
+						<div id="cc_score_stars" style="color: rgba(0,0,0,0.4); font-size: 14px;">★★★★☆</div>
+					</div>
+				</div>
+
+				<!-- Details Region -->
+				<div style="display: flex; gap: 10px;">
+					<!-- Small Text -->
+					<div id="cc_small_box"
+						style="flex: 1; background: rgba(255,255,255,0.3); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+						<span id="cc_s_label" style="font-size: 11px; font-weight: bold;">Small text</span>
+						<span id="cc_small_stars" style="font-size: 10px; color: rgba(0,0,0,0.5);">★★★</span>
+					</div>
+					<!-- Large Text -->
+					<div id="cc_large_box"
+						style="flex: 1; background: rgba(255,255,255,0.3); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+						<span id="cc_l_label" style="font-size: 11px; font-weight: bold;">Large text</span>
+						<span id="cc_large_stars" style="font-size: 10px; color: rgba(0,0,0,0.5);">★★★</span>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- Custom Picker Modal (Duplicate from Main for safety) -->
+	<div id="custom_picker_modal"
+		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+		<div
+			style="background: #2D2D2D; padding: 15px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 220px; display: flex; flex-direction: column; gap: 10px;">
+			<div
+				style="display: flex; justify-content: space-between; align-items: center; color: #fff; margin-bottom: 5px;">
+				<span style="font-size: 12px; font-weight: bold;">Select Color</span>
+				<div id="custom_picker_preview"
+					style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #fff;"></div>
+			</div>
+
+			<!-- Saturation/Value Canvas -->
+			<div style="position: relative; width: 100%; height: 150px; cursor: crosshair;">
+				<canvas id="custom_picker_canvas" width="190" height="150"
+					style="width: 100%; height: 100%; border-radius: 4px;"></canvas>
+				<div id="custom_picker_cursor"
+					style="position: absolute; top: 0; left: 0; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; transform: translate(-5px, -5px); pointer-events: none; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
+				</div>
+			</div>
+
+			<!-- Hue Slider -->
+			<input type="range" id="custom_picker_hue" min="0" max="360" value="0"
+				style="width: 100%; height: 10px; -webkit-appearance: none; background: linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red); border-radius: 5px; cursor: pointer;">
+
+			<!-- Buttons -->
+			<div style="display: flex; gap: 10px; margin-top: 5px;">
+				<button onclick="closeCustomPicker()"
+					style="flex: 1; padding: 6px; background: #444; color: #ccc; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Cancel</button>
+				<button onclick="confirmCustomPicker()"
+					style="flex: 1; padding: 6px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Select</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="js/libs/CSInterface.js"></script>
+	<!-- We need the color logic, but we might need to split main.js. 
+         For now, if main.js is huge, linking it might cause issues if it tries to init the Main Panel layout.
+         Ideally, we should have split logic. 
+         TEMPORARY: I will link main.js but we must ensure init() handles 'colors.html' logic separately. -->
+	<script src="js/main.js"></script>
+</body>
+
+</html>

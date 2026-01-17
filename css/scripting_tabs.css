@@ -1,0 +1,125 @@
+/* Scripting Tabs */
+.tab-btn.active {
+    background: #333;
+    border-bottom: 2px solid #0078d4 !important;
+    font-weight: bold;
+    color: #fff;
+}
+
+.tab-btn {
+    cursor: pointer;
+    padding: 8px 0;
+    transition: background 0.2s;
+    color: #aaa;
+}
+
+.tab-btn:hover {
+    background: #2a2a2a;
+    color: #ddd;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: flex !important;
+}
+
+/* Toast */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #27ae60;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 999;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.toast-notification.show {
+    opacity: 1;
+}
+
+/* Smart Words Chips */
+#smart_words_container {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    /* Horizontal Scroll */
+    padding: 8px 0;
+    white-space: nowrap;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE */
+    align-items: center;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+    background: #222;
+    min-height: 48px;
+    /* Fixed height to prevent jump */
+}
+
+#smart_words_container::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.smart-chip {
+    background: linear-gradient(135deg, #3a3a3a, #2b2b2b);
+    color: #ccc;
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid #444;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    /* Prevent shrinking */
+    user-select: none;
+}
+
+.smart-chip:hover {
+    background: #444;
+    border-color: #555;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.smart-chip:active {
+    transform: translateY(0);
+}
+
+.cycle-btn {
+    background: #252525;
+    color: #4facfe;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #4facfe;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-left: 4px;
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.2);
+    transition: all 0.2s;
+}
+
+.cycle-btn:hover {
+    background: #4facfe;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+    transform: rotate(180deg);
+}

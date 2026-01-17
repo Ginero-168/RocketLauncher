@@ -44,53 +44,121 @@
 		}
 
 
-		// Initialize Layout FIRST (so we have a target for user scripts)
-		try { initDragLayout(); } catch (e) { }
 
-		setupTabs();
-		initUserScripts(); // Adds orphans to layout
-		// setupDimension(); // Removed to prevent Cleaner Tab overwrite
-		setupSwift(); // RESTORED
-		try { setupCreative(); } catch (e) { alert("SetupCreative Error: " + e); }
-		setupPanelToggle();
+		// Determine Context (Main Panel vs Sub-Panel)
+		var isColorPanel = window.location.href.indexOf('colors.html') !== -1;
 
-		// Initialize Features
-		try { initHotkeys(); } catch (e) { }
+		if (isColorPanel) {
+			// ==================== COLORS PANEL INIT ====================
+			try { setupCreative(); } catch (e) { alert("SetupCreative Error: " + e); }
 
+			// Init Color-Specific Context Menu or Features if needed
+			// For now, Creative setup is sufficient + Custom Picker
+		} else {
+			// ==================== MAIN PANEL INIT ====================
+
+			// Initialize Layout FIRST (so we have a target for user scripts)
+			try { initDragLayout(); } catch (e) { }
+
+			// V2: Setup Uniform Grid Tabs
+			setupTabsV2();
+
+			// Old setupTabs was: setupTabs(); 
+			// We will replace it with V2 logic below.
+
+			initUserScripts(); // Adds orphans to layout
+
+			// RESTORED Swift Tools (now as grid buttons)
+			setupSwift();
+
+			// setupPanelToggle is Main Panel only
+			setupPanelToggle();
+
+			// Initialize Features (Hotkeys are Main Panel only)
+			try { initHotkeys(); } catch (e) { }
+
+			// Render all tabs first
+			// renderAllLayouts(); // V2 uses new grid render
+			renderGrid();
+
+			// IMPORTANT: Setup effects AFTER rendering tabs
+			// so Smart Clean button exists in DOM
+			setupEffects();
+		}
+
+		// COMMON INIT
 		// load Host Script (Monolithic)
 		csInterface.evalScript('$.evalFile("' + extensionPath + '/jsx/hostscript.jsx")');
-
-		// Render all tabs first
-		renderAllLayouts();
-
-		// IMPORTANT: Setup effects AFTER rendering tabs
-		// so Smart Clean button exists in DOM
-		setupEffects();
 	}
+
 
 	// ...
 
 
 	function setupTabs() {
+		// Legacy setup, replaced by setupTabsV2 but kept for safety if revert
 		var tabs = document.querySelectorAll('.tab-btn');
-
 		tabs.forEach(function (tab) {
 			tab.addEventListener('click', function () {
 				switchTab(this);
 			});
+		});
+	}
 
-			// FORCE BLOCK DRAG (Capture Phase)
-			// This intercepts events BEFORE they reach any bubbling handlers
-			var blockDrag = function (e) {
-				e.preventDefault();
-				e.stopPropagation();
-				e.stopImmediatePropagation();
-				return false;
-			};
+	function initTabRenaming() {
+		var tabs = document.querySelectorAll('.tab-btn');
 
-			tab.addEventListener('dragenter', blockDrag, true);
-			tab.addEventListener('dragover', blockDrag, true);
-			tab.addEventListener('drop', blockDrag, true);
+		// Load Saved Names
+		var savedNames = localStorage.getItem('tata_tab_names');
+		if (savedNames) {
+			try {
+				var names = JSON.parse(savedNames);
+				tabs.forEach(function (tab) {
+					var key = tab.dataset.tab;
+					if (names[key]) tab.innerText = names[key];
+				});
+			} catch (e) { }
+		}
+
+		tabs.forEach(function (tab) {
+			tab.addEventListener('dblclick', function () {
+				var currentName = this.innerText;
+				var input = document.createElement('input');
+				input.type = 'text';
+				input.className = 'tab-rename-input';
+				input.value = currentName;
+
+				var self = this;
+
+				function save() {
+					var newName = input.value.trim();
+					if (newName) {
+						self.innerText = newName;
+						// Save to Storage
+						var names = {};
+						var saved = localStorage.getItem('tata_tab_names');
+						if (saved) try { names = JSON.parse(saved); } catch (e) { }
+						names[self.dataset.tab] = newName;
+						localStorage.setItem('tata_tab_names', JSON.stringify(names));
+					} else {
+						self.innerText = currentName; // Revert if empty
+					}
+				}
+
+				input.addEventListener('blur', save);
+				input.addEventListener('keydown', function (e) {
+					if (e.key === 'Enter') {
+						save();
+						// Blur manually to stop editing
+						// this.blur(); // Handled by blur event
+					}
+				});
+
+				this.innerHTML = '';
+				this.appendChild(input);
+				input.focus();
+				input.select();
+			});
 		});
 	}
 
@@ -314,6 +382,40 @@
 		inputs.forEach(function (inp) { inp.addEventListener('keydown', onKey); });
 	}
 
+	function showConfirmModal(title, text, callback) {
+		var modal = document.getElementById('confirm_modal');
+		var elTitle = document.getElementById('confirm_modal_title');
+		var elText = document.getElementById('confirm_modal_text');
+		var btnOk = document.getElementById('btn_confirm_ok');
+		var btnCancel = document.getElementById('btn_confirm_cancel');
+
+		if (!modal) return;
+
+		elTitle.innerText = title;
+		elText.innerText = text;
+		modal.classList.add('active');
+
+		var cleanup = function () {
+			modal.classList.remove('active');
+			btnOk.removeEventListener('click', onOk);
+			btnCancel.removeEventListener('click', onCancel);
+		};
+
+		var onOk = function () {
+			cleanup();
+			callback(true);
+		};
+
+		var onCancel = function () {
+			cleanup();
+			callback(false);
+		};
+
+		btnOk.addEventListener('click', onOk);
+		btnCancel.addEventListener('click', onCancel);
+		btnOk.focus();
+	}
+
 	function setupDimension() {
 		var btn = document.getElementById('btn_dimension');
 		if (btn) {
@@ -508,65 +610,83 @@
 	var setupPanelToggleDone = false;
 
 	function setupPanelToggle() {
-		// Prevent duplicate setup
 		if (setupPanelToggleDone) return;
 		setupPanelToggleDone = true;
 
-		var btn = document.getElementById('btn_toggle_height');
-		var isCollapsed = false;
+		var btnToggle = document.getElementById('btn_toggle_height');
+		var strip = document.getElementById('collapsed_strip');
 
-		if (!btn) return;
+		if (!btnToggle || !strip) return;
 
-		btn.addEventListener('click', function () {
-			try {
-				if (!isCollapsed) {
-					// Collapse
-					if (window.innerHeight > 100) {
-						btn.dataset.lastHeight = window.innerHeight;
-					}
-					var width = Math.floor(window.innerWidth);
+		// 1. STATE PERSISTENCE
+		var savedState = localStorage.getItem('tata_panel_collapsed');
+		var isCollapsed = (savedState === 'true');
 
-					// Dynamic Height Calculation
-					var hotkeyBar = document.getElementById('hotkey-bar');
-					var tabsContent = document.querySelector('.tabs');
-					var footer = document.querySelector('.footer');
+		function getCollapsedHeight() {
+			var hotkeyBar = document.getElementById('hotkey-bar');
+			// Height = Hotkeys + Strip (14px) + Buffer(6px) = ~20px + Hotkeys
+			return Math.ceil((hotkeyBar ? hotkeyBar.offsetHeight : 0) + 24);
+		}
 
-					var hHotkeys = hotkeyBar ? hotkeyBar.offsetHeight : 0;
-					var hFooter = footer ? footer.offsetHeight : 32;
+		function setCollapsedState(collapsed) {
+			isCollapsed = collapsed;
+			localStorage.setItem('tata_panel_collapsed', isCollapsed);
 
-					// Hide Tabs
-					if (tabsContent) tabsContent.style.display = 'none';
+			if (isCollapsed) {
+				document.body.classList.add('collapsed');
 
-					// Height = Hotkeys + Footer (Tabs excluded)
-					var collapsedHeight = Math.ceil(hHotkeys + hFooter);
+				// Hide Tabs
+				var tabsContent = document.querySelector('.tabs');
+				if (tabsContent) tabsContent.style.display = 'none';
 
-					// Resize
-					csInterface.resizeContent(width, collapsedHeight);
+				// Resize to Minimal
+				csInterface.resizeContent(Math.floor(window.innerWidth), getCollapsedHeight());
+			} else {
+				document.body.classList.remove('collapsed');
 
-					// Update UI
-					btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
-					btn.title = "Expand Panel";
-					document.body.classList.add('collapsed');
-					isCollapsed = true;
-				} else {
-					// Expand
-					var tabsContent = document.querySelector('.tabs');
-					if (tabsContent) tabsContent.style.display = ''; // Restore Tabs
+				// Show Tabs
+				var tabsContent = document.querySelector('.tabs');
+				if (tabsContent) tabsContent.style.display = '';
 
-					var width = Math.floor(window.innerWidth);
-					var restoreH = parseInt(btn.dataset.lastHeight) || 500;
-
-					csInterface.resizeContent(width, restoreH);
-
-					// Update UI
-					btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6 6-6 6z"/></svg>';
-					btn.title = "Collapse Panel";
-					document.body.classList.remove('collapsed');
-					isCollapsed = false;
-				}
-			} catch (e) {
-				alert("Resize Error: " + e.message);
+				// Restore Height
+				var restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+				csInterface.resizeContent(Math.floor(window.innerWidth), restoreH);
 			}
+		}
+
+		// 2. INITIAL SYNC
+		if (isCollapsed) {
+			document.body.classList.add('collapsed');
+			var tabsContent = document.querySelector('.tabs');
+			if (tabsContent) tabsContent.style.display = 'none';
+			// Defer resize
+			setTimeout(function () {
+				csInterface.resizeContent(Math.floor(window.innerWidth), getCollapsedHeight());
+			}, 100);
+		} else {
+			// Correct Icon/State in Toolbar
+			document.body.classList.remove('collapsed');
+			// Safety Check
+			if (window.innerHeight < 100) {
+				var restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+				csInterface.resizeContent(Math.floor(window.innerWidth), restoreH);
+			}
+		}
+
+		// 3. LISTENERS
+
+		// A. Collapse Button (In Footer)
+		btnToggle.addEventListener('click', function () {
+			// Save Height before collapsing
+			if (window.innerHeight > 200) {
+				localStorage.setItem('tata_panel_last_height', window.innerHeight);
+			}
+			setCollapsedState(true);
+		});
+
+		// B. Expand Strip (Bottom)
+		strip.addEventListener('click', function () {
+			setCollapsedState(false);
 		});
 	}
 
@@ -1296,9 +1416,142 @@
 	window.addEventListener('load', function () {
 		try {
 			init();
-			initHotkeys();
-			initTabRenaming();
+			// Features only for Main Panel
+			if (window.location.href.indexOf('colors.html') === -1) {
+				initHotkeys();
+				initTabRenaming();
+			}
 			initContrastChecker();
+
+			// Listen for Scripts from Scripting Panel
+			csInterface.addEventListener("com.tata.pro.importScript", function (event) {
+				try {
+					var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+
+					// Add to Active or Swift Tab
+					var activeTabEl = document.querySelector('.tab-btn.active');
+					var targetTab = activeTabEl ? activeTabEl.dataset.tab : 'custom';
+
+					// CRITICAL: Load latest layout from storage before modifing
+					var saved = localStorage.getItem('tata_v2_layout');
+					if (saved) {
+						try {
+							v2Layout = JSON.parse(saved);
+						} catch (e) { console.error(e); }
+					} else {
+						// If no storage, use defaults (cloned)
+						v2Layout = JSON.parse(JSON.stringify(v2Defaults)); // Clone defaults
+					}
+
+					// Merge Defaults: Ensure all tabs exist (fix for disappearing buttons)
+					Object.keys(v2Defaults).forEach(function (k) {
+						if (!v2Layout[k]) v2Layout[k] = v2Defaults[k];
+					});
+
+					// Ensure target exists
+					if (!v2Layout[targetTab]) v2Layout[targetTab] = [];
+
+					var newItem = {
+						id: data.id,
+						label: data.name,
+						icon: data.icon,
+						code: data.code,
+						type: 'code'
+					};
+
+					if (!v2Layout[targetTab]) v2Layout[targetTab] = [];
+					v2Layout[targetTab].push(newItem);
+					saveV2Layout();
+					renderGrid();
+
+					// Optional: Save to userScripts global store too for redundancy
+					// FIX: Pass true for isUpdate to force using data.id, ensuring consistency
+					// FIX 2: Pass true for skipRender to prevent Legacy Render destroying the V2 Grid
+					saveUserScript(data.name, data.icon, data.code, 'gray', true, data.id, true);
+
+				} catch (e) {
+					console.error("Import Event Error", e);
+				}
+			});
+
+			// ==================== CONTEXT MENU: EDIT ====================
+			var btnEdit = document.getElementById('ctx_edit');
+			if (btnEdit) {
+				btnEdit.onclick = function () {
+					var id = window.currentContextScriptId;
+					if (!id) return;
+
+					// BLOCK DEFAULTS
+					if (id.indexOf('btn_') === 0) {
+						showToast("Default scripts cannot be edited.", "error");
+						document.getElementById('context_menu').style.display = 'none';
+						return;
+					}
+
+					// Find Data (Prioritize V2 Layout)
+					var foundItem = null;
+					['swift', 'creative', 'tool', 'custom'].forEach(t => {
+						if (v2Layout[t]) {
+							var match = v2Layout[t].find(x => x.id === id);
+							if (match) foundItem = match;
+						}
+					});
+
+					// Fallback to User Scripts
+					if (!foundItem && userScripts[id]) {
+						foundItem = userScripts[id];
+						foundItem.code = foundItem.code;
+					}
+
+					if (foundItem && (foundItem.code || foundItem.script)) {
+						document.getElementById('context_menu').style.display = 'none'; // Hide Menu
+
+						// Open Scripting Panel
+						CSInterface.prototype.requestOpenExtension("com.tata.pro.scripting", "");
+
+						// Logic to load file content if it's a default script
+						if (!foundItem.code && foundItem.script) {
+							try {
+								var fs = require('fs');
+								var path = require('path');
+								var scriptPath = path.join(extensionPath, 'jsx', foundItem.script);
+								if (fs.existsSync(scriptPath)) {
+									foundItem.code = fs.readFileSync(scriptPath, 'utf-8');
+								} else {
+									// Try absolute path if any
+									if (fs.existsSync(foundItem.script)) {
+										foundItem.code = fs.readFileSync(foundItem.script, 'utf-8');
+									}
+								}
+							} catch (err) {
+								// console.error("Could not read script file", err);
+							}
+						}
+
+						// Send Data Delayed (to allow panel load)
+						setTimeout(function () {
+							var evt = new CSEvent("com.tata.pro.editScript", "APPLICATION");
+							evt.data = JSON.stringify(foundItem);
+							csInterface.dispatchEvent(evt);
+						}, 800);
+					} else {
+						alert("Cannot edit this item (No inline code found).");
+						document.getElementById('context_menu').style.display = 'none';
+					}
+				};
+			}
+			// ============================================================
+
+			// Listen for Settings Request from Scripting Panel
+			csInterface.addEventListener("com.tata.pro.requestSettings", function (event) {
+				var apiKey = localStorage.getItem('tata_gemini_api_key') || "";
+				var picker = localStorage.getItem('tata_picker_mode') || "os";
+
+				var response = new CSEvent("com.tata.pro.settingsData", "APPLICATION");
+				response.data = JSON.stringify({ apiKey: apiKey, pickerMode: picker });
+				csInterface.dispatchEvent(response);
+			});
+
 		} catch (e) {
 			alert("CRITICAL INIT ERROR: " + e);
 		}
@@ -1359,8 +1612,16 @@
 		};
 
 		// Edit Action
+		// Edit Action
 		if (btnEdit) {
 			btnEdit.onclick = function () {
+				// Block Defaults
+				if (currentContextScriptId && currentContextScriptId.indexOf('btn_') === 0) {
+					showToast("Default scripts cannot be edited.", "error");
+					if (contextMenuEl) contextMenuEl.style.display = 'none';
+					return;
+				}
+
 				if (currentContextScriptId) {
 					openEditScriptModal(currentContextScriptId);
 				}
@@ -1376,18 +1637,27 @@
 				// Resolve ID from Closure OR Global Fallback
 				var targetId = currentContextScriptId || window.currentContextScriptId;
 
+				// Block Defaults
+				if (targetId && targetId.indexOf('btn_') === 0) {
+					showToast("Default scripts cannot be deleted.", "error");
+					if (contextMenuEl) contextMenuEl.style.display = 'none';
+					return;
+				}
+
+				// Hide Context Menu IMMEDIATELY
+				if (contextMenuEl) contextMenuEl.style.display = 'none';
+
 				// alert("Delete Clicked. Resolved ID: " + targetId); // Debug
 
 				if (targetId) {
-					var c = confirm('Delete this script?');
-					if (c) {
-						deleteUserScript(targetId);
-						contextMenuEl.style.display = 'none';
-
-						// Reset globals to be safe
-						currentContextScriptId = null;
-						window.currentContextScriptId = null;
-					}
+					showConfirmModal("Delete this script?", "This action cannot be undone.", function (confirmed) {
+						if (confirmed) {
+							deleteUserScript(targetId);
+							// No need to hide here, already hidden.
+							currentContextScriptId = null;
+							window.currentContextScriptId = null;
+						}
+					});
 				} else {
 					alert("Error: No Script ID found.\nCtx: " + currentContextScriptId + "\nWin: " + window.currentContextScriptId);
 				}
@@ -1539,44 +1809,11 @@
 		// ==================
 		if (btnAdd) {
 			btnAdd.addEventListener('click', function () {
-				// Reset Mode
-				var btnSave = document.getElementById('btn_save_script');
-				btnSave.dataset.mode = "create";
-				btnSave.dataset.targetId = "";
-				btnSave.innerText = "Save";
-
-				document.getElementById('script_modal_title').innerText = "Add New Script";
-				document.getElementById('btn_open_ai').innerText = "✨ Ask AI to write code";
-
-				document.getElementById('script_name').value = "";
-				document.getElementById('script_code').value = "";
-				// Reset Icon Grid
-				var iconVal = document.getElementById('script_icon_val');
-				iconVal.value = '<svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // Default Play Icon
-
-				document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
-				// Select first one (Fit) or Generic Play? Let's generic Play (index 8)
-				var playIcon = document.querySelector('.icon-option[title="Play"]');
-				if (playIcon) {
-					playIcon.classList.add('selected');
-					iconVal.value = playIcon.innerHTML;
-				} else {
-					// Fallback to first
-					var first = document.querySelector('.icon-option');
-					if (first) {
-						first.classList.add('selected');
-						iconVal.value = first.innerHTML;
-					}
-				}
-
-				// Reset Color to Red
-				document.getElementById('script_color').value = 'red';
-				document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
-				document.querySelector('.color-swatch[data-color="red"]').classList.add('selected');
-
-				scriptModal.classList.add('active');
+				new CSInterface().requestOpenExtension('com.tata.pro.scripting', '');
 			});
 		}
+
+
 
 		if (btnCancelScript) {
 			btnCancelScript.addEventListener('click', function () {
@@ -2858,31 +3095,50 @@
 	}
 
 	function deleteUserScript(id) {
-		// 1. Remove from userScripts
-		delete userScripts[id];
-		localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
+		// 1. Remove from userScripts (Global Store)
+		if (userScripts[id]) {
+			delete userScripts[id];
+			localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
+		}
 
-		// 2. Remove from Layout
+		// 2. Remove from V2 Layout (Prioritized)
+		var v2Dirty = false;
+		['swift', 'creative', 'tool', 'custom'].forEach(t => {
+			var list = v2Layout[t];
+			if (!list) return;
+			// Find Index
+			var idx = list.findIndex(item => item.id === id);
+			if (idx !== -1) {
+				list.splice(idx, 1);
+				v2Dirty = true;
+			}
+		});
+
+		if (v2Dirty) {
+			saveV2Layout();
+			renderGrid();
+			return; // V2 handled, exit to avoid confusion unless we share IDs
+		}
+
+		// 3. Remove from Legacy Layout (Fallback)
 		var dirty = false;
+		// ... existing V1 logic if needed, but V2 is priority ...
 		Object.keys(layoutState).forEach(function (tabId) {
 			var rows = layoutState[tabId];
 			if (!rows) return;
-			// Backward loop to safe splice
 			for (var i = rows.length - 1; i >= 0; i--) {
 				var row = rows[i];
 				var cIdx = row.indexOf(id);
 				if (cIdx !== -1) {
 					row.splice(cIdx, 1);
 					dirty = true;
-					// If row empty, remove row
-					if (row.length === 0) {
-						rows.splice(i, 1);
-					}
+					if (row.length === 0) rows.splice(i, 1);
 				}
 			}
 		});
 
 		if (dirty) saveLayout();
+
 
 		// 3. Clear from cache
 		if (buttonCache[id]) delete buttonCache[id];
@@ -3972,7 +4228,7 @@
 		return btn;
 	}
 
-	function saveUserScript(name, icon, code, color, isUpdate, targetId) {
+	function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender) {
 		var id = isUpdate ? targetId : 'script_' + Date.now();
 
 		userScripts[id] = {
@@ -3998,9 +4254,383 @@
 		}
 
 
-		renderAllLayouts();
+		if (!skipRender) renderAllLayouts();
 	}
 	// ------------------------------------
 
 	// Init handled by window.load event listener above
-}());
+
+	// ====================================================================================
+	// ====================================   V2 LOGIC   ==================================
+	// ====================================================================================
+
+	var v2Layout = {}; // In-memory state
+
+	var ICONS = {
+		fit: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v2H4v4H2V4a2 2 0 0 1 2-2zm16 0h-4v2h4v4h2V4a2 2 0 0 0-2-2zM4 20h4v-2H4v-4H2v4a2 2 0 0 0 2 2zm16 0h-4v-2h4v-4h2v4a2 2 0 0 0-2 2z" /></svg>',
+		resize: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 12h-2.26l2.03-2.03l-1.41-1.41L15.31 10.6V8.34h-2v4.66h4.66v-2h-2.66zM7 12h2.26L7.23 14.03l1.41 1.41L10.69 13.4v2.26h2v-4.66H8.03v2H10.69z" /></svg>',
+		follow: '<svg class="icon" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" /></svg>',
+		arrange: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z" /></svg>',
+		stars: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>',
+		palette: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" /></svg>',
+		embed: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" /></svg>',
+		preview: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>',
+		dimension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 21l-4.486-4.494M19 10H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM10 3v4M14 3v4M8 5h8" /></svg>',
+		clean: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>',
+		colors: '<svg class="icon" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10" /></svg>' // Placeholder
+	};
+
+	var v2Defaults = {
+		swift: [
+			{ id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx' },
+			{ id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx' },
+			{ id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx' },
+			{ id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx' },
+			{ id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx' },
+			{ id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx' },
+			{ id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx' },
+			{ id: 'btn_preview', label: 'Preview', icon: ICONS.preview, script: 'Preview.jsx' },
+			{ id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx' }
+		],
+		creative: [
+			{ id: 'btn_open_colors', label: 'Colors Panel', icon: ICONS.colors, type: 'subpanel', target: 'com.tata.pro.colors' }
+		],
+		tool: [
+			{ id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx' }
+		],
+		custom: []
+	};
+
+	function setupTabsV2() {
+		initTabRenaming(); // Enable renaming
+
+		var tabs = document.querySelectorAll('.tab-btn');
+		tabs.forEach(function (tab) {
+			tab.addEventListener('click', function () {
+				document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+				document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+				this.classList.add('active');
+				var target = document.getElementById(this.dataset.tab);
+				if (target) target.classList.add('active');
+			});
+
+			// Drag Over to Switch Tab
+			tab.addEventListener('dragenter', function (e) {
+				e.preventDefault();
+				this.click(); // Auto switch
+			});
+			tab.addEventListener('dragover', function (e) { e.preventDefault(); });
+			tab.addEventListener('drop', function (e) { e.preventDefault(); });
+		});
+	}
+
+	function renderGrid() {
+		// Load from Storage or Use Defaults
+		var saved = localStorage.getItem('tata_v2_layout');
+		if (saved) {
+			try { v2Layout = JSON.parse(saved); } catch (e) { v2Layout = v2Defaults; }
+		} else {
+			v2Layout = v2Defaults;
+		}
+
+		// Check if buttons migrated? 
+		// If existing user has NO v2 layout, give them defaults.
+
+		['swift', 'creative', 'tool', 'custom'].forEach(function (tabName) {
+			var container = document.getElementById(tabName);
+			if (!container) return; // Skip if tab doesn't exist (e.g. in Colors Panel)
+
+			container.innerHTML = ''; // Clear
+
+			var items = v2Layout[tabName] || [];
+			items.forEach(function (item, index) {
+				var btn = createGridButton(item, tabName, index);
+				container.appendChild(btn);
+			});
+		});
+
+		// Attach Drag events
+		setupGridDrag();
+	}
+
+	function createGridButton(item, tabName, index) {
+		var btn = document.createElement('div');
+		btn.className = 'grid-btn';
+		btn.id = item.id;
+		btn.draggable = true;
+		btn.dataset.index = index;
+		btn.dataset.tab = tabName;
+
+		// Add class for defaults
+		if (item.id && item.id.indexOf('btn_') === 0) {
+			btn.classList.add('default-script');
+		}
+
+		// Icon
+		var iconDiv = document.createElement('div');
+		iconDiv.innerHTML = item.icon || ICONS.stars; // Default icon
+		// Normalize SVG size
+		var svg = iconDiv.querySelector('svg');
+		if (svg) {
+			svg.setAttribute('width', '24');
+			svg.setAttribute('height', '24');
+		}
+		btn.appendChild(iconDiv);
+
+		// Label
+		var lbl = document.createElement('span');
+		lbl.innerText = item.label;
+		btn.appendChild(lbl);
+
+		// Click Handler
+		btn.addEventListener('click', function () {
+			if (item.type === 'subpanel') {
+				CSInterface.prototype.requestOpenExtension(item.target, '');
+			} else if (item.script) {
+				runScript(item.script); // Use existing runner
+			} else if (item.code) {
+				// Inline code support (for custom scripts)
+				csInterface.evalScript(item.code);
+			}
+		});
+
+		// Context Menu (Right Click)
+		btn.oncontextmenu = function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			// Set Global Context ID
+			window.currentContextScriptId = item.id;
+
+			// Show Menu
+			var menu = document.getElementById('context_menu');
+			if (menu) {
+				menu.style.display = 'block';
+				menu.style.left = e.clientX + 'px';
+				menu.style.top = e.clientY + 'px';
+			}
+		};
+
+		return btn;
+	}
+
+	function setupGridDrag() {
+		var buttons = document.querySelectorAll('.grid-btn');
+		var draggedItem = null;
+
+		buttons.forEach(btn => {
+			btn.addEventListener('dragstart', function (e) {
+				draggedItem = this;
+				e.dataTransfer.effectAllowed = 'move';
+				e.dataTransfer.setData('text/html', this.innerHTML);
+				// To allow dropping into Hotkeys
+				var itemData = getItemDataFromElement(this);
+				e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
+			});
+
+			btn.addEventListener('dragend', function () {
+				draggedItem = null;
+			});
+
+			// Reordering within Grid
+			btn.addEventListener('dragover', function (e) {
+				e.preventDefault();
+			});
+
+			btn.addEventListener('drop', function (e) {
+				e.preventDefault();
+				if (draggedItem !== this) {
+					// Swap Logic in Data Model
+					var srcTab = draggedItem.dataset.tab;
+					var srcIdx = parseInt(draggedItem.dataset.index);
+					var destTab = this.dataset.tab;
+					var destIdx = parseInt(this.dataset.index);
+
+					// Perform swap (or move)
+					if (srcTab === destTab) {
+						var list = v2Layout[srcTab];
+						var temp = list[srcIdx];
+						list[srcIdx] = list[destIdx];
+						list[destIdx] = temp;
+					} else {
+						// Move across tabs
+						var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
+						v2Layout[destTab].splice(destIdx, 0, item);
+					}
+
+					saveV2Layout();
+					renderGrid();
+				}
+			});
+		});
+
+		// Dropping into Tab Content (Empty area) => Append
+		document.querySelectorAll('.tab-content').forEach(container => {
+			container.addEventListener('dragover', e => e.preventDefault());
+			container.addEventListener('drop', function (e) {
+				e.preventDefault();
+				if (e.target === this && draggedItem) { // Dropped on background
+					var srcTab = draggedItem.dataset.tab;
+					var srcIdx = parseInt(draggedItem.dataset.index);
+					var destTab = this.id;
+
+					if (srcTab !== destTab) {
+						var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
+						v2Layout[destTab].push(item);
+						saveV2Layout();
+						renderGrid();
+					}
+				}
+			});
+		});
+	}
+
+	function getItemDataFromElement(el) {
+		var tab = el.dataset.tab;
+		var idx = el.dataset.index;
+		return v2Layout[tab][idx];
+	}
+
+	function saveV2Layout() {
+		localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+	}
+
+	// ==================== IMPORT / EXPORT ====================
+
+	// Basic Node.js FS (Enabled in Manifest)
+	var fs = require('fs');
+	var path = require('path');
+
+	function exportScript() {
+		// 1. Get List of Exportable Scripts
+		var exportable = [];
+		var allTabs = ['swift', 'creative', 'tool', 'custom'];
+		allTabs.forEach(t => {
+			v2Layout[t].forEach(item => {
+				if (item.script || item.code) {
+					item._tab = t;
+					exportable.push(item);
+				}
+			});
+		});
+
+		if (exportable.length === 0) {
+			showToast("No scripts to export.", "error");
+			return;
+		}
+
+		// 2. UX: Toast instead of Alert
+		showToast("Click a button to export it", "info");
+		document.body.classList.add('export-mode');
+
+		var btns = document.querySelectorAll('.grid-btn');
+		var handler = function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+
+			// Find Data
+			var item = getItemDataFromElement(this);
+
+			// Fix 3: Remove .json from default name (OS handles it, or filter does)
+			// Also checking if item.label already has extension is good practice but item.label is usually distinct.
+			// Passing just the label lets the OS/Dialog append the extension from the selected filter.
+			var defaultName = item.label;
+
+			// Save Dialog
+			var result = window.cep.fs.showSaveDialogEx("Export Script", "", ["json"], defaultName);
+			if (result.data) {
+				var payload = {
+					tata_version: "2.0",
+					name: item.label,
+					icon: item.icon,
+					script: item.script, // Built-in path
+					code: item.code,     // Custom code
+					type: item.type
+				};
+				// Ensure extension is there if OS didn't add it (rare but possible)
+				var finalPath = result.data;
+				if (!finalPath.toLowerCase().endsWith('.json')) finalPath += '.json';
+
+				fs.writeFileSync(finalPath, JSON.stringify(payload, null, 2));
+				showToast("Exported!", "success");
+			}
+
+			// Cleanup
+			document.body.classList.remove('export-mode');
+			btns.forEach(b => b.removeEventListener('click', handler, true));
+		};
+
+		btns.forEach(b => b.addEventListener('click', handler, true)); // Capture phase
+	}
+
+	function importScript() {
+		// Fix 4: Filter should be ["json"] not [".json"]
+		var result = window.cep.fs.showOpenDialogEx(false, false, "Import Script", "", ["json"]);
+		if (result.data && result.data.length > 0) {
+			var filePath = result.data[0];
+			try {
+				var content = fs.readFileSync(filePath, 'utf8');
+				var data = JSON.parse(content);
+
+				// Add to Current Active Tab or Custom?
+				var activeTabEl = document.querySelector('.tab-btn.active');
+				var activeTab = activeTabEl ? activeTabEl.dataset.tab : 'custom';
+
+				var newItem = {
+					id: 'imported_' + new Date().getTime(),
+					label: data.name || "Imported",
+					icon: data.icon || ICONS.stars,
+					script: data.script,
+					code: data.code,
+					type: data.type
+				};
+
+				v2Layout[activeTab].push(newItem);
+				saveV2Layout();
+				renderGrid();
+				showToast("Imported " + data.name, "success");
+
+			} catch (e) {
+				showToast("Import Failed: " + e, "error");
+			}
+		}
+	}
+
+	// Helper: Toast Notification
+	function showToast(msg, type) {
+		var toast = document.createElement('div');
+		toast.className = 'toast-notification ' + (type || 'info');
+		toast.innerText = msg;
+
+		document.body.appendChild(toast);
+
+		// Animate in
+		setTimeout(() => toast.classList.add('show'), 10);
+
+		// Auto remove
+		setTimeout(() => {
+			toast.classList.remove('show');
+			setTimeout(() => {
+				if (toast.parentNode) toast.parentNode.removeChild(toast);
+			}, 300);
+		}, 3000);
+	}
+
+	// ==================== INITIALIZATION WIRING ====================
+
+	// Attach FAB Listeners (Call this in setupTabsV2 or init)
+	var fabImport = document.getElementById('btn_import_script');
+	if (fabImport) fabImport.addEventListener('click', importScript);
+
+	var fabExport = document.getElementById('btn_export_script');
+	if (fabExport) fabExport.addEventListener('click', exportScript);
+
+	// Reset Tab Names
+	var btnResetTabs = document.getElementById('btn_reset_tab_names');
+	if (btnResetTabs) btnResetTabs.addEventListener('click', function () {
+		localStorage.removeItem('tata_tab_names');
+		location.reload();
+	});
+
+})();
