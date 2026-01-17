@@ -5,6 +5,10 @@
     var extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION);
     var currentScriptId = null; // Track ID for edits
 
+    // V3: Script Version History
+    var scriptVersions = {}; // { scriptId: [{ code, timestamp }] }
+    var MAX_VERSIONS = 5;
+
     // ==================== ICONS ====================
     // Moved to top for safety
     var ICONS = {
@@ -53,6 +57,9 @@
         initIconPicker();
         initListeners();
 
+        // V3: Initialize CodeMirror for Syntax Highlighting
+        initCodeMirror();
+
         // Request Settings from Main Panel
         var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
         csInterface.dispatchEvent(req);
@@ -93,6 +100,27 @@
                 localStorage.setItem('tata_gemini_api_key', data.apiKey);
             }
         });
+
+        // V3: Version History Button
+        var btnVersion = document.getElementById('btn_version_history');
+        if (btnVersion) {
+            btnVersion.addEventListener('click', function () {
+                var versions = getVersions(currentScriptId);
+                if (versions.length === 0) {
+                    showToast("No version history");
+                    return;
+                }
+                // Simple: Restore previous version
+                if (versions.length > 1) {
+                    restoreVersion(currentScriptId, 1);
+                } else {
+                    showToast("Only 1 version saved");
+                }
+            });
+        }
+
+        // Load version history on init
+        loadVersionHistory();
     }
 
     function initTabs() {
@@ -206,7 +234,11 @@
                 prompt = "Current Code:\n```javascript\n" + currentCode + "\n```\n\nTask: " + userText + "\n\nModify code. Return full code.";
             }
 
-            var result = await callGemini(apiKey, prompt);
+            // V3: Get selected model
+            var modelSelector = document.getElementById('ai_model_selector');
+            var selectedModel = modelSelector ? modelSelector.value : 'gemini-1.5-pro';
+
+            var result = await callAI(apiKey, prompt, selectedModel);
 
             var loadingBubble = document.getElementById(loadingId);
             if (loadingBubble) loadingBubble.remove();
@@ -252,6 +284,9 @@
             code: scriptCode
         };
 
+        // V3: Save version before import
+        saveVersion(data.id, scriptCode);
+
         var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
         event.data = JSON.stringify(data);
         csInterface.dispatchEvent(event);
@@ -276,18 +311,58 @@
 
     // ==================== HELPERS ====================
 
-    async function callGemini(apiKey, prompt) {
+    // V3: Multi-Model AI Call
+    async function callAI(apiKey, prompt, model) {
         var systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
-        var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
 
-        var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error("API Error " + response.status);
+        if (model.startsWith('gemini')) {
+            // Gemini API
+            var modelName = model === 'gemini-2.0-flash' ? 'gemini-2.0-flash-exp' : 'gemini-1.5-pro';
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+            var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
 
-        var data = await response.json();
-        var text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(text);
+            var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error("Gemini API Error " + response.status);
+
+            var data = await response.json();
+            var text = data.candidates[0].content.parts[0].text;
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(text);
+
+        } else if (model.startsWith('claude')) {
+            // Claude API (Anthropic)
+            var claudeKey = localStorage.getItem('tata_claude_api_key') || apiKey; // Fallback to Gemini key for now
+            var claudeUrl = "https://api.anthropic.com/v1/messages";
+            var claudePayload = {
+                model: "claude-3-haiku-20240307",
+                max_tokens: 4096,
+                messages: [{ role: "user", content: systemPrompt + "\n\n" + prompt }]
+            };
+
+            var claudeResponse = await fetch(claudeUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': claudeKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify(claudePayload)
+            });
+
+            if (!claudeResponse.ok) throw new Error("Claude API Error " + claudeResponse.status);
+
+            var claudeData = await claudeResponse.json();
+            var claudeText = claudeData.content[0].text;
+            claudeText = claudeText.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(claudeText);
+        }
+
+        throw new Error("Unknown model: " + model);
+    }
+
+    // Legacy alias
+    async function callGemini(apiKey, prompt) {
+        return callAI(apiKey, prompt, 'gemini-1.5-pro');
     }
 
     function addChatBubble(type, html) {
@@ -364,3 +439,98 @@
     init();
 
 })();
+
+// ==================== V3: VERSION HISTORY ====================
+function loadVersionHistory() {
+    var saved = localStorage.getItem('tata_script_versions');
+    if (saved) {
+        try { scriptVersions = JSON.parse(saved); } catch (e) { }
+    }
+}
+
+function saveVersionHistory() {
+    localStorage.setItem('tata_script_versions', JSON.stringify(scriptVersions));
+}
+
+function saveVersion(scriptId, code) {
+    if (!scriptId || !code) return;
+
+    if (!scriptVersions[scriptId]) {
+        scriptVersions[scriptId] = [];
+    }
+
+    // Add new version
+    scriptVersions[scriptId].unshift({
+        code: code,
+        timestamp: Date.now()
+    });
+
+    // Limit to MAX_VERSIONS
+    if (scriptVersions[scriptId].length > MAX_VERSIONS) {
+        scriptVersions[scriptId] = scriptVersions[scriptId].slice(0, MAX_VERSIONS);
+    }
+
+    saveVersionHistory();
+}
+
+function getVersions(scriptId) {
+    return scriptVersions[scriptId] || [];
+}
+
+function restoreVersion(scriptId, index) {
+    var versions = getVersions(scriptId);
+    if (versions[index]) {
+        document.getElementById('code_editor').value = versions[index].code;
+        showToast("Version " + (index + 1) + " restored!");
+    }
+}
+
+    // ==================== V3: CODEMIRROR ====================
+    var cmEditor = null;
+    
+    function initCodeMirror() {
+        var textarea = document.getElementById('code_editor');
+        if (!textarea || typeof CodeMirror === 'undefined') {
+            console.log("CodeMirror not available, using fallback textarea");
+            return;
+        }
+        
+        cmEditor = CodeMirror.fromTextArea(textarea, {
+            mode: 'javascript',
+            theme: 'material-darker',
+            lineNumbers: true,
+            lineWrapping: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: true,
+            autoCloseBrackets: true,
+            matchBrackets: true
+        });
+        
+        // Sync with hidden textarea for form submissions
+        cmEditor.on('change', function () {
+            cmEditor.save();
+        });
+        
+        // Style adjustments
+        var cmWrapper = cmEditor.getWrapperElement();
+        cmWrapper.style.flex = '1';
+        cmWrapper.style.fontSize = '12px';
+        cmWrapper.style.height = 'auto';
+    }
+    
+    // Override getValue for CodeMirror
+    function getEditorCode() {
+        if (cmEditor) {
+            return cmEditor.getValue();
+        }
+        return document.getElementById('code_editor').value;
+    }
+    
+    function setEditorCode(code) {
+        if (cmEditor) {
+            cmEditor.setValue(code);
+        } else {
+            document.getElementById('code_editor').value = code;
+        }
+    }

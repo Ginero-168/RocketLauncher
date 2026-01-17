@@ -1,7 +1,45 @@
 (function () {
 	'use strict';
 
+	// ==========================================
+	// V3: Global Error Handler
+	// ==========================================
+	window.onerror = function (msg, url, line, col, error) {
+		console.error('[TATA Error]', { msg: msg, url: url, line: line, col: col, error: error });
+		if (typeof showToast === 'function') {
+			showToast('Error: ' + msg, 'error');
+		}
+		return true; // Prevent default browser error handling
+	};
 
+	// ==========================================
+	// V3: Debounce Utility
+	// ==========================================
+	function debounce(func, wait) {
+		var timeout;
+		return function () {
+			var context = this, args = arguments;
+			clearTimeout(timeout);
+			timeout = setTimeout(function () {
+				func.apply(context, args);
+			}, wait);
+		};
+	}
+
+	// ==========================================
+	// V3: DOM Cache
+	// ==========================================
+	var DOM = {};
+	function cacheDOM() {
+		DOM.hotkeyBar = document.getElementById('hotkey-bar');
+		DOM.footerToolbar = document.querySelector('.footer-toolbar');
+		DOM.collapsedStrip = document.getElementById('collapsed_strip');
+		DOM.tabs = document.querySelector('.tabs');
+		DOM.tabContainer = document.getElementById('tab-container');
+		DOM.settingsModal = document.getElementById('settings_modal');
+		DOM.inputModal = document.getElementById('input_modal');
+		DOM.confirmModal = document.getElementById('confirm_modal');
+	}
 
 	var csInterface = new CSInterface();
 	var extensionPath = "";
@@ -25,6 +63,15 @@
 	};
 
 	function init() {
+		// V3: Cache DOM elements first
+		cacheDOM();
+
+		// V3: Apply saved theme
+		var savedTheme = localStorage.getItem('tata_theme');
+		if (savedTheme === 'light') {
+			document.body.classList.add('light-theme');
+		}
+
 		try {
 			extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION);
 		} catch (e) { }
@@ -610,83 +657,96 @@
 	var setupPanelToggleDone = false;
 
 	function setupPanelToggle() {
+		// Prevent duplicate setup
 		if (setupPanelToggleDone) return;
 		setupPanelToggleDone = true;
 
-		var btnToggle = document.getElementById('btn_toggle_height');
-		var strip = document.getElementById('collapsed_strip');
-
-		if (!btnToggle || !strip) return;
+		var btn = document.getElementById('btn_toggle_height');
+		if (!btn) return;
 
 		// 1. STATE PERSISTENCE
 		var savedState = localStorage.getItem('tata_panel_collapsed');
 		var isCollapsed = (savedState === 'true');
 
+		// Helpers for Height
 		function getCollapsedHeight() {
 			var hotkeyBar = document.getElementById('hotkey-bar');
-			// Height = Hotkeys + Strip (14px) + Buffer(6px) = ~20px + Hotkeys
-			return Math.ceil((hotkeyBar ? hotkeyBar.offsetHeight : 0) + 24);
-		}
-
-		function setCollapsedState(collapsed) {
-			isCollapsed = collapsed;
-			localStorage.setItem('tata_panel_collapsed', isCollapsed);
-
-			if (isCollapsed) {
-				document.body.classList.add('collapsed');
-
-				// Hide Tabs
-				var tabsContent = document.querySelector('.tabs');
-				if (tabsContent) tabsContent.style.display = 'none';
-
-				// Resize to Minimal
-				csInterface.resizeContent(Math.floor(window.innerWidth), getCollapsedHeight());
-			} else {
-				document.body.classList.remove('collapsed');
-
-				// Show Tabs
-				var tabsContent = document.querySelector('.tabs');
-				if (tabsContent) tabsContent.style.display = '';
-
-				// Restore Height
-				var restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
-				csInterface.resizeContent(Math.floor(window.innerWidth), restoreH);
-			}
+			var footer = document.querySelector('.footer-toolbar');
+			// Buffer +30px for absolute safety
+			return Math.ceil((hotkeyBar ? hotkeyBar.offsetHeight : 0) + (footer ? footer.offsetHeight : 50) + 30);
 		}
 
 		// 2. INITIAL SYNC
 		if (isCollapsed) {
+			// Apply Collapsed UI
 			document.body.classList.add('collapsed');
+			btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>'; // Down Arrow
+			btn.title = "Expand Panel";
 			var tabsContent = document.querySelector('.tabs');
 			if (tabsContent) tabsContent.style.display = 'none';
-			// Defer resize
+
+			// Force Resize (with slight delay)
 			setTimeout(function () {
 				csInterface.resizeContent(Math.floor(window.innerWidth), getCollapsedHeight());
 			}, 100);
+
 		} else {
-			// Correct Icon/State in Toolbar
+			// Apply Expanded UI
 			document.body.classList.remove('collapsed');
-			// Safety Check
-			if (window.innerHeight < 100) {
+			btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>'; // Up Arrow
+			btn.title = "Collapse Panel";
+
+			// Safety: Force Expand if window is suspiciously small but state is Open
+			if (window.innerHeight < 200) {
 				var restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
 				csInterface.resizeContent(Math.floor(window.innerWidth), restoreH);
 			}
 		}
 
-		// 3. LISTENERS
+		// 3. EVENT LISTENER
+		btn.addEventListener('click', function () {
+			try {
+				if (!isCollapsed) {
+					// --- ACTION: COLLAPSE ---
+					if (window.innerHeight > 200) {
+						var h = window.innerHeight;
+						btn.dataset.lastHeight = h;
+						localStorage.setItem('tata_panel_last_height', h);
+					}
 
-		// A. Collapse Button (In Footer)
-		btnToggle.addEventListener('click', function () {
-			// Save Height before collapsing
-			if (window.innerHeight > 200) {
-				localStorage.setItem('tata_panel_last_height', window.innerHeight);
+					var width = Math.floor(window.innerWidth);
+					var tabsContent = document.querySelector('.tabs');
+					if (tabsContent) tabsContent.style.display = 'none';
+
+					csInterface.resizeContent(width, getCollapsedHeight());
+
+					btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>';
+					btn.title = "Expand Panel";
+					document.body.classList.add('collapsed');
+					isCollapsed = true;
+
+				} else {
+					// --- ACTION: EXPAND ---
+					var tabsContent = document.querySelector('.tabs');
+					if (tabsContent) tabsContent.style.display = '';
+
+					var width = Math.floor(window.innerWidth);
+					var restoreH = parseInt(btn.dataset.lastHeight) || parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+
+					csInterface.resizeContent(width, restoreH);
+
+					btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>';
+					btn.title = "Collapse Panel";
+					document.body.classList.remove('collapsed');
+					isCollapsed = false;
+				}
+
+				// SAVE STATE
+				localStorage.setItem('tata_panel_collapsed', isCollapsed);
+
+			} catch (e) {
+				console.error("Panel Toggle Error", e);
 			}
-			setCollapsedState(true);
-		});
-
-		// B. Expand Strip (Bottom)
-		strip.addEventListener('click', function () {
-			setCollapsedState(false);
 		});
 	}
 
@@ -1708,6 +1768,11 @@
 				var elPicker = document.getElementById('setting_picker_mode');
 				if (elPicker) elPicker.value = localStorage.getItem('tata_picker_mode') || 'os';
 
+				// V3: Load Theme
+				var elTheme = document.getElementById('setting_theme');
+				var savedTheme = localStorage.getItem('tata_theme') || 'dark';
+				if (elTheme) elTheme.value = savedTheme;
+
 				// Load Count UI
 				var savedCount = localStorage.getItem('tata_hotkey_count') || "5";
 				document.getElementById('hotkey_count_display').textContent = savedCount;
@@ -1785,6 +1850,18 @@
 				if (elPicker) {
 					localStorage.setItem('tata_picker_mode', elPicker.value);
 					pickerMode = elPicker.value; // Update Global
+				}
+
+				// V3: Save Theme
+				var elTheme = document.getElementById('setting_theme');
+				if (elTheme) {
+					var theme = elTheme.value;
+					localStorage.setItem('tata_theme', theme);
+					if (theme === 'light') {
+						document.body.classList.add('light-theme');
+					} else {
+						document.body.classList.remove('light-theme');
+					}
 				}
 
 				// Save Count

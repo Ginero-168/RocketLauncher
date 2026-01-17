@@ -173,6 +173,17 @@
 			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
 			<div class="control-group">
+				<label>Theme</label>
+				<select id="setting_theme"
+					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+					<option value="dark">Dark Mode</option>
+					<option value="light">Light Mode</option>
+				</select>
+			</div>
+
+			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+
+			<div class="control-group">
 				<label>Number of Hotkey Slots</label>
 				<div class="input-stepper" id="stepper_hotkey_count">
 					<button class="btn-minus">-</button>
@@ -302,6 +313,12 @@
 	</div>
 
 	<script src="js/libs/CSInterface.js"></script>
+	<!-- V3 Modules -->
+	<script src="js/modals.js"></script>
+	<script src="js/hotkeys.js"></script>
+	<script src="js/icons.js"></script>
+	<script src="js/plugins.js"></script>
+	<!-- Main Logic -->
 	<script src="js/main.js"></script>
 
 </body>
