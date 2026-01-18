@@ -123,13 +123,11 @@ body {
     min-height: 0;
     height: auto;
     overflow-y: auto;
+    padding-bottom: 100px;
+    /* V3: Extra space for footer toolbar */
 }
 
-/* Force Creative specifc */
-#creative {
-    /* min-height: 500px !important; Removed */
-    /* border: 2px solid cyan !important; Removed */
-}
+/* Creative tab - no custom styles needed */
 
 /* Fix Scripts Tab Padding (ID is swift) */
 #swift {
@@ -1516,18 +1514,22 @@ body.export-mode .footer-toolbar {
     background-color: #383838;
     border-color: #555;
 }
+
 /* Toggle Button Fixes */
 #btn_toggle_height {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    margin-right: 8px; /* Extra spacing from New button */
+    margin-right: 8px;
+    /* Extra spacing from New button */
 }
 
 /* Remove rotation for Toggle Button specifically */
 #btn_toggle_height:hover {
-    transform: none; /* No rotate */
-    background: #444; /* Hover bg */
+    transform: none;
+    /* No rotate */
+    background: #444;
+    /* Hover bg */
     border-color: #666;
 }
 
@@ -1546,11 +1548,13 @@ body.export-mode .footer-toolbar {
 
 /* Toggle Button Fixes - Final Polish */
 #btn_toggle_height {
-    width: 30px !important; /* Match Settings Button */
+    width: 30px !important;
+    /* Match Settings Button */
     height: 30px !important;
     border-radius: 50%;
     margin-right: 8px;
-    flex-shrink: 0; /* Prevent squashing */
+    flex-shrink: 0;
+    /* Prevent squashing */
 }
 
 /* Ensure no rotation on hover */
@@ -1560,7 +1564,8 @@ body.export-mode .footer-toolbar {
 }
 
 #btn_toggle_height svg {
-    width: 20px; /* Standard icon size */
+    width: 20px;
+    /* Standard icon size */
     height: 20px;
     fill: #ccc;
     transition: transform 0.2s;
@@ -1573,9 +1578,12 @@ body.export-mode .footer-toolbar {
 
 /* Footer Toolbar Robustness */
 .footer-toolbar {
-    min-height: 50px; /* Prevent squashing */
-    flex-shrink: 0;   /* Prevent flex resize */
-    overflow: hidden; /* Hide overflow */
+    min-height: 50px;
+    /* Prevent squashing */
+    flex-shrink: 0;
+    /* Prevent flex resize */
+    overflow: hidden;
+    /* Hide overflow */
 }
 
 /* Absolute Safety for Toggle Button */
@@ -1584,15 +1592,18 @@ body.export-mode .footer-toolbar {
     min-height: 30px !important;
     max-width: 30px !important;
     max-height: 30px !important;
-    padding: 0 !important; /* Ensure no padding squeeze */
+    padding: 0 !important;
+    /* Ensure no padding squeeze */
 }
 
 /* Minimal Collapse Strip */
 #collapsed_strip {
-    height: 14px; /* Slightly taller for clickability, but looks like 10px */
+    height: 14px;
+    /* Slightly taller for clickability, but looks like 10px */
     background: #1e1e1e;
     border-top: 1px solid #333;
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -1601,7 +1612,8 @@ body.export-mode .footer-toolbar {
 }
 
 #collapsed_strip:hover {
-    background: #3771c8; /* Accent */
+    background: #3771c8;
+    /* Accent */
 }
 
 #collapsed_strip svg {

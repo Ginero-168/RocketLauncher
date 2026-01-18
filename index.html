@@ -154,9 +154,19 @@
 	<div id="settings_modal" class="modal">
 		<div class="modal-content">
 			<h3>Settings</h3>
+			<!-- AI Settings Group -->
 			<div class="control-group">
 				<label>Gemini API Key</label>
 				<input type="password" id="setting_api_key" placeholder="Paste API Key here">
+			</div>
+			<div class="control-group" style="margin-top: 10px;">
+				<label>AI Model</label>
+				<select id="setting_ai_model"
+					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+					<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+					<option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+					<option value="claude-3-haiku">Claude 3 Haiku</option>
+				</select>
 			</div>
 
 			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
@@ -190,14 +200,6 @@
 					<span class="val" id="hotkey_count_display">5</span>
 					<button class="btn-plus">+</button>
 				</div>
-			</div>
-
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
-
-			<div class="control-group">
-				<label>Tab Names</label>
-				<button id="btn_reset_tab_names" class="secondary" style="width: 100%; font-size: 11px;">Reset Tab Names
-					to Default</button>
 			</div>
 
 			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
