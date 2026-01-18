@@ -285,28 +285,34 @@
 				input.value = currentName;
 
 				var self = this;
+				var saved = false; // Prevent double save
 
 				function save() {
-					var newName = input.value.trim();
-					if (newName) {
-						self.innerText = newName;
-						// Save to Storage
-						var names = {};
-						var saved = localStorage.getItem('tata_tab_names');
-						if (saved) try { names = JSON.parse(saved); } catch (e) { }
-						names[self.dataset.tab] = newName;
-						localStorage.setItem('tata_tab_names', JSON.stringify(names));
-					} else {
-						self.innerText = currentName; // Revert if empty
+					if (saved) return; // Already saved
+					saved = true;
+
+					var newName = input.value.trim() || currentName;
+
+					// Remove input if still present
+					if (input.parentNode === self) {
+						self.removeChild(input);
 					}
+
+					// Set text directly
+					self.textContent = newName;
+
+					// Save to localStorage
+					var names = {};
+					var storedNames = localStorage.getItem('tata_tab_names');
+					if (storedNames) try { names = JSON.parse(storedNames); } catch (e) { }
+					names[self.dataset.tab] = newName;
+					localStorage.setItem('tata_tab_names', JSON.stringify(names));
 				}
 
 				input.addEventListener('blur', save);
 				input.addEventListener('keydown', function (e) {
 					if (e.key === 'Enter') {
-						save();
-						// Blur manually to stop editing
-						// this.blur(); // Handled by blur event
+						input.blur(); // Trigger blur which calls save
 					}
 				});
 
