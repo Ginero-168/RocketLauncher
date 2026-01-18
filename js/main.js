@@ -4934,4 +4934,21 @@
 		location.reload();
 	});
 
+	// ==========================================
+	// V4.2: Export to Global TATA Namespace
+	// ==========================================
+	window.TATA = window.TATA || {};
+	TATA.showToast = showToast;
+	TATA.showInputModal = showInputModal;
+	TATA.showConfirmModal = showConfirmModal;
+	TATA.renderGrid = renderGrid;
+	TATA.renderHotkeys = renderHotkeys;
+	TATA.saveV2Layout = saveV2Layout;
+	TATA.saveHotkeys = saveHotkeys;
+	TATA.debounce = debounce;
+	TATA.safeParse = safeParse;
+	TATA.backupBeforeSave = backupBeforeSave;
+	TATA.DOM = DOM;
+	TATA.csInterface = csInterface;
+
 })();
