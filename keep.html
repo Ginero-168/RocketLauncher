@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TATA KEEP</title>
+    <link rel="stylesheet" href="css/keep.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🗂️ TATA KEEP</h1>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button id="btn_import" class="btn-primary" title="Import SVG files">
+            📁 Import
+        </button>
+        <button id="btn_add_selection" class="btn-accent" title="Save current selection as SVG">
+            ➕ Selection
+        </button>
+        <button id="btn_export" class="btn-secondary" title="Export all to folder">
+            ↗️ Export
+        </button>
+    </div>
+
+    <!-- Grid Container -->
+    <div id="keeper_grid" class="keeper-grid">
+        <!-- SVG cards will be rendered here -->
+        <div class="empty-state" id="empty_state">
+            <div class="empty-icon">📦</div>
+            <div class="empty-text">No items yet</div>
+            <div class="empty-hint">Import SVG files or save your Illustrator selection</div>
+        </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="footer">
+        <button id="btn_clear" class="btn-danger" title="Delete all items">
+            🗑️ Clear All
+        </button>
+        <span class="item-count" id="item_count">0 items</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/libs/CSInterface.js"></script>
+    <script src="js/keep.js"></script>
+</body>
+
+</html>
