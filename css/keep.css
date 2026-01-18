@@ -267,3 +267,79 @@ button {
 .toast.error {
     border-left: 3px solid #ef4444;
 }
+/* Toolbar Spacer */
+.toolbar-spacer {
+	flex: 1;
+}
+
+/* Info Button */
+.btn-icon {
+	background: transparent;
+	color: #9ca3af;
+	border: 1px solid #4b5563;
+	border-radius: 4px;
+	padding: 6px 8px;
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.btn-icon:hover {
+	background: #374151;
+	color: #fff;
+}
+
+/* Info Modal */
+.info-modal {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.8);
+	z-index: 100;
+	justify-content: center;
+	align-items: center;
+	padding: 20px;
+}
+
+.info-modal.show {
+	display: flex;
+}
+
+.info-content {
+	background: #2d2d2d;
+	border-radius: 8px;
+	padding: 16px;
+	max-width: 300px;
+	max-height: 90%;
+	overflow-y: auto;
+}
+
+.info-content h2 {
+	font-size: 14px;
+	margin-bottom: 12px;
+	color: #fff;
+}
+
+.info-section {
+	margin-bottom: 10px;
+}
+
+.info-section h3 {
+	font-size: 12px;
+	color: #3b82f6;
+	margin-bottom: 4px;
+}
+
+.info-section p {
+	font-size: 11px;
+	color: #9ca3af;
+	line-height: 1.4;
+}
+
+.info-content .btn-primary {
+	width: 100%;
+	margin-top: 12px;
+}

@@ -73,6 +73,17 @@
         document.getElementById('btn_add_selection').addEventListener('click', addSelectionToKeeper);
         document.getElementById('btn_export').addEventListener('click', exportFiles);
         document.getElementById('btn_clear').addEventListener('click', clearAll);
+
+        // Info modal
+        document.getElementById('btn_info').addEventListener('click', function () {
+            document.getElementById('info_modal').classList.add('show');
+        });
+        document.getElementById('btn_close_info').addEventListener('click', function () {
+            document.getElementById('info_modal').classList.remove('show');
+        });
+        document.getElementById('info_modal').addEventListener('click', function (e) {
+            if (e.target === this) this.classList.remove('show');
+        });
     }
 
     // ==========================================

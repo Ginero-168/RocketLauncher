@@ -9,11 +9,6 @@
 </head>
 
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>🗂️ TATA Keep</h1>
-    </div>
-
     <!-- Toolbar -->
     <div class="toolbar">
         <button id="btn_import" class="btn-primary" title="Import SVG files">
@@ -25,6 +20,38 @@
         <button id="btn_export" class="btn-secondary" title="Export all to folder">
             ↗️ Export
         </button>
+        <div class="toolbar-spacer"></div>
+        <button id="btn_info" class="btn-icon" title="How to use">
+            ℹ️
+        </button>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info_modal" class="info-modal">
+        <div class="info-content">
+            <h2>🗂️ TATA Keep - SVG Asset Manager</h2>
+            <div class="info-section">
+                <h3>📁 Import</h3>
+                <p>Select SVG files from your computer to store them in Keep.</p>
+            </div>
+            <div class="info-section">
+                <h3>➕ Selection</h3>
+                <p>Save your current Illustrator selection as an SVG file.</p>
+            </div>
+            <div class="info-section">
+                <h3>↗️ Export</h3>
+                <p>Export all stored SVGs to a folder on your computer.</p>
+            </div>
+            <div class="info-section">
+                <h3>📍 Place</h3>
+                <p>Click "Place" on any card to insert the SVG into your document.</p>
+            </div>
+            <div class="info-section">
+                <h3>🖱️ Drag & Drop</h3>
+                <p>Drag SVG cards directly into Illustrator to place them.</p>
+            </div>
+            <button id="btn_close_info" class="btn-primary">Got it!</button>
+        </div>
     </div>
 
     <!-- Grid Container -->
