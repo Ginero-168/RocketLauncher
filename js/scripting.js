@@ -150,7 +150,87 @@
             }
         });
 
+        // Upload to Server
+        var btnUpload = document.getElementById('btn_upload_server');
+        if (btnUpload) btnUpload.addEventListener('click', handleUploadToServer);
+    }
 
+    // ==================== SUPABASE CONFIG ====================
+    var SUPABASE_URL = 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+
+    function handleUploadToServer() {
+        var nameInput = document.getElementById('script_name_input');
+        var descInput = document.getElementById('script_description');
+        var iconInput = document.getElementById('icon_value');
+        var colorTrigger = document.getElementById('color_trigger');
+
+        var name = nameInput ? nameInput.value.trim() : '';
+        var description = descInput ? descInput.value.trim() : '';
+        var code = getEditorCode();
+        var icon = iconInput ? iconInput.value : '★';
+
+        // Validation
+        if (!name) {
+            showToast('⚠️ Please enter a script name');
+            return;
+        }
+        if (!code || code === '// Your code will appear here...') {
+            showToast('⚠️ Please write some code first');
+            return;
+        }
+        if (!description) {
+            showToast('⚠️ Please add a description for upload');
+            return;
+        }
+
+        // Determine category based on color
+        var color = colorTrigger ? colorTrigger.style.background : '#3b82f6';
+        var category = 'tools';
+        if (color.includes('ef4444') || color.includes('239, 68, 68')) category = 'swift';
+        else if (color.includes('f59e0b') || color.includes('245, 158, 11')) category = 'creative';
+        else if (color.includes('8b5cf6') || color.includes('139, 92, 246')) category = 'tools';
+
+        var data = {
+            name: name,
+            description: description,
+            code: code,
+            icon: icon,
+            category: category,
+            author_name: 'Anonymous',
+            votes: 0,
+            downloads: 0
+        };
+
+        // Show loading
+        var btn = document.getElementById('btn_upload_server');
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+
+        fetch(SUPABASE_URL + '/rest/v1/scripts', {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('Upload failed');
+                return res.json();
+            })
+            .then(function () {
+                showToast('🎉 Script uploaded to Explore!');
+            })
+            .catch(function (err) {
+                showToast('❌ Upload failed: ' + err.message);
+            })
+            .finally(function () {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            });
     }
 
     function initTabs() {
