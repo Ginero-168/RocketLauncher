@@ -39,6 +39,23 @@
 		DOM.settingsModal = document.getElementById('settings_modal');
 		DOM.inputModal = document.getElementById('input_modal');
 		DOM.confirmModal = document.getElementById('confirm_modal');
+		// V4.1: Context Menu Elements
+		DOM.contextMenu = document.getElementById('context_menu');
+		DOM.ctxEdit = document.getElementById('ctx_edit');
+		DOM.ctxDelete = document.getElementById('ctx_delete');
+		DOM.ctxColors = document.getElementById('ctx_colors');
+	}
+
+	// ==========================================
+	// V4.1: Safe JSON Parse Utility
+	// ==========================================
+	function safeParse(jsonString, fallback) {
+		try {
+			return JSON.parse(jsonString);
+		} catch (e) {
+			console.error('[TATA] JSON Parse Error:', e);
+			return fallback;
+		}
 	}
 
 	// ==========================================
@@ -4581,19 +4598,31 @@
 	function renderGrid() {
 		var saved = localStorage.getItem('tata_v2_layout');
 		if (saved) {
-			try { v2Layout = JSON.parse(saved); } catch (e) { v2Layout = JSON.parse(JSON.stringify(v2Defaults)); }
+			v2Layout = safeParse(saved, JSON.parse(JSON.stringify(v2Defaults)));
 		} else {
 			v2Layout = JSON.parse(JSON.stringify(v2Defaults));
 		}
 
-
-		// Merge Defaults Logic - DISABLED V4 (Causes Duplication on Move)
-		/*
-		Object.keys(v2Defaults).forEach(function (k) {
-			// Trust v2Layout as source of truth.
-			// Only inject if completely missing? No, trust init.
+		// V4.1: Smart Default Merge (Only add defaults that don't exist ANYWHERE)
+		var allLayoutIds = {};
+		['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
+			if (v2Layout[tabName]) {
+				v2Layout[tabName].forEach(function (item) {
+					if (item && item.id) allLayoutIds[item.id] = true;
+				});
+			}
 		});
-		*/
+
+		// Inject missing defaults into their original tab
+		Object.keys(v2Defaults).forEach(function (tabName) {
+			if (!v2Layout[tabName]) v2Layout[tabName] = [];
+			v2Defaults[tabName].forEach(function (def) {
+				if (!allLayoutIds[def.id]) {
+					v2Layout[tabName].push(JSON.parse(JSON.stringify(def)));
+					console.log('[TATA] Injected missing default:', def.id);
+				}
+			});
+		});
 
 		// Ensure layout exists
 		['swift', 'creative', 'organize', 'tools'].forEach(t => {
@@ -4722,24 +4751,29 @@
 			btn.addEventListener('drop', function (e) {
 				e.preventDefault();
 				e.stopPropagation(); // Stop Container Drop
-				if (draggedItem !== this) {
-					var srcTab = draggedItem.dataset.tab;
-					var srcIdx = parseInt(draggedItem.dataset.index);
-					var destTab = this.dataset.tab;
-					var destIdx = parseInt(this.dataset.index);
+				try {
+					if (draggedItem !== this) {
+						var srcTab = draggedItem.dataset.tab;
+						var srcIdx = parseInt(draggedItem.dataset.index);
+						var destTab = this.dataset.tab;
+						var destIdx = parseInt(this.dataset.index);
 
-					if (srcTab === destTab) {
-						var list = v2Layout[srcTab];
-						var temp = list[srcIdx];
-						list[srcIdx] = list[destIdx];
-						list[destIdx] = temp;
-					} else {
-						var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
-						v2Layout[destTab].splice(destIdx, 0, item);
+						if (srcTab === destTab) {
+							var list = v2Layout[srcTab];
+							var temp = list[srcIdx];
+							list[srcIdx] = list[destIdx];
+							list[destIdx] = temp;
+						} else {
+							var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
+							v2Layout[destTab].splice(destIdx, 0, item);
+						}
+
+						saveV2Layout();
+						renderGrid();
 					}
-
-					saveV2Layout();
-					renderGrid();
+				} catch (err) {
+					console.error('[TATA] Drop Error:', err);
+					showToast('Drag failed: ' + err.message, 'error');
 				}
 			});
 		});
@@ -4774,6 +4808,9 @@
 		backupBeforeSave('tata_v2_layout');
 		localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
 	}
+
+	// V4.1: Debounced version for high-frequency operations
+	var debouncedSaveV2Layout = debounce(saveV2Layout, 300);
 
 	// ==================== IMPORT / EXPORT ====================
 
