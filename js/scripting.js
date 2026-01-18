@@ -5,10 +5,6 @@
     var extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION);
     var currentScriptId = 'default_script'; // Track ID for edits - start with default
 
-    // V3: Script Version History
-    var scriptVersions = {}; // { scriptId: [{ code, timestamp }] }
-    var MAX_VERSIONS = 5;
-
     // ==================== ICONS ====================
     // Expanded icon library (60+ icons)
     var ICONS = {
@@ -91,10 +87,14 @@
         initTabs();
         initSmartWords();
         initIconPicker();
+        initColorPicker(); // V4 Custom Color Picker
         initListeners();
 
         // V3: Initialize CodeMirror for Syntax Highlighting
         initCodeMirror();
+
+        // V4: Status Init
+        updateEditorStatus('new');
 
         // Request Settings from Main Panel
         var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
@@ -126,7 +126,7 @@
         var btnClear = document.getElementById('btn_clear_chat');
         if (btnClear) btnClear.addEventListener('click', handleClearChat);
 
-        // V3: Copy Code Button
+        // V3: Copy Last Code Button (Global) - OPTIONAL/REMOVED in V4.1
         var btnCopy = document.getElementById('btn_copy_code');
         if (btnCopy) {
             btnCopy.addEventListener('click', function () {
@@ -134,18 +134,7 @@
                 if (code && code.trim()) {
                     navigator.clipboard.writeText(code).then(function () {
                         showToast("Code copied!");
-                    }).catch(function () {
-                        // Fallback for older browsers
-                        var textarea = document.createElement('textarea');
-                        textarea.value = code;
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                        showToast("Code copied!");
                     });
-                } else {
-                    showToast("No code to copy");
                 }
             });
         }
@@ -161,28 +150,7 @@
             }
         });
 
-        // V3: Version History Button - with modal selector
-        var btnVersion = document.getElementById('btn_version_history');
-        if (btnVersion) {
-            btnVersion.addEventListener('click', function () {
-                var versions = getVersions(currentScriptId);
-                if (versions.length === 0) {
-                    showToast("No version history yet. Generate a script with AI first!");
-                    return;
-                }
 
-                if (versions.length === 1) {
-                    showToast("Only 1 version saved (current)");
-                    return;
-                }
-
-                // Show version history modal
-                showVersionHistoryModal(currentScriptId, versions);
-            });
-        }
-
-        // Load version history on init
-        loadVersionHistory();
     }
 
     function initTabs() {
@@ -239,6 +207,90 @@
         });
     }
 
+    // ==================== V4 CUSTOM COLOR PICKER ====================
+    var PRESET_COLORS = [
+        '#3b82f6', '#8b5cf6', '#ef4444', '#f97316',
+        '#eab308', '#10b981', '#14b8a6', '#06b6d4',
+        '#ec4899', '#f43f5e', '#64748b', '#FFD700'
+    ];
+
+    function initColorPicker() {
+        var trigger = document.getElementById('color_trigger');
+        var modal = document.getElementById('color_picker_modal');
+        var backdrop = document.getElementById('color_backdrop');
+        var grid = document.getElementById('color_grid');
+        var input = document.getElementById('color_hex_input');
+        var preview = document.getElementById('color_preview');
+
+        if (!trigger || !modal) return;
+
+        // Render Grid
+        PRESET_COLORS.forEach(color => {
+            var swatch = document.createElement('div');
+            swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+            swatch.onmouseover = function () { this.style.transform = 'scale(1.1)'; };
+            swatch.onmouseout = function () { this.style.transform = 'scale(1)'; };
+            swatch.onclick = function () {
+                setColor(color);
+                closeModal();
+            };
+            grid.appendChild(swatch);
+        });
+
+        function setColor(hex) {
+            input.value = hex;
+            preview.style.background = hex;
+            trigger.style.background = hex;
+        }
+
+        function openModal() {
+            modal.style.display = 'flex';
+            backdrop.style.display = 'block';
+            setColor(input.value); // Sync UI
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            backdrop.style.display = 'none';
+        }
+
+        // Listeners
+        trigger.onclick = openModal;
+        backdrop.onclick = closeModal;
+
+        input.addEventListener('input', function () {
+            var val = this.value;
+            if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
+                preview.style.background = val;
+                trigger.style.background = val;
+            }
+        });
+    }
+
+
+
+    // ==================== V4 EDITOR STATUS ====================
+    function updateEditorStatus(mode, name) {
+        var el = document.getElementById('editor_status');
+        if (!el) return;
+
+        if (mode === 'edit') {
+            el.innerHTML = "• Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
+            el.style.color = "#f97316"; // Orange for edit
+
+            // V4: Button Text
+            var btn = document.getElementById('btn_import');
+            if (btn) btn.innerText = "Update";
+        } else {
+            el.innerHTML = "• New Script";
+            el.style.color = "#2ecc71"; // Green for new
+
+            // V4: Button Text
+            var btn = document.getElementById('btn_import');
+            if (btn) btn.innerText = "Import to TATA";
+        }
+    }
+
     // ==================== HANDLERS ====================
 
     function handleEditScriptEvent(event) {
@@ -269,6 +321,9 @@
                 if (svg) { svg.setAttribute('width', '18'); svg.setAttribute('height', '18'); }
             }
         }
+
+        // V4: Update Status
+        updateEditorStatus('edit', (data.label || data.name || "Script"));
 
         activateTab('tab_editor');
         showToast("Edit Mode: " + (data.label || data.name || "Script"));
@@ -314,11 +369,9 @@
                 activateTab('tab_editor');
                 showToast("Code Generated!");
 
-                // V3: Auto-save version and set currentScriptId for version history
                 if (!currentScriptId) {
                     currentScriptId = 'ai_script_' + Date.now();
                 }
-                saveVersion(currentScriptId, result.code);
             }
             if (result.name) {
                 document.getElementById('script_name_input').value = result.name;
@@ -404,20 +457,22 @@
         var scriptCode = getEditorCode();
         var scriptName = document.getElementById('script_name_input').value || "New Script";
         var scriptIcon = document.getElementById('icon_value').value || "★";
+        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6"; // V4 Custom Input
 
         var data = {
             id: currentScriptId || ('ai_script_' + Date.now()),
             name: scriptName,
             icon: scriptIcon,
-            code: scriptCode
+            code: scriptCode,
+            color: scriptColor
         };
-
-        // V3: Save version before import
-        saveVersion(data.id, scriptCode);
 
         var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
         event.data = JSON.stringify(data);
         csInterface.dispatchEvent(event);
+
+        // V4: Force Switch Focus to Main Panel
+        CSInterface.prototype.requestOpenExtension("com.tata.pro.panel", "");
 
         var btn = document.getElementById('btn_import');
         var original = btn.innerText;
@@ -432,9 +487,10 @@
     function handleClearChat() {
         var container = document.getElementById('chat_history');
         if (!container) return;
-        var bubbles = container.querySelectorAll('.chat-bubble');
-        bubbles.forEach(b => b.remove());
-        addChatBubble("ai", "Chat cleared.");
+        container.innerHTML = ''; // Fully Clear
+        // Reset Logic
+        autoFixAttempts = 0;
+        addChatBubble("ai", "Chat cleared (Context reset).");
     }
 
     // ==================== HELPERS ====================
@@ -496,11 +552,46 @@
     function addChatBubble(type, html) {
         var container = document.getElementById('chat_history');
         if (!container) return;
+
+        // Wrapper for Layout (Message Row)
+        var wrapper = document.createElement('div');
+        wrapper.className = "chat-message-row " + type;
+        wrapper.style.cssText = "display: flex; width: 100%; margin-bottom: 8px; align-items: flex-start;";
+        wrapper.style.justifyContent = (type === 'user') ? 'flex-end' : 'flex-start';
+
+        // V4: Per-Message Copy Button (User Only)
+        if (type === 'user') {
+            // Icon SVG (Copy)
+            var copyBtn = document.createElement('div');
+            copyBtn.innerHTML = ICONS.copy; // Use existing copy icon
+            copyBtn.title = "Copy Text";
+            copyBtn.className = "msg-copy-btn";
+            // Style: Hidden by default, show on hover
+            copyBtn.style.cssText = "width: 24px; height: 24px; margin-right: 8px; cursor: pointer; color: #888; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center;";
+
+            var svg = copyBtn.querySelector('svg');
+            if (svg) { svg.style.width = '16px'; svg.style.height = '16px'; }
+
+            // Copy Logic
+            copyBtn.onclick = function () {
+                var text = html.replace(/<[^>]*>?/gm, ''); // Strip HTML if any
+                navigator.clipboard.writeText(text).then(() => showToast("Copied!"));
+            };
+
+            // Hover Logic (Row)
+            wrapper.onmouseenter = function () { copyBtn.style.opacity = '1'; };
+            wrapper.onmouseleave = function () { copyBtn.style.opacity = '0'; };
+
+            wrapper.appendChild(copyBtn);
+        }
+
         var bubble = document.createElement('div');
         bubble.className = "chat-bubble " + type;
         bubble.id = "msg_" + Date.now();
         bubble.innerHTML = html;
-        container.appendChild(bubble);
+
+        wrapper.appendChild(bubble);
+        container.appendChild(wrapper);
         container.scrollTop = container.scrollHeight;
         return bubble.id;
     }
@@ -563,112 +654,7 @@
         });
     }
 
-    // ==================== V3: VERSION HISTORY ====================
-    function loadVersionHistory() {
-        var saved = localStorage.getItem('tata_script_versions');
-        if (saved) {
-            try { scriptVersions = JSON.parse(saved); } catch (e) { }
-        }
-    }
 
-    function saveVersionHistory() {
-        localStorage.setItem('tata_script_versions', JSON.stringify(scriptVersions));
-    }
-
-    function saveVersion(scriptId, code) {
-        if (!scriptId || !code) return;
-
-        if (!scriptVersions[scriptId]) {
-            scriptVersions[scriptId] = [];
-        }
-
-        // Add new version
-        scriptVersions[scriptId].unshift({
-            code: code,
-            timestamp: Date.now()
-        });
-
-        // Limit to MAX_VERSIONS
-        if (scriptVersions[scriptId].length > MAX_VERSIONS) {
-            scriptVersions[scriptId] = scriptVersions[scriptId].slice(0, MAX_VERSIONS);
-        }
-
-        saveVersionHistory();
-    }
-
-    function getVersions(scriptId) {
-        return scriptVersions[scriptId] || [];
-    }
-
-    function restoreVersion(scriptId, index) {
-        var versions = getVersions(scriptId);
-        if (versions[index]) {
-            setEditorCode(versions[index].code);
-            showToast("Version " + (index + 1) + " restored!");
-        }
-    }
-
-    // V3: Version History Modal with selector
-    function showVersionHistoryModal(scriptId, versions) {
-        // Remove existing modal if any
-        var existing = document.getElementById('version_modal');
-        if (existing) existing.remove();
-
-        // Create modal
-        var modal = document.createElement('div');
-        modal.id = 'version_modal';
-        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;';
-
-        var content = document.createElement('div');
-        content.style.cssText = 'background: #2d2d2d; border-radius: 8px; padding: 20px; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto;';
-
-        var title = document.createElement('h3');
-        title.textContent = 'Version History (' + versions.length + ')';
-        title.style.cssText = 'margin: 0 0 15px 0; color: #fff;';
-        content.appendChild(title);
-
-        versions.forEach(function (version, index) {
-            var item = document.createElement('div');
-            item.style.cssText = 'padding: 12px; margin: 8px 0; background: #3a3a3a; border-radius: 6px; cursor: pointer; transition: background 0.2s;';
-            item.onmouseover = function () { this.style.background = '#4a4a4a'; };
-            item.onmouseout = function () { this.style.background = '#3a3a3a'; };
-
-            var date = new Date(version.timestamp);
-            var timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            var preview = version.code.substring(0, 50).replace(/\n/g, ' ') + '...';
-
-            item.innerHTML = '<div style="color: #fff; font-weight: bold; margin-bottom: 4px;">' +
-                (index === 0 ? '✓ Current' : 'Version ' + (index + 1)) +
-                '</div><div style="color: #888; font-size: 11px;">' + timeStr +
-                '</div><div style="color: #aaa; font-size: 10px; margin-top: 4px; font-family: monospace;">' +
-                preview + '</div>';
-
-            if (index > 0) {
-                item.onclick = function () {
-                    restoreVersion(scriptId, index);
-                    modal.remove();
-                };
-            } else {
-                item.style.opacity = '0.6';
-                item.style.cursor = 'default';
-            }
-
-            content.appendChild(item);
-        });
-
-        // Close button
-        var closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
-        closeBtn.style.cssText = 'width: 100%; padding: 10px; margin-top: 15px; background: #555; border: none; color: #fff; border-radius: 6px; cursor: pointer;';
-        closeBtn.onclick = function () { modal.remove(); };
-        content.appendChild(closeBtn);
-
-        // Click outside to close
-        modal.onclick = function (e) { if (e.target === modal) modal.remove(); };
-
-        modal.appendChild(content);
-        document.body.appendChild(modal);
-    }
 
     // ==================== V3: CODEMIRROR ====================
     var cmEditor = null;

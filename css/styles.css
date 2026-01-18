@@ -1,24 +1,44 @@
 :root {
-    --bg-color: #1e1e1e;
-    --surface-color: #2b2b2b;
-    --text-color: #f0f0f0;
-    --text-secondary: #aaaaaa;
-    --accent-color: #3771c8;
-    --accent-hover: #4a84db;
-    --border-color: #3e3e3e;
-    --input-bg: #252525;
-    --danger-color: #e81123;
-    --swift-color: #e74c3c;
-    --creative-color: #f1c40f;
-    --other-color: #9b59b6;
-    --hover-color: #3a3a3a;
-    /* Defined missing var */
+    /* V4 Premium Dark Tokens */
+    --bg-color: #202020;
+    /* Deep Neutral */
+    --surface-color: #2d2d2d;
+    /* Soft Surface */
+    --surface-hover: #3a3a3a;
+    --text-color: #e0e0e0;
+    /* Softer White */
+    --text-secondary: #9ca3af;
+    /* Muted Text */
+
+    --accent-color: #3b82f6;
+    /* Vibrant Blue */
+    --accent-hover: #60a5fa;
+    --accent-glow: rgba(59, 130, 246, 0.3);
+
+    --border-color: #404040;
+    /* Subtle Border */
+    --input-bg: #181818;
+    /* Dark Input */
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+
+    --danger-color: #ef4444;
+
+    /* Tab Accents */
+    --swift-color: #f87171;
+    /* Soft Red */
+    --creative-color: #facc15;
+    /* Soft Yellow */
+    --other-color: #c084fc;
+    /* Soft Purple */
 }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* Prefer Inter if available */
     margin: 0;
     padding: 0;
     font-size: 11px;
@@ -32,83 +52,89 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
-    background: var(--bg-color);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
     background: #444;
     border-radius: 4px;
+    border: 2px solid var(--bg-color);
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
 
-/* Tabs */
+/* Tabs - Modern Underline Style */
 .tabs {
     display: flex;
-    background: var(--surface-color);
-    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+    /* Match body for seamless look */
+    padding: 0 8px;
+    gap: 4px;
+    /* Tighter Spacing */
     flex-shrink: 0;
-    padding: 0 4px;
+    border-bottom: 1px solid #333;
+    /* Separator line */
 }
 
 .tab-btn {
     flex: 1;
-    background: none;
+    background: transparent;
     border: none;
+    /* No border */
+    border-bottom: 2px solid transparent;
+    /* Invisible underline base */
     color: var(--text-secondary);
     padding: 10px 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 12px;
+    /* Slightly Larger */
     font-weight: 500;
     position: relative;
-    transition: color 0.2s ease;
+    border-radius: 0;
+    /* No radius */
+    transition: all 0.2s ease;
+    text-align: center;
+    text-transform: capitalize;
+    /* Clean text */
 }
 
 .tab-btn:hover {
     color: var(--text-color);
+    background: transparent;
+    /* No hover bg */
 }
 
 .tab-btn.active {
     color: var(--text-color);
+    font-weight: 600;
 }
 
-.tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: var(--accent-color);
-}
-
-/* Tab Specific Colors */
+/* Tab Specific Glows */
 .tab-btn[data-tab="swift"].active {
-    color: var(--swift-color);
-}
-
-.tab-btn[data-tab="swift"].active::after {
-    background-color: var(--swift-color);
+    color: #fff;
+    border-color: var(--swift-color);
+    background: transparent;
 }
 
 .tab-btn[data-tab="creative"].active {
-    color: var(--creative-color);
+    color: #fff;
+    border-color: var(--creative-color);
+    background: transparent;
 }
 
-.tab-btn[data-tab="creative"].active::after {
-    background-color: var(--creative-color);
+.tab-btn[data-tab="organize"].active {
+    color: #fff;
+    border-color: #3b82f6;
+    background: transparent;
 }
 
-.tab-btn[data-tab="other"].active {
-    color: var(--other-color);
+.tab-btn[data-tab="tools"].active {
+    color: #fff;
+    border-color: var(--other-color);
+    background: transparent;
 }
-
-.tab-btn[data-tab="other"].active::after {
-    background-color: var(--other-color);
-}
-
 
 
 /* simplified tab logic */
@@ -154,19 +180,22 @@ input[type="number"] {
     background: var(--input-bg);
     border: 1px solid var(--border-color);
     color: var(--text-color);
-    padding: 6px 8px;
+    padding: 8px 10px;
     width: 100%;
     box-sizing: border-box;
-    border-radius: 4px;
+    border-radius: 6px;
+    /* Rounded */
     font-size: 11px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
     outline: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus {
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 1px var(--accent-color);
+    background: #202020;
+    box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .small-input {
@@ -178,45 +207,67 @@ input[type="number"]:focus {
 .equal-split>* {
     flex: 1 1 0 !important;
     width: 0;
-    /* Ensures true 50/50 split */
 }
 
 /* Buttons */
 button {
-    background: var(--surface-color);
+    background: linear-gradient(to bottom, #323232, #252525);
     border: 1px solid var(--border-color);
     color: var(--text-color);
-    padding: 5px 12px;
-    /* Reduced padding */
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
     cursor: pointer;
     width: 100%;
-    margin-bottom: 8px;
-    /* Increased margin */
-    font-size: 12px;
-    /* Larger font */
+    margin-bottom: 4px;
+    /* Tighten Button Gap */
+    font-size: 11px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    /* Space between icon and text */
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glassy highlight on top */
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+button:hover {
+    background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+    border-color: #555;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    color: #fff;
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background: #222;
 }
 
 .icon {
     width: 16px;
     height: 16px;
     fill: currentColor;
-    /* Inherit text color */
     flex-shrink: 0;
+    opacity: 0.8;
+    transition: opacity 0.2s;
 }
 
-button:hover {
-    background: var(--hover-color);
-    border-color: var(--accent-color);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+button:hover .icon {
+    opacity: 1;
 }
 
 /* Tab Specific Button Hovers */
@@ -741,8 +792,8 @@ body.dragging-mode .tab-btn {
 
 /* Hotkey Bar */
 #hotkey-bar {
-    padding: 8px;
-    gap: 8px;
+    padding: 4px;
+    gap: 4px;
     background: var(--bg-color);
     border-bottom: 1px solid var(--border-color);
     min-height: 40px;

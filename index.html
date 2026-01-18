@@ -102,8 +102,8 @@
 	<div class="tabs">
 		<button class="tab-btn active" data-tab="swift" title="Double click to rename">Swift</button>
 		<button class="tab-btn" data-tab="creative" title="Double click to rename">Creative</button>
-		<button class="tab-btn" data-tab="tool" title="Double click to rename">Tool</button>
-		<button class="tab-btn" data-tab="custom" title="Double click to rename">Custom</button>
+		<button class="tab-btn" data-tab="organize" title="Double click to rename">Organize</button>
+		<button class="tab-btn" data-tab="tools" title="Double click to rename">Tools</button>
 	</div>
 
 	<!-- TAB CONTENTS (GRID LAYOUTS) -->
@@ -115,11 +115,11 @@
 		<!-- Buttons injected via JS -->
 	</div>
 
-	<div id="tool" class="tab-content">
+	<div id="organize" class="tab-content">
 		<!-- Buttons injected via JS -->
 	</div>
 
-	<div id="custom" class="tab-content">
+	<div id="tools" class="tab-content">
 		<!-- Buttons injected via JS -->
 	</div>
 
@@ -303,7 +303,12 @@
 
 	<!-- Global Context Menu -->
 	<div id="context_menu"
-		style="display: none; position: fixed; z-index: 1000; background: #2b2b2b; border: 1px solid #444; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); padding: 4px 0; min-width: 120px;">
+		style="display: none; position: fixed; z-index: 1000; background: #2b2b2b; border: 1px solid #444; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); padding: 4px 0; min-width: 140px;">
+		<!-- V4: Quick Colors -->
+		<div id="ctx_colors"
+			style="display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid #444; margin-bottom: 4px; justify-content: center; flex-wrap: wrap;">
+			<!-- Injected by JS -->
+		</div>
 		<div id="ctx_edit"
 			style="padding: 6px 12px; color: #ddd; font-size: 12px; cursor: pointer; transition: background 0.1s;">
 			✏️ Edit Script

@@ -42,15 +42,28 @@
 	}
 
 	// ==========================================
-	// V3: Storage Versioning (for data migration)
+	// V4: Storage Versioning (for data migration)
 	// ==========================================
-	var STORAGE_VERSION = 1;
+	var STORAGE_VERSION = 2; // V4 Bump
 	function checkStorageVersion() {
 		var currentVersion = parseInt(localStorage.getItem('tata_storage_version') || '0');
 		if (currentVersion < STORAGE_VERSION) {
-			// Future migrations can be added here
-			// if (currentVersion < 2) { migrate_v1_to_v2(); }
+			console.log("[TATA] Migrating to V4 Layout Structure...");
+
+			// Backup old data just in case
+			backupBeforeSave('tata_v2_layout_v' + currentVersion);
+
+			// Force V4 Defaults (Simple Reset Strategy for cleanliness)
+			// User scripts are safe in 'tata_user_scripts', only layout is reset
+			localStorage.removeItem('tata_v2_layout');
+
+			// Update Version
 			localStorage.setItem('tata_storage_version', STORAGE_VERSION.toString());
+
+			// Show Toast after init
+			setTimeout(function () {
+				if (typeof showToast === 'function') showToast("Panel Updated to V4 Layout", "success");
+			}, 1000);
 		}
 	}
 
@@ -908,7 +921,18 @@
 			var data = hotkeys[i];
 			if (data) {
 				slot.classList.add('filled');
-				if (data.color) slot.classList.add('btn-' + data.color);
+				if (data.color) {
+					// V4: Solid Hotkey Background (Stream Deck Style)
+					slot.style.background = data.color; // Solid
+					slot.style.borderColor = data.color;
+					// Add slight inner shadow for depth
+					slot.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
+					slot.style.color = '#ffffff'; // Force white text/icon
+				} else {
+					slot.style.background = '';
+					slot.style.borderColor = '';
+					slot.style.boxShadow = '';
+				}
 
 				if (data.icon) {
 					var iconSpan = document.createElement('span');
@@ -920,10 +944,9 @@
 						svg.setAttribute('height', '16');
 						svg.style.width = '16px';
 						svg.style.height = '16px';
-						svg.style.minWidth = '16px'; // Prevent shrink
+						svg.style.minWidth = '16px';
 						svg.style.display = 'block';
-						// Remove global .icon class to prevent style conflict if needed
-						// svg.classList.remove('icon'); 
+						// V4: Do NOT color icon (keep default fill/stroke)
 					}
 					slot.appendChild(iconSpan);
 				} else {
@@ -1530,9 +1553,17 @@
 				try {
 					var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
 
-					// Add to Active or Swift Tab
+					// 1. Auto-switch Focus: Moved to scripting.js SIDE
+					// But we can try here too just in case
+					// CSInterface.prototype.requestOpenExtension("com.tata.pro.panel", "");
+
+					// 2. Add to Active Tab or Swift
 					var activeTabEl = document.querySelector('.tab-btn.active');
-					var targetTab = activeTabEl ? activeTabEl.dataset.tab : 'custom';
+					var targetTab = activeTabEl ? activeTabEl.dataset.tab : 'swift';
+
+					// Ensure target exists (legacy safety)
+					var validTabs = ['swift', 'creative', 'organize', 'tools'];
+					if (validTabs.indexOf(targetTab) === -1) targetTab = 'swift';
 
 					// CRITICAL: Load latest layout from storage before modifing
 					var saved = localStorage.getItem('tata_v2_layout');
@@ -1541,29 +1572,26 @@
 							v2Layout = JSON.parse(saved);
 						} catch (e) { console.error(e); }
 					} else {
-						// If no storage, use defaults (cloned)
-						v2Layout = JSON.parse(JSON.stringify(v2Defaults)); // Clone defaults
+						v2Layout = JSON.parse(JSON.stringify(v2Defaults));
 					}
 
-					// Merge Defaults: Ensure all tabs AND all default items exist
+					// Merge Defaults Logic
 					Object.keys(v2Defaults).forEach(function (k) {
 						if (!v2Layout[k]) {
 							v2Layout[k] = JSON.parse(JSON.stringify(v2Defaults[k]));
 						} else {
-							// Ensure all default buttons are present
 							v2Defaults[k].forEach(function (defaultItem) {
 								var exists = v2Layout[k].some(function (item) {
 									return item.id === defaultItem.id;
 								});
 								if (!exists) {
-									// Insert at beginning to preserve defaults
 									v2Layout[k].unshift(JSON.parse(JSON.stringify(defaultItem)));
 								}
 							});
 						}
 					});
 
-					// Ensure target exists
+					// Ensure target array exists
 					if (!v2Layout[targetTab]) v2Layout[targetTab] = [];
 
 					var newItem = {
@@ -1571,7 +1599,8 @@
 						label: data.name,
 						icon: data.icon,
 						code: data.code,
-						type: 'code'
+						type: 'code',
+						color: data.color // V4 Color Handle
 					};
 
 					// Check if already exists (update instead of duplicate)
@@ -1581,6 +1610,7 @@
 
 					if (existingIndex >= 0) {
 						v2Layout[targetTab][existingIndex] = newItem;
+						// Preserve position but update data
 					} else {
 						v2Layout[targetTab].push(newItem);
 					}
@@ -1588,9 +1618,9 @@
 					saveV2Layout();
 					renderGrid();
 
-					// Optional: Save to userScripts global store (deferred to prevent race condition)
+					// Optional: Save to userScripts global store
 					setTimeout(function () {
-						saveUserScript(data.name, data.icon, data.code, 'gray', true, data.id, true);
+						saveUserScript(data.name, data.icon, data.code, data.color || 'gray', true, data.id, true);
 					}, 100);
 
 				} catch (e) {
@@ -1729,6 +1759,28 @@
 		contextMenuEl = document.getElementById('context_menu');
 		var btnEdit = document.getElementById('ctx_edit');
 		var btnDelete = document.getElementById('ctx_delete');
+		var ctxColors = document.getElementById('ctx_colors');
+
+		// V4: Quick Colors Init
+		if (ctxColors && ctxColors.children.length === 0) {
+			ctxColors.innerHTML = ''; // Clear comments
+			var COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
+			COLORS.forEach(c => {
+				var sw = document.createElement('div');
+				sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
+				sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
+				sw.onmouseout = function () { this.style.transform = 'scale(1)'; };
+				sw.onclick = function (e) {
+					e.stopPropagation();
+					var targetId = window.currentContextScriptId || currentContextScriptId;
+					if (targetId) {
+						updateItemColor(targetId, c);
+						if (contextMenuEl) contextMenuEl.style.display = 'none';
+					}
+				};
+				ctxColors.appendChild(sw);
+			});
+		}
 
 		// Global Hide (Ensure single listener)
 		window.onclick = function (e) {
@@ -1739,15 +1791,17 @@
 		// Edit Action
 		if (btnEdit) {
 			btnEdit.onclick = function () {
+				var targetId = window.currentContextScriptId || currentContextScriptId;
+
 				// Block Defaults
-				if (currentContextScriptId && currentContextScriptId.indexOf('btn_') === 0) {
+				if (targetId && targetId.indexOf('btn_') === 0) {
 					showToast("Default scripts cannot be edited.", "error");
 					if (contextMenuEl) contextMenuEl.style.display = 'none';
 					return;
 				}
 
-				if (currentContextScriptId) {
-					openEditScriptModal(currentContextScriptId);
+				if (targetId) {
+					openEditScriptModal(targetId);
 				}
 			};
 		}
@@ -1788,6 +1842,57 @@
 			};
 		} else {
 			alert("CRITICAL ERROR: 'ctx_delete' element not found!");
+		}
+	}
+
+	function updateItemColor(targetId, newColor) {
+		// 1. Update In-Memory Layout (v2Layout)
+		var found = false;
+		['swift', 'creative', 'organize', 'tools'].forEach(tab => {
+			if (v2Layout[tab]) {
+				v2Layout[tab].forEach(item => {
+					if (item.id === targetId) {
+						item.color = newColor;
+						found = true;
+					}
+				});
+			}
+		});
+
+		// 2. Update User Scripts (if applicable)
+		if (userScripts[targetId]) {
+			userScripts[targetId].color = newColor;
+			localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
+		}
+
+		// 3. Update Defaults (if applicable, though generally ephemeral, 
+		// we persist via v2Layout save, but good to update runtime object if needed)
+		// If v2Defaults is used for reset, we don't touch it. 
+		// But if renderGrid uses it (which we disabled), it matters.
+
+		// 4. Update Hotkeys (if assigned)
+		if (typeof hotkeys !== 'undefined' && Array.isArray(hotkeys)) {
+			var hotkeyUpdated = false;
+			hotkeys.forEach(function (hk, idx) {
+				if (hk && hk.id === targetId) {
+					hk.color = newColor;
+					hotkeyUpdated = true;
+				}
+			});
+			if (hotkeyUpdated) {
+				saveHotkeys();
+				renderHotkeys();
+			}
+		}
+
+		if (found) {
+			saveV2Layout();
+			renderGrid();
+			showToast("Color Updated!", "success");
+		} else {
+			// Might be a default button that hasn't been instantiated in v2Layout yet?
+			// Unlikely given renderGrid renders from v2Layout.
+			showToast("Item not found in layout.", "error");
 		}
 	}
 
@@ -4424,32 +4529,32 @@
 		preview: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>',
 		dimension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 21l-4.486-4.494M19 10H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM10 3v4M14 3v4M8 5h8" /></svg>',
 		clean: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>',
-		colors: '<svg class="icon" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10" /></svg>' // Placeholder
+		colors: '<svg class="icon" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10" /></svg>'
 	};
 
+	// V4 Default Structure
 	var v2Defaults = {
 		swift: [
-			{ id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx' },
-			{ id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx' },
-			{ id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx' },
-			{ id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx' },
-			{ id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx' },
-			{ id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx' },
-			{ id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx' },
-			{ id: 'btn_preview', label: 'Preview', icon: ICONS.preview, script: 'Preview.jsx' },
-			{ id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx' }
+			{ id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx', color: '#3b82f6' },
+			{ id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx', color: '#3b82f6' },
+			{ id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx', color: '#3b82f6' },
+			{ id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx', color: '#8b5cf6' },
+			{ id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx', color: '#8b5cf6' },
+			{ id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx', color: '#f59e0b' },
+			{ id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx', color: '#10b981' },
+			{ id: 'btn_preview', label: 'Preview', icon: ICONS.preview, script: 'Preview.jsx', color: '#10b981' },
+			{ id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx', color: '#64748b' },
+			{ id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx', color: '#ef4444' }
 		],
-		creative: [
-			{ id: 'btn_open_colors', label: 'Colors Panel', icon: ICONS.colors, type: 'subpanel', target: 'com.tata.pro.colors' }
-		],
-		tool: [
-			{ id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx' }
-		],
-		custom: []
+		creative: [],
+		organize: [], // Renamed from other
+		tools: [
+			{ id: 'btn_open_colors', label: 'Colors Panel', icon: ICONS.colors, type: 'subpanel', target: 'com.tata.pro.colors', color: '#f59e0b' }
+		]
 	};
 
 	function setupTabsV2() {
-		initTabRenaming(); // Enable renaming
+		initTabRenaming();
 
 		var tabs = document.querySelectorAll('.tab-btn');
 		tabs.forEach(function (tab) {
@@ -4458,14 +4563,15 @@
 				document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
 				this.classList.add('active');
-				var target = document.getElementById(this.dataset.tab);
+				var targetId = this.dataset.tab;
+				var target = document.getElementById(targetId);
 				if (target) target.classList.add('active');
 			});
 
 			// Drag Over to Switch Tab
 			tab.addEventListener('dragenter', function (e) {
 				e.preventDefault();
-				this.click(); // Auto switch
+				this.click();
 			});
 			tab.addEventListener('dragover', function (e) { e.preventDefault(); });
 			tab.addEventListener('drop', function (e) { e.preventDefault(); });
@@ -4473,50 +4579,34 @@
 	}
 
 	function renderGrid() {
-		// Load from Storage or Use Defaults
 		var saved = localStorage.getItem('tata_v2_layout');
 		if (saved) {
 			try { v2Layout = JSON.parse(saved); } catch (e) { v2Layout = JSON.parse(JSON.stringify(v2Defaults)); }
 		} else {
-			v2Layout = JSON.parse(JSON.stringify(v2Defaults)); // Clone defaults
+			v2Layout = JSON.parse(JSON.stringify(v2Defaults));
 		}
 
-		// V3 FIX: Always merge defaults to ensure all default buttons exist
-		// Strategy: Put defaults FIRST, then add user items that aren't duplicates
+
+		// Merge Defaults Logic - DISABLED V4 (Causes Duplication on Move)
+		/*
 		Object.keys(v2Defaults).forEach(function (k) {
-			if (!v2Layout[k] || !Array.isArray(v2Layout[k])) {
-				// Tab doesn't exist or is corrupted - use defaults
-				v2Layout[k] = JSON.parse(JSON.stringify(v2Defaults[k]));
-			} else {
-				// Create new array: start with defaults, add unique user items
-				var defaultIds = {};
-				var merged = [];
+			// Trust v2Layout as source of truth.
+			// Only inject if completely missing? No, trust init.
+		});
+		*/
 
-				// 1. Add all defaults first (in order)
-				v2Defaults[k].forEach(function (defaultItem) {
-					merged.push(JSON.parse(JSON.stringify(defaultItem)));
-					defaultIds[defaultItem.id] = true;
-				});
-
-				// 2. Add user items that aren't in defaults
-				v2Layout[k].forEach(function (userItem) {
-					if (userItem.id && !defaultIds[userItem.id]) {
-						merged.push(userItem);
-					}
-				});
-
-				v2Layout[k] = merged;
-			}
+		// Ensure layout exists
+		['swift', 'creative', 'organize', 'tools'].forEach(t => {
+			if (!v2Layout[t]) v2Layout[t] = [];
 		});
 
-		// Save the merged layout back to ensure consistency
 		saveV2Layout();
 
-		['swift', 'creative', 'tool', 'custom'].forEach(function (tabName) {
+		['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
 			var container = document.getElementById(tabName);
-			if (!container) return; // Skip if tab doesn't exist (e.g. in Colors Panel)
+			if (!container) return;
 
-			container.innerHTML = ''; // Clear
+			container.innerHTML = '';
 
 			var items = v2Layout[tabName] || [];
 			items.forEach(function (item, index) {
@@ -4525,7 +4615,6 @@
 			});
 		});
 
-		// Attach Drag events
 		setupGridDrag();
 	}
 
@@ -4537,15 +4626,25 @@
 		btn.dataset.index = index;
 		btn.dataset.tab = tabName;
 
-		// Add class for defaults
+		// V4 Custom Color Logic
+		if (item.color) {
+			btn.style.borderColor = item.color;
+			// Add a subtle glow based on color
+			btn.addEventListener('mouseenter', function () {
+				btn.style.boxShadow = '0 0 8px ' + item.color + '60';
+			});
+			btn.addEventListener('mouseleave', function () {
+				btn.style.boxShadow = 'none';
+			});
+		}
+
 		if (item.id && item.id.indexOf('btn_') === 0) {
 			btn.classList.add('default-script');
 		}
 
 		// Icon
 		var iconDiv = document.createElement('div');
-		iconDiv.innerHTML = item.icon || ICONS.stars; // Default icon
-		// Normalize SVG size
+		iconDiv.innerHTML = item.icon || ICONS.stars;
 		var svg = iconDiv.querySelector('svg');
 		if (svg) {
 			svg.setAttribute('width', '24');
@@ -4558,31 +4657,40 @@
 		lbl.innerText = item.label;
 		btn.appendChild(lbl);
 
-		// Click Handler
 		btn.addEventListener('click', function () {
 			if (item.type === 'subpanel') {
 				CSInterface.prototype.requestOpenExtension(item.target, '');
 			} else if (item.script) {
-				runScript(item.script); // Use existing runner
+				runScript(item.script);
 			} else if (item.code) {
-				// Inline code support (for custom scripts)
 				csInterface.evalScript(item.code);
 			}
 		});
 
-		// Context Menu (Right Click)
 		btn.oncontextmenu = function (e) {
 			e.preventDefault();
 			e.stopPropagation();
-
-			// Set Global Context ID
 			window.currentContextScriptId = item.id;
-
-			// Show Menu
 			var menu = document.getElementById('context_menu');
 			if (menu) {
+				// V4: Hide Edit/Delete for Defaults, Show Colors for All
+				var isDefault = (item.id.indexOf('btn_') === 0);
+				var editBtn = document.getElementById('ctx_edit');
+				var delBtn = document.getElementById('ctx_delete');
+				var colorRow = document.getElementById('ctx_colors');
+
+				if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
+				if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
+				if (colorRow) colorRow.style.display = 'flex'; // Always show colors
+
 				menu.style.display = 'block';
-				menu.style.left = e.clientX + 'px';
+
+				// Boundary Check
+				var menuWidth = 140; // Approx
+				var x = e.clientX;
+				if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+
+				menu.style.left = x + 'px';
 				menu.style.top = e.clientY + 'px';
 			}
 		};
@@ -4599,7 +4707,6 @@
 				draggedItem = this;
 				e.dataTransfer.effectAllowed = 'move';
 				e.dataTransfer.setData('text/html', this.innerHTML);
-				// To allow dropping into Hotkeys
 				var itemData = getItemDataFromElement(this);
 				e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
 			});
@@ -4608,28 +4715,25 @@
 				draggedItem = null;
 			});
 
-			// Reordering within Grid
 			btn.addEventListener('dragover', function (e) {
 				e.preventDefault();
 			});
 
 			btn.addEventListener('drop', function (e) {
 				e.preventDefault();
+				e.stopPropagation(); // Stop Container Drop
 				if (draggedItem !== this) {
-					// Swap Logic in Data Model
 					var srcTab = draggedItem.dataset.tab;
 					var srcIdx = parseInt(draggedItem.dataset.index);
 					var destTab = this.dataset.tab;
 					var destIdx = parseInt(this.dataset.index);
 
-					// Perform swap (or move)
 					if (srcTab === destTab) {
 						var list = v2Layout[srcTab];
 						var temp = list[srcIdx];
 						list[srcIdx] = list[destIdx];
 						list[destIdx] = temp;
 					} else {
-						// Move across tabs
 						var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
 						v2Layout[destTab].splice(destIdx, 0, item);
 					}
@@ -4640,12 +4744,11 @@
 			});
 		});
 
-		// Dropping into Tab Content (Empty area) => Append
 		document.querySelectorAll('.tab-content').forEach(container => {
 			container.addEventListener('dragover', e => e.preventDefault());
 			container.addEventListener('drop', function (e) {
 				e.preventDefault();
-				if (e.target === this && draggedItem) { // Dropped on background
+				if (e.target === this && draggedItem) {
 					var srcTab = draggedItem.dataset.tab;
 					var srcIdx = parseInt(draggedItem.dataset.index);
 					var destTab = this.id;
@@ -4668,22 +4771,20 @@
 	}
 
 	function saveV2Layout() {
-		// V3: Backup before saving for recovery
 		backupBeforeSave('tata_v2_layout');
 		localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
 	}
 
 	// ==================== IMPORT / EXPORT ====================
 
-	// Basic Node.js FS (Enabled in Manifest)
 	var fs = require('fs');
 	var path = require('path');
 
 	function exportScript() {
-		// 1. Get List of Exportable Scripts
 		var exportable = [];
-		var allTabs = ['swift', 'creative', 'tool', 'custom'];
+		var allTabs = ['swift', 'creative', 'organize', 'tools'];
 		allTabs.forEach(t => {
+			if (!v2Layout[t]) return;
 			v2Layout[t].forEach(item => {
 				if (item.script || item.code) {
 					item._tab = t;
@@ -4697,7 +4798,6 @@
 			return;
 		}
 
-		// 2. UX: Toast instead of Alert
 		showToast("Click a button to export it", "info");
 		document.body.classList.add('export-mode');
 
@@ -4706,26 +4806,20 @@
 			e.preventDefault();
 			e.stopPropagation();
 
-			// Find Data
 			var item = getItemDataFromElement(this);
-
-			// Fix 3: Remove .json from default name (OS handles it, or filter does)
-			// Also checking if item.label already has extension is good practice but item.label is usually distinct.
-			// Passing just the label lets the OS/Dialog append the extension from the selected filter.
 			var defaultName = item.label;
 
-			// Save Dialog
 			var result = window.cep.fs.showSaveDialogEx("Export Script", "", ["json"], defaultName);
 			if (result.data) {
 				var payload = {
 					tata_version: "2.0",
 					name: item.label,
 					icon: item.icon,
-					script: item.script, // Built-in path
-					code: item.code,     // Custom code
-					type: item.type
+					script: item.script,
+					code: item.code,
+					type: item.type,
+					color: item.color // V4: Save Color
 				};
-				// Ensure extension is there if OS didn't add it (rare but possible)
 				var finalPath = result.data;
 				if (!finalPath.toLowerCase().endsWith('.json')) finalPath += '.json';
 
@@ -4733,16 +4827,14 @@
 				showToast("Exported!", "success");
 			}
 
-			// Cleanup
 			document.body.classList.remove('export-mode');
 			btns.forEach(b => b.removeEventListener('click', handler, true));
 		};
 
-		btns.forEach(b => b.addEventListener('click', handler, true)); // Capture phase
+		btns.forEach(b => b.addEventListener('click', handler, true));
 	}
 
 	function importScript() {
-		// Fix 4: Filter should be ["json"] not [".json"]
 		var result = window.cep.fs.showOpenDialogEx(false, false, "Import Script", "", ["json"]);
 		if (result.data && result.data.length > 0) {
 			var filePath = result.data[0];
@@ -4750,9 +4842,11 @@
 				var content = fs.readFileSync(filePath, 'utf8');
 				var data = JSON.parse(content);
 
-				// Add to Current Active Tab or Custom?
 				var activeTabEl = document.querySelector('.tab-btn.active');
-				var activeTab = activeTabEl ? activeTabEl.dataset.tab : 'custom';
+				var activeTab = activeTabEl ? activeTabEl.dataset.tab : 'swift';
+
+				// Ensure activeTab is valid (fallback to swift)
+				if (!v2Layout[activeTab]) activeTab = 'swift';
 
 				var newItem = {
 					id: 'imported_' + new Date().getTime(),
@@ -4760,7 +4854,8 @@
 					icon: data.icon || ICONS.stars,
 					script: data.script,
 					code: data.code,
-					type: data.type
+					type: data.type,
+					color: data.color // V4 Import Color
 				};
 
 				v2Layout[activeTab].push(newItem);
@@ -4774,18 +4869,12 @@
 		}
 	}
 
-	// Helper: Toast Notification
 	function showToast(msg, type) {
 		var toast = document.createElement('div');
 		toast.className = 'toast-notification ' + (type || 'info');
 		toast.innerText = msg;
-
 		document.body.appendChild(toast);
-
-		// Animate in
 		setTimeout(() => toast.classList.add('show'), 10);
-
-		// Auto remove
 		setTimeout(() => {
 			toast.classList.remove('show');
 			setTimeout(() => {
@@ -4796,14 +4885,12 @@
 
 	// ==================== INITIALIZATION WIRING ====================
 
-	// Attach FAB Listeners (Call this in setupTabsV2 or init)
 	var fabImport = document.getElementById('btn_import_script');
 	if (fabImport) fabImport.addEventListener('click', importScript);
 
 	var fabExport = document.getElementById('btn_export_script');
 	if (fabExport) fabExport.addEventListener('click', exportScript);
 
-	// Reset Tab Names
 	var btnResetTabs = document.getElementById('btn_reset_tab_names');
 	if (btnResetTabs) btnResetTabs.addEventListener('click', function () {
 		localStorage.removeItem('tata_tab_names');
