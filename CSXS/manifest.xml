@@ -7,10 +7,10 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<ExtensionList>
-		<Extension Id="com.tata.pro.panel" Version="1.0" />
-		<Extension Id="com.tata.pro.colors" Version="1.0" />
-		<Extension Id="com.tata.pro.scripting" Version="1.0" />
-		<Extension Id="com.tata.pro.keep" Version="1.0" />
+		<Extension Id="com.tata.pro.panel" Version="1.0.0" />
+		<Extension Id="com.tata.pro.colors" Version="1.0.0" />
+		<Extension Id="com.tata.pro.scripting" Version="1.0.0" />
+		<Extension Id="com.tata.pro.keep" Version="1.0.0" />
 	</ExtensionList>
 
 	<ExecutionEnvironment>
