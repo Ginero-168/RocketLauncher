@@ -323,38 +323,31 @@ var TATA = {
         var obj1 = sel[0];
         var obj2 = sel[1];
 
-        // Determine which is on top (visually higher Y)
-        var topObj, bottomObj;
+        // Determine which is on top (visually higher Y = reference)
+        var refObj, targetObj;
         if (obj1.top > obj2.top) {
-            topObj = obj1;
-            bottomObj = obj2;
+            refObj = obj1;
+            targetObj = obj2;
         } else {
-            topObj = obj2;
-            bottomObj = obj1;
+            refObj = obj2;
+            targetObj = obj1;
         }
 
-        // Scale bottomObj to match width of topObj
-        if (bottomObj.width !== 0 && topObj.width !== 0) {
-            var scaleFactor = topObj.width / bottomObj.width;
+        // Scale targetObj to match width of refObj
+        if (targetObj.width !== 0 && refObj.width !== 0) {
+            var scaleFactor = refObj.width / targetObj.width;
 
             // Resize
-            bottomObj.width = topObj.width;
-            bottomObj.height *= scaleFactor;
+            targetObj.width = refObj.width;
+            targetObj.height *= scaleFactor;
 
-            // Align Center: Move bottomObj below topObj
-            var topCenterX = topObj.left + topObj.width / 2;
+            // Align both X and Y to reference object position
+            var refCenterX = refObj.left + refObj.width / 2;
+            var refCenterY = refObj.top - refObj.height / 2;
 
-            // Align Centers horizontally
-            bottomObj.left = topCenterX - bottomObj.width / 2;
-
-            // Optional: Keep vertical distance? V9 logic implies just resizing? 
-            // Re-reading V9 dump: "My memory... V9 did this..." 
-            // V9 Dump in previous turn: 
-            // bottomObj.left = topCenterX - bottomObj.width / 2;
-            // bottomObj.top = topCenterY + bottomObj.height / 2; -> This overlaps?
-            // Actually, let's stick to width + center alignment which is the core "Follow" feature.
-            // Preserving original Y unless V9 explicitly moved it.
-            // Since V9 dump showed center calculation, I will apply horizontal centering.
+            // Move target to same center position as reference (both X and Y)
+            targetObj.left = refCenterX - targetObj.width / 2;
+            targetObj.top = refCenterY + targetObj.height / 2;
         }
     },
 
@@ -1290,7 +1283,7 @@ function placePaletteOnArtboard(colors) {
         for (var i = 0; i < colors.length; i++) {
             var hex = colors[i];
             var rgb = hexToRgb(hex);
-            
+
             var color = new RGBColor();
             color.red = rgb.r;
             color.green = rgb.g;
@@ -1304,7 +1297,7 @@ function placePaletteOnArtboard(colors) {
         // Select the new group
         doc.selection = null;
         group.selected = true;
-        
+
         return "success";
     } catch (e) {
         return "error: " + e.message;
@@ -1328,7 +1321,7 @@ function saveToSwatches(name, colors) {
         try {
             swatchGroup = doc.swatchGroups.add();
             swatchGroup.name = groupName;
-        } catch(e) {
+        } catch (e) {
             // Group might already exist or name conflict, create unique name
             swatchGroup = doc.swatchGroups.add();
             swatchGroup.name = groupName + " " + new Date().getTime();
@@ -1346,11 +1339,11 @@ function saveToSwatches(name, colors) {
             // Add swatch
             var swatchName = "TATA " + hex;
             var swatch = null;
-            
+
             // Check if swatch exists, otherwise create
             try {
                 swatch = doc.swatches.getByName(swatchName);
-            } catch(e) {
+            } catch (e) {
                 swatch = doc.swatches.add();
                 swatch.name = swatchName;
                 swatch.color = color;

@@ -39,7 +39,6 @@
             { id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx', color: '#8b5cf6' },
             { id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx', color: '#f59e0b' },
             { id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx', color: '#10b981' },
-            { id: 'btn_preview', label: 'Preview', icon: ICONS.preview, script: 'Preview.jsx', color: '#10b981' },
             { id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx', color: '#64748b' },
             { id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx', color: '#ef4444' }
         ],

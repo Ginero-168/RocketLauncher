@@ -595,15 +595,19 @@ function drawSummaryCircles(doc, list, x, y, d, spacing, labelSize, labelMode) {
             var pct = (list[i].topArea / list[i].totalArea) * 100;
             label.contents = "(" + pct.toFixed(1) + "%)  " + hex;
 
-            // Bold the percentage
+            // Bold the percentage - with proper validation
             try {
                 var txt = label.contents;
-                var lp = txt.indexOf("(");
-                var rp = txt.indexOf(")");
-                if (lp >= 0 && rp > lp) {
-                    var chars = label.textRange.characters;
-                    for (var idx = lp; idx <= rp && idx < chars.length; idx++) {
-                        chars[idx].characterAttributes.fauxBold = true;
+                if (txt && txt.length > 0) {
+                    var lp = txt.indexOf("(");
+                    var rp = txt.indexOf(")");
+                    if (lp >= 0 && rp > lp && label.textRange && label.textRange.characters && label.textRange.characters.length > rp) {
+                        var chars = label.textRange.characters;
+                        for (var idx = lp; idx <= rp && idx < chars.length; idx++) {
+                            try {
+                                chars[idx].characterAttributes.fauxBold = true;
+                            } catch (charErr) { }
+                        }
                     }
                 }
             } catch (e) { }

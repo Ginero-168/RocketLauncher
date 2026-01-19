@@ -834,7 +834,6 @@
 		attach('btn_stars', 'Stars.jsx');
 		attach('btn_palette', 'PaletteGenerator.jsx');
 		attach('btn_embed', 'Embed.jsx');
-		attach('btn_preview', 'Preview.jsx');
 		attach('btn_dimension'); // Add dimension button
 		attach('btn_smart_clean', 'SmartClean.jsx'); // Smart Clean now uses JSX dialog
 	}
@@ -1356,8 +1355,7 @@
 			'swift': [
 				['btn_fit', 'btn_resize', 'btn_follow'],
 				['btn_arrange', 'btn_stars', 'btn_palette'],
-				['btn_embed', 'btn_preview'],
-				['btn_dimension', 'btn_smart_clean']
+				['btn_embed', 'btn_dimension', 'btn_smart_clean']
 			],
 			'creative': [],
 			'dimension': [],
@@ -4655,7 +4653,6 @@
 			{ id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx', color: '#8b5cf6' },
 			{ id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx', color: '#f59e0b' },
 			{ id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx', color: '#10b981' },
-			{ id: 'btn_preview', label: 'Preview', icon: ICONS.preview, script: 'Preview.jsx', color: '#10b981' },
 			{ id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx', color: '#64748b' },
 			{ id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx', color: '#ef4444' }
 		],
