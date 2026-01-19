@@ -125,6 +125,22 @@
         }, 3000);
     }
 
+    function showLoading(message) {
+        var overlay = document.getElementById('loading_overlay');
+        var text = document.getElementById('loading_text');
+        if (overlay) {
+            if (text && message) text.textContent = message;
+            overlay.classList.add('active');
+        }
+    }
+
+    function hideLoading() {
+        var overlay = document.getElementById('loading_overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+
     function renderScripts(scripts) {
         var container = document.getElementById('explore_content');
         var emptyState = document.getElementById('empty_state');
@@ -698,18 +714,27 @@
     function loadContent() {
         var container = document.getElementById('explore_content');
         container.innerHTML = '<div class="loading">Loading...</div>';
+        showLoading('Loading ' + currentType + '...');
 
         if (currentType === 'scripts') {
             fetchScripts()
-                .then(renderScripts)
+                .then(function (scripts) {
+                    hideLoading();
+                    renderScripts(scripts);
+                })
                 .catch(function (err) {
+                    hideLoading();
                     container.innerHTML = '<div class="loading">Error loading scripts</div>';
                     console.error(err);
                 });
         } else if (currentType === 'colors') {
             fetchColors()
-                .then(renderColors)
+                .then(function (colors) {
+                    hideLoading();
+                    renderColors(colors);
+                })
                 .catch(function (err) {
+                    hideLoading();
                     container.innerHTML = '<div class="loading">Error loading colors</div>';
                     console.error(err);
                 });
