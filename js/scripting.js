@@ -602,18 +602,30 @@
         var systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"name\": \"Short Script Name (2-4 words)\", \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
 
         if (model.startsWith('gemini')) {
-            // Gemini API - use stable models only
-            var modelName = model === 'gemini-2.0-flash' ? 'gemini-1.5-flash' : 'gemini-1.5-pro';
-            var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
-            var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
+            // Gemini API - auto discover working model
+            var modelsToTry = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro-latest'];
+            var lastError = null;
 
-            var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error("Gemini API Error " + response.status);
+            for (var i = 0; i < modelsToTry.length; i++) {
+                var modelName = modelsToTry[i];
+                var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+                var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
 
-            var data = await response.json();
-            var text = data.candidates[0].content.parts[0].text;
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(text);
+                try {
+                    var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) {
+                        var data = await response.json();
+                        var text = data.candidates[0].content.parts[0].text;
+                        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                        console.log('[TATA] Using Gemini model: ' + modelName);
+                        return JSON.parse(text);
+                    }
+                    lastError = "HTTP " + response.status;
+                } catch (e) {
+                    lastError = e.message;
+                }
+            }
+            throw new Error("Gemini API Error: " + lastError + " (tried all models)");
 
         } else if (model.startsWith('claude')) {
             // Claude API (Anthropic)
