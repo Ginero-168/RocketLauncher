@@ -2534,7 +2534,7 @@
 
 	async function generateScriptWithGemini(apiKey, prompt) {
 		// 1. Discovery: List available models
-		var selectedModel = "gemini-pro"; // Default fallback
+		var selectedModel = "gemini-1.5-flash"; // Stable default fallback
 
 		try {
 			var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;

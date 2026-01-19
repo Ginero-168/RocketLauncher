@@ -580,8 +580,8 @@
         var systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"name\": \"Short Script Name (2-4 words)\", \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
 
         if (model.startsWith('gemini')) {
-            // Gemini API
-            var modelName = model === 'gemini-2.0-flash' ? 'gemini-2.0-flash-exp' : 'gemini-1.5-pro';
+            // Gemini API - use stable models only
+            var modelName = model === 'gemini-2.0-flash' ? 'gemini-1.5-flash' : 'gemini-1.5-pro';
             var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
             var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
 
