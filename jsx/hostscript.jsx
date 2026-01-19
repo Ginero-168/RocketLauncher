@@ -1262,3 +1262,118 @@ TATA.openColorPicker = function (params) {
         return "ERR: " + e.message;
     }
 };
+
+// ===========================================
+// COLOR HARMONY FUNCTIONS
+// ===========================================
+
+/**
+ * Place a color palette on the artboard as a row of rectangles.
+ * @param {Array} colors - Array of hex color strings (e.g., ["#FF0000", "#00FF00"])
+ * @returns {string} - "success" or error message
+ */
+function placePaletteOnArtboard(colors) {
+    try {
+        if (!app.documents.length) return "error: No document open";
+        var doc = app.activeDocument;
+        var layer = doc.activeLayer;
+
+        var rectSize = 50;
+        var gap = 5;
+        var startX = doc.activeView.centerPoint[0] - ((colors.length * (rectSize + gap)) / 2);
+        var startY = doc.activeView.centerPoint[1];
+
+        // Create group for palette
+        var group = layer.groupItems.add();
+        group.name = "TATA Palette";
+
+        for (var i = 0; i < colors.length; i++) {
+            var hex = colors[i];
+            var rgb = hexToRgb(hex);
+            
+            var color = new RGBColor();
+            color.red = rgb.r;
+            color.green = rgb.g;
+            color.blue = rgb.b;
+
+            var rect = group.pathItems.rectangle(startY, startX + (i * (rectSize + gap)), rectSize, rectSize);
+            rect.fillColor = color;
+            rect.stroked = false;
+        }
+
+        // Select the new group
+        doc.selection = null;
+        group.selected = true;
+        
+        return "success";
+    } catch (e) {
+        return "error: " + e.message;
+    }
+}
+
+/**
+ * Save a color palette to the Swatches panel.
+ * @param {string} name - Name of the swatch group
+ * @param {Array} colors - Array of hex color strings
+ * @returns {string} - "success" or error message
+ */
+function saveToSwatches(name, colors) {
+    try {
+        if (!app.documents.length) return "error: No document open";
+        var doc = app.activeDocument;
+
+        // Create new Swatch Group
+        var groupName = name || "TATA Palette";
+        var swatchGroup;
+        try {
+            swatchGroup = doc.swatchGroups.add();
+            swatchGroup.name = groupName;
+        } catch(e) {
+            // Group might already exist or name conflict, create unique name
+            swatchGroup = doc.swatchGroups.add();
+            swatchGroup.name = groupName + " " + new Date().getTime();
+        }
+
+        for (var i = 0; i < colors.length; i++) {
+            var hex = colors[i];
+            var rgb = hexToRgb(hex);
+
+            var color = new RGBColor();
+            color.red = rgb.r;
+            color.green = rgb.g;
+            color.blue = rgb.b;
+
+            // Add swatch
+            var swatchName = "TATA " + hex;
+            var swatch = null;
+            
+            // Check if swatch exists, otherwise create
+            try {
+                swatch = doc.swatches.getByName(swatchName);
+            } catch(e) {
+                swatch = doc.swatches.add();
+                swatch.name = swatchName;
+                swatch.color = color;
+            }
+
+            // Add to group
+            swatchGroup.addSwatch(swatch);
+        }
+
+        return "success";
+    } catch (e) {
+        return "error: " + e.message;
+    }
+}
+
+// Helper: Hex to RGB
+function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    var r = parseInt(hex.substring(0, 2), 16);
+    var g = parseInt(hex.substring(2, 4), 16);
+    var b = parseInt(hex.substring(4, 6), 16);
+    return { r: r, g: g, b: b };
+}

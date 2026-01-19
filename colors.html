@@ -24,26 +24,52 @@
 
 <body>
 
-	<!-- 1. Saved Colors (Previously Explore) -->
-	<div class="section-card collapsed">
+	<!-- 0. Custom Colors (New Section) -->
+	<div class="section-card">
 		<div class="section-header" onclick="event.stopPropagation(); this.parentNode.classList.toggle('collapsed')"
 			style="cursor: pointer;">
-			<span>Saved Colors</span>
+			<span>Custom Colors</span>
 			<svg class="icon chevron" viewBox="0 0 24 24">
 				<path d="M7 14l5-5 5 5z" />
 			</svg>
 		</div>
 		<div class="section-content">
-			<div id="saved_colors_list" style="display: flex; flex-direction: column; gap: 8px;">
-				<!-- Saved sets injected here -->
-				<div style="font-size: 11px; color: #888; text-align: center; padding: 10px;">
-					No saved palettes yet.
-				</div>
+			<!-- 6 Color Slots -->
+			<div id="custom_colors_container" style="display: flex; gap: 4px; margin-bottom: 10px;">
+				<!-- Slots will be injected by JS or hardcoded here -->
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #FF0000; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="0"></div>
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #FF7F00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="1"></div>
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #FFFF00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="2"></div>
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #00FF00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="3"></div>
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #0000FF; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="4"></div>
+				<div class="custom-color-slot"
+					style="flex: 1; height: 35px; background: #8B00FF; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					data-index="5"></div>
+			</div>
+
+			<!-- Controls -->
+			<div style="display: flex; gap: 6px;">
+				<button id="btn_custom_place" class="btn-mini" style="flex: 1;">Place</button>
+				<button id="btn_custom_swatch" class="btn-mini" style="flex: 1;">Swatch</button>
+			</div>
+			<div style="margin-top: 6px;">
+				<button id="btn_custom_explore" class="btn-mini"
+					style="width: 100%; background: #5b21b6; color: white;">Explore</button>
 			</div>
 		</div>
 	</div>
 
-	<!-- 2. Color Harmony (Default Expanded) -->
+	<!-- 1. Color Harmony (Default Expanded) -->
 	<div class="section-card">
 		<div class="section-header" onclick="event.stopPropagation(); this.parentNode.classList.toggle('collapsed')"
 			style="cursor: pointer;">
@@ -260,6 +286,45 @@
 					style="flex: 1; padding: 6px; background: #444; color: #ccc; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Cancel</button>
 				<button onclick="confirmCustomPicker()"
 					style="flex: 1; padding: 6px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Select</button>
+			</div>
+		</div>
+	</div>
+	<!-- Share Palette Name Modal -->
+	<div id="share_modal"
+		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center;">
+		<div
+			style="background: linear-gradient(145deg, #2a2a2a, #1e1e1e); padding: 20px; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); width: 280px; border: 1px solid #444;">
+			<!-- Header -->
+			<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+				<div
+					style="width: 36px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+						<path
+							d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+					</svg>
+				</div>
+				<div>
+					<div style="font-size: 14px; font-weight: 600; color: #fff;">Share to Explore</div>
+					<div style="font-size: 10px; color: #888;">Enter a name for your palette</div>
+				</div>
+			</div>
+
+			<!-- Input -->
+			<input type="text" id="share_palette_name"
+				style="width: 100%; padding: 10px 12px; background: #333; border: 1px solid #555; color: #fff; font-size: 13px; border-radius: 6px; outline: none; box-sizing: border-box;"
+				placeholder="e.g. Sunset Vibes">
+
+			<!-- Preview (will be filled by JS) -->
+			<div id="share_color_preview"
+				style="display: flex; height: 24px; border-radius: 4px; overflow: hidden; margin: 12px 0;">
+			</div>
+
+			<!-- Buttons -->
+			<div style="display: flex; gap: 10px; margin-top: 5px;">
+				<button id="share_modal_cancel"
+					style="flex: 1; padding: 10px; background: #444; color: #ccc; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Cancel</button>
+				<button id="share_modal_confirm"
+					style="flex: 1; padding: 10px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">Share</button>
 			</div>
 		</div>
 	</div>

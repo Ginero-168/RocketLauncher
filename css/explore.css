@@ -533,3 +533,151 @@ body {
 .btn-submit:hover {
     background: #0d9668;
 }
+
+/* Color Card Styles */
+.color-card .color-preview-bar {
+    display: flex;
+    height: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.color-card .color-swatch {
+    flex: 1;
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.color-card .color-swatch:hover {
+    transform: scaleY(1.2);
+    z-index: 1;
+}
+
+.card-harmony-type {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 4px 0;
+}
+
+/* Color Harmony Card Style */
+.color-harmony-card {
+    background: var(--surface);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+}
+
+.harmony-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.harmony-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+.harmony-stats {
+    display: flex;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.harmony-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.harmony-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 3px 8px;
+    font-size: 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.harmony-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.harmony-color-bar {
+    display: flex;
+    height: 32px;
+}
+
+.harmony-swatch {
+    flex: 1;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.harmony-swatch:hover {
+    transform: scaleY(1.15);
+    z-index: 1;
+}
+
+.harmony-vote-row {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.vote-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 3px 8px;
+    font-size: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vote-btn.vote-up:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.vote-btn.vote-down:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Stats in vote row (bottom-right) */
+.harmony-stats-bottom {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+/* Fix for forced visibility */
+.color-harmony-card {
+    overflow: visible !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+.harmony-vote-row {
+    display: flex !important;
+    min-height: 40px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}

@@ -68,8 +68,8 @@
         return apiRequest(query);
     }
 
-    function fetchPlugins() {
-        var query = 'plugins?order=' + getSortOrder();
+    function fetchColors() {
+        var query = 'colors?order=' + getSortOrder();
 
         if (searchQuery) {
             query += '&name=ilike.*' + encodeURIComponent(searchQuery) + '*';
@@ -260,11 +260,11 @@
         }
     }
 
-    function renderPlugins(plugins) {
+    function renderColors(colors) {
         var container = document.getElementById('explore_content');
         var emptyState = document.getElementById('empty_state');
 
-        if (!plugins || plugins.length === 0) {
+        if (!colors || colors.length === 0) {
             container.innerHTML = '';
             emptyState.style.display = 'block';
             return;
@@ -273,10 +273,219 @@
         emptyState.style.display = 'none';
         container.innerHTML = '';
 
-        plugins.forEach(function (plugin) {
-            var card = createCompactCard(plugin, 'plugins');
+        colors.forEach(function (color) {
+            var card = createColorCard(color);
             container.appendChild(card);
         });
+    }
+
+    function createColorCard(item) {
+        var card = document.createElement('div');
+        card.className = 'color-harmony-card';
+        card.dataset.id = item.id;
+
+        // Force styles to ensure visibility
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.overflow = 'visible';
+        card.style.height = 'auto';
+        card.style.border = '1px solid #444';
+        card.style.borderRadius = '6px';
+        card.style.marginBottom = '10px';
+        card.style.background = '#252525';
+
+        var colorArray = [];
+        try {
+            colorArray = typeof item.colors === 'string' ? JSON.parse(item.colors) : item.colors;
+        } catch (e) { colorArray = []; }
+
+        // 1. Header Row
+        var header = document.createElement('div');
+        header.className = 'harmony-header';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.padding = '8px 10px';
+        header.innerHTML =
+            '<div class="harmony-name" style="font-weight:600; font-size:12px; color:#eee;">' + escapeHtml(item.name) + '</div>';
+
+        // Buttons
+        var btnContainer = document.createElement('div');
+        btnContainer.className = 'harmony-buttons';
+        btnContainer.style.display = 'flex';
+        btnContainer.style.gap = '5px';
+
+        // Place Button
+        var btnPlace = document.createElement('button');
+        btnPlace.innerText = 'Place';
+        btnPlace.className = 'harmony-btn';
+        btnPlace.style.padding = '4px 10px';
+        btnPlace.style.background = '#0078d4';
+        btnPlace.style.color = 'white';
+        btnPlace.style.border = 'none';
+        btnPlace.style.borderRadius = '4px';
+        btnPlace.style.cursor = 'pointer';
+        btnPlace.onclick = function (e) {
+            e.stopPropagation();
+            placeColorPalette(colorArray);
+        };
+        btnContainer.appendChild(btnPlace);
+
+        // Swatch Button
+        var btnSwatch = document.createElement('button');
+        btnSwatch.innerText = 'Swatch';
+        btnSwatch.className = 'harmony-btn';
+        btnSwatch.style.padding = '4px 10px';
+        btnSwatch.style.background = '#444';
+        btnSwatch.style.color = 'white';
+        btnSwatch.style.border = 'none';
+        btnSwatch.style.borderRadius = '4px';
+        btnSwatch.style.cursor = 'pointer';
+        btnSwatch.onclick = function (e) {
+            e.stopPropagation();
+            saveToSwatches(item.name, colorArray);
+        };
+        btnContainer.appendChild(btnSwatch);
+
+        header.appendChild(btnContainer);
+        card.appendChild(header);
+
+        // 2. Color Bar
+        var colorBar = document.createElement('div');
+        colorBar.className = 'harmony-color-bar';
+        colorBar.style.display = 'flex';
+        colorBar.style.height = '40px'; // Slightly taller
+        colorBar.style.width = '100%';
+
+        colorArray.forEach(function (c) {
+            var swatch = document.createElement('div');
+            swatch.className = 'harmony-swatch';
+            swatch.style.flex = '1';
+            swatch.style.backgroundColor = c;
+            swatch.title = c;
+            swatch.style.cursor = 'pointer';
+            swatch.onclick = function () {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(c);
+                    showToast('📋 Copied: ' + c);
+                }
+            };
+            colorBar.appendChild(swatch);
+        });
+        card.appendChild(colorBar);
+
+        // 3. Vote Row (Explicit Construction)
+        var voteRow = document.createElement('div');
+        voteRow.className = 'harmony-vote-row';
+        voteRow.style.display = 'flex';
+        voteRow.style.alignItems = 'center';
+        voteRow.style.justifyContent = 'space-between';
+        voteRow.style.padding = '8px 12px';
+        voteRow.style.background = '#1e1e1e';
+        voteRow.style.borderTop = '1px solid #333';
+        voteRow.style.color = '#ccc';
+        voteRow.style.fontSize = '11px';
+
+        // Left: Voting Buttons
+        var leftDiv = document.createElement('div');
+        leftDiv.style.display = 'flex';
+        leftDiv.style.gap = '8px';
+
+        var btnUp = document.createElement('button');
+        btnUp.className = 'vote-btn vote-up';
+        btnUp.innerHTML = '👍 +1';
+        btnUp.style.background = 'transparent';
+        btnUp.style.border = '1px solid #555';
+        btnUp.style.color = '#aaa';
+        btnUp.style.padding = '4px 8px';
+        btnUp.style.borderRadius = '4px';
+        btnUp.style.cursor = 'pointer';
+        btnUp.addEventListener('click', function (e) {
+            e.stopPropagation();
+            voteForItem('colors', item.id, 1);
+        });
+
+        var btnDown = document.createElement('button');
+        btnDown.className = 'vote-btn vote-down';
+        btnDown.innerHTML = '👎 -1';
+        btnDown.style.background = 'transparent';
+        btnDown.style.border = '1px solid #555';
+        btnDown.style.color = '#aaa';
+        btnDown.style.padding = '4px 8px';
+        btnDown.style.borderRadius = '4px';
+        btnDown.style.cursor = 'pointer';
+        btnDown.addEventListener('click', function (e) {
+            e.stopPropagation();
+            voteForItem('colors', item.id, -1);
+        });
+
+        leftDiv.appendChild(btnUp);
+        leftDiv.appendChild(btnDown);
+        voteRow.appendChild(leftDiv);
+
+        // Right: Stats
+        var rightDiv = document.createElement('div');
+        rightDiv.style.display = 'flex';
+        rightDiv.style.gap = '12px';
+
+        var voteCount = document.createElement('span');
+        voteCount.innerHTML = '👍 ' + (item.votes || 0);
+
+        var dlCount = document.createElement('span');
+        dlCount.innerHTML = '📥 ' + (item.downloads || 0);
+
+        rightDiv.appendChild(voteCount);
+        rightDiv.appendChild(dlCount);
+        voteRow.appendChild(rightDiv);
+
+        card.appendChild(voteRow);
+
+        return card;
+    }
+
+    function placeColorPalette(colors) {
+        csInterface.evalScript('placePaletteOnArtboard(' + JSON.stringify(colors) + ')', function (result) {
+            if (result === 'success') {
+                showToast('🎨 Palette placed!', 'success');
+            } else {
+                showToast('⚠️ Place failed', 'error');
+            }
+        });
+    }
+
+    function saveToSwatches(name, colors) {
+        csInterface.evalScript('saveToSwatches("' + name + '", ' + JSON.stringify(colors) + ')', function (result) {
+            if (result === 'success') {
+                showToast('✅ Saved to Swatches!', 'success');
+            } else {
+                showToast('⚠️ Swatch save failed', 'error');
+            }
+        });
+    }
+
+    function applyColorPalette(colorItem) {
+        var colorArray = [];
+        try {
+            colorArray = typeof colorItem.colors === 'string' ? JSON.parse(colorItem.colors) : colorItem.colors;
+        } catch (e) { colorArray = []; }
+
+        // Send to T Colors panel
+        var evt = new CSEvent('com.tata.pro.applyColors', 'APPLICATION');
+        evt.data = JSON.stringify({
+            name: colorItem.name,
+            colors: colorArray
+        });
+        csInterface.dispatchEvent(evt);
+
+        // Increment download
+        incrementDownload('colors', colorItem.id)
+            .then(function () {
+                showToast('🎨 "' + colorItem.name + '" applied!', 'success');
+                loadContent();
+            })
+            .catch(function () {
+                showToast('🎨 Applied!', 'success');
+            });
     }
 
     // ==========================================
@@ -497,11 +706,11 @@
                     container.innerHTML = '<div class="loading">Error loading scripts</div>';
                     console.error(err);
                 });
-        } else {
-            fetchPlugins()
-                .then(renderPlugins)
+        } else if (currentType === 'colors') {
+            fetchColors()
+                .then(renderColors)
                 .catch(function (err) {
-                    container.innerHTML = '<div class="loading">Error loading plugins</div>';
+                    container.innerHTML = '<div class="loading">Error loading colors</div>';
                     console.error(err);
                 });
         }

@@ -347,6 +347,209 @@
 		}
 	}
 
+	// ==========================================
+	// GLOBAL UTILS
+	// ==========================================
+	window.shareColorsToExplore = function (harmonyName, colors) {
+		if (!colors || colors.length === 0) {
+			showToast('⚠️ No colors to share');
+			return;
+		}
+
+		// Show custom modal
+		var modal = document.getElementById('share_modal');
+		var input = document.getElementById('share_palette_name');
+		var preview = document.getElementById('share_color_preview');
+		var confirmBtn = document.getElementById('share_modal_confirm');
+		var cancelBtn = document.getElementById('share_modal_cancel');
+
+		if (modal && input && preview) {
+			// Set default name
+			input.value = harmonyName + ' Palette';
+			input.select();
+
+			// Render color preview
+			preview.innerHTML = '';
+			colors.forEach(function (c) {
+				preview.innerHTML += '<div style="flex:1; background:' + c + ';"></div>';
+			});
+
+			// Show modal
+			modal.style.display = 'flex';
+
+			// Attach One-Time Handlers
+			var onConfirm = function () {
+				var name = input.value.trim();
+				if (!name) { showToast('⚠️ Name required'); return; }
+
+				// Post to Supabase (Mocked or Real)
+				// Since we are in Main.js context for colors.html, we need to handle this.
+				// But previously it was local. We will use a firing mechanism.
+				// Actually, just emit the event or run logic.
+				// For now, let's close and toast (mock).
+				// In a real scenario, we'd do the fetch here.
+
+				// Re-using the logic from the local scope if possible, but now we are global.
+				// We need the SUPABASE keys.
+				// We'll define them globally or passing them is hard.
+				// Let's just define the function fully here.
+				doShareToSupabase(name, colors);
+
+				cleanup();
+			};
+
+			var onCancel = function () {
+				cleanup();
+			};
+
+			var cleanup = function () {
+				modal.style.display = 'none';
+				confirmBtn.removeEventListener('click', onConfirm);
+				cancelBtn.removeEventListener('click', onCancel);
+			};
+
+			confirmBtn.addEventListener('click', onConfirm);
+			cancelBtn.addEventListener('click', onCancel);
+		}
+	};
+
+	// Helper for Supabase (extracted)
+	// Helper for Supabase (extracted)
+	function doShareToSupabase(name, colors) {
+		var SUPABASE_URL = 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
+		var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+
+		var harmonyType = 'custom'; // Default
+
+		var payload = {
+			name: name,
+			colors: JSON.stringify(colors), // Stringify for 'colors' table as per previous logic
+			harmony_type: harmonyType,
+			author_name: 'Anonymous',
+			votes: 0,
+			downloads: 0
+		};
+
+		fetch(SUPABASE_URL + '/rest/v1/colors', {
+			method: 'POST',
+			headers: {
+				'apikey': SUPABASE_KEY,
+				'Authorization': 'Bearer ' + SUPABASE_KEY,
+				'Content-Type': 'application/json',
+				'Prefer': 'return=representation'
+			},
+			body: JSON.stringify(payload)
+		})
+			.then(function (res) {
+				if (res.ok) {
+					showToast('✅ Shared to Explore!');
+				} else {
+					console.error('Supabase Error:', res.status, res.statusText);
+					return res.text().then(text => { throw new Error(text || 'Upload failed'); });
+				}
+			})
+			.catch(function (err) {
+				console.error(err);
+				showToast('❌ Share failed: ' + err.message);
+			});
+	}
+
+	window.openGlobalColorPicker = function (callback, initialColor) {
+		// Create modal if needed
+		var modalId = 'global_color_picker';
+		var modal = document.getElementById(modalId);
+
+		if (!modal) {
+			modal = document.createElement('div');
+			modal.id = modalId;
+			modal.className = 'modal'; // Reuse existing modal styles
+			modal.innerHTML =
+				'<div class="modal-content" style="max-width:250px;">' +
+				'<h3>Select Color</h3>' +
+				'<div style="margin-bottom:10px;">' +
+				'<label>Presets</label>' +
+				'<div class="color-swatches" style="display:flex; gap:8px; justify-content:center; margin-bottom:15px;">' +
+				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e74c3c"></div>' +
+				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#e67e22"></div>' +
+				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#f1c40f"></div>' +
+				'<div class="color-swatch swatch-green" data-color="green" data-hex="#2ecc71"></div>' +
+				'<div class="color-swatch swatch-blue" data-color="blue" data-hex="#3498db"></div>' +
+				'<div class="color-swatch swatch-purple" data-color="purple" data-hex="#9b59b6"></div>' +
+				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#95a5a6"></div>' +
+				'</div>' +
+				'</div>' +
+				'<div class="control-group">' +
+				'<label>Custom Hex</label>' +
+				'<div style="display:flex; gap:5px;">' +
+				'<input type="color" id="gcp_native" style="width:30px; height:30px; padding:0; border:none; background:none;">' +
+				'<input type="text" id="gcp_hex" placeholder="#RRGGBB" style="flex:1;">' +
+				'</div>' +
+				'</div>' +
+				'<div class="modal-actions">' +
+				'<button id="gcp_cancel" class="secondary">Cancel</button>' +
+				'<button id="gcp_ok" class="primary">Select</button>' +
+				'</div>' +
+				'</div>';
+			document.body.appendChild(modal);
+		}
+
+		var inpNative = document.getElementById('gcp_native');
+		var inpHex = document.getElementById('gcp_hex');
+		var btnOk = document.getElementById('gcp_ok');
+		var btnCancel = document.getElementById('gcp_cancel');
+		var swatches = modal.querySelectorAll('.color-swatch');
+
+		// Reset State
+		inpHex.value = initialColor || '#FF0000';
+		inpNative.value = initialColor || '#FF0000';
+		swatches.forEach(function (s) { s.classList.remove('selected'); });
+
+		// Handlers
+		var onSwatch = function (e) {
+			var hex = e.target.getAttribute('data-hex');
+			if (hex) {
+				inpHex.value = hex;
+				inpNative.value = hex;
+				swatches.forEach(function (s) { s.classList.remove('selected'); });
+				e.target.classList.add('selected');
+			}
+		};
+		swatches.forEach(function (s) { s.onclick = onSwatch; });
+
+		var onNative = function () {
+			inpHex.value = inpNative.value;
+			swatches.forEach(function (s) { s.classList.remove('selected'); });
+		};
+		inpNative.oninput = onNative;
+
+		var onHex = function () {
+			inpNative.value = inpHex.value;
+			swatches.forEach(function (s) { s.classList.remove('selected'); });
+		};
+		inpHex.oninput = onHex;
+
+		var onConfirm = function () {
+			var val = inpHex.value;
+			cleanup();
+			if (callback) callback(val);
+		};
+
+		var onDismiss = function () {
+			cleanup();
+		};
+
+		function cleanup() {
+			modal.classList.remove('active');
+			btnOk.onclick = null;
+			btnCancel.onclick = null;
+		}
+
+		btnOk.onclick = onConfirm;
+		btnCancel.onclick = onDismiss;
+
+		modal.classList.add('active');
+	};
+
 	function moveButtonToTab(btnId, targetTabId) {
 		// 1. Find and remove from old location
 		var foundSourceTab = null;
@@ -929,15 +1132,13 @@
 		bar.innerHTML = ''; // Clear existing
 
 		// Calculate Columns
-		// If count <= 5, use count columns (fill row).
-		// If count > 5, cap at 5 (wrap).
 		var cols = hotkeyCount;
 		if (cols > 5) cols = 5;
 		bar.style.setProperty('--col-count', cols);
 
 		for (var i = 0; i < hotkeyCount; i++) {
 			var slot = document.createElement('div');
-			slot.className = 'hotkey-slot'; // Uses existing CSS (20% width)
+			slot.className = 'hotkey-slot';
 			slot.dataset.slot = (i + 1);
 
 			// Logic to render content
@@ -946,7 +1147,7 @@
 				slot.classList.add('filled');
 				if (data.color) {
 					// V4: Solid Hotkey Background (Stream Deck Style)
-					slot.style.background = data.color; // Solid
+					slot.style.background = data.color;
 					slot.style.borderColor = data.color;
 					// Add slight inner shadow for depth
 					slot.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
@@ -969,7 +1170,6 @@
 						svg.style.height = '16px';
 						svg.style.minWidth = '16px';
 						svg.style.display = 'block';
-						// V4: Do NOT color icon (keep default fill/stroke)
 					}
 					slot.appendChild(iconSpan);
 				} else {
@@ -1003,6 +1203,24 @@
 						}
 					};
 				})(data.id);
+
+				// Right Click -> Change Color using Global Picker
+				slot.oncontextmenu = (function (idx, currentData) {
+					return function (e) {
+						e.preventDefault();
+						e.stopPropagation();
+						var curColor = currentData.color || '#FF0000';
+						openGlobalColorPicker(function (newColor) {
+							if (newColor) {
+								hotkeys[idx].color = newColor;
+								saveHotkeys();
+								renderHotkeys();
+							}
+						}, curColor);
+						return false;
+					};
+				})(i, data);
+
 			} else {
 				slot.title = "Drag a button here";
 			}
@@ -2084,6 +2302,91 @@
 			});
 		}
 
+		// ==========================================
+		// VERSION CHECK SYSTEM
+		// ==========================================
+		var CURRENT_VERSION = '6.0.0';
+		var SUPABASE_URL = 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
+		var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+
+		function checkForUpdates() {
+			var btnCheck = document.getElementById('btn_check_update');
+			if (btnCheck) {
+				btnCheck.textContent = 'Checking...';
+				btnCheck.disabled = true;
+			}
+
+			fetch(SUPABASE_URL + '/rest/v1/app_version?id=eq.1', {
+				headers: {
+					'apikey': SUPABASE_KEY,
+					'Authorization': 'Bearer ' + SUPABASE_KEY
+				}
+			})
+				.then(function (res) { return res.json(); })
+				.then(function (data) {
+					if (data && data[0]) {
+						var latestVersion = data[0].version;
+						var downloadUrl = data[0].download_url;
+
+						// Compare versions
+						if (compareVersions(latestVersion, CURRENT_VERSION) > 0) {
+							// New version available
+							document.getElementById('new_version').textContent = 'v' + latestVersion;
+							document.getElementById('download_link').href = downloadUrl;
+							document.getElementById('update_available').style.display = 'block';
+							showToast('🆕 Update available: v' + latestVersion);
+						} else {
+							showToast('✅ You have the latest version!');
+							document.getElementById('update_available').style.display = 'none';
+						}
+					}
+				})
+				.catch(function (err) {
+					showToast('❌ Failed to check updates');
+					console.error(err);
+				})
+				.finally(function () {
+					if (btnCheck) {
+						btnCheck.textContent = 'Check Update';
+						btnCheck.disabled = false;
+					}
+				});
+		}
+
+		function compareVersions(v1, v2) {
+			var parts1 = v1.split('.').map(Number);
+			var parts2 = v2.split('.').map(Number);
+			for (var i = 0; i < 3; i++) {
+				if ((parts1[i] || 0) > (parts2[i] || 0)) return 1;
+				if ((parts1[i] || 0) < (parts2[i] || 0)) return -1;
+			}
+			return 0;
+		}
+
+		// Init version display
+		var versionEl = document.getElementById('current_version');
+		if (versionEl) versionEl.textContent = 'v' + CURRENT_VERSION;
+
+		// Check update button
+		var btnCheckUpdate = document.getElementById('btn_check_update');
+		if (btnCheckUpdate) {
+			btnCheckUpdate.addEventListener('click', checkForUpdates);
+		}
+
+		// Auto-check on startup (after 3 seconds)
+		setTimeout(function () {
+			fetch(SUPABASE_URL + '/rest/v1/app_version?id=eq.1', {
+				headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+			})
+				.then(function (res) { return res.json(); })
+				.then(function (data) {
+					if (data && data[0] && compareVersions(data[0].version, CURRENT_VERSION) > 0) {
+						showToast('🆕 Update available! Check Settings.');
+					}
+				})
+				.catch(function () { });
+		}, 3000);
+
 		// ==================
 		// 2. Add Script Logic
 		// ==================
@@ -2537,6 +2840,9 @@
 			if (recentColors.length > 7) recentColors = recentColors.slice(0, 7);
 		} catch (e) { recentColors = []; }
 
+		// Ensure shareColorsToExplore is available in this scope (it is now global)
+		// No local definition needed.
+
 		// Helper: HSL/Hex
 		function hslToHex(h, s, l) {
 			l /= 100;
@@ -2885,130 +3191,8 @@
 
 
 
-		// --- SAVED COLORS FEATURE ---
-		var savedColors = [];
-		try {
-			var stored = localStorage.getItem('tata_saved_colors');
-			if (stored) savedColors = JSON.parse(stored);
-		} catch (e) { savedColors = []; }
+		// Logic using global shareColorsToExplore if needed for custom UI
 
-		function savePaletteToStorage(name, colors) {
-			// FIFO Logic: Max 4
-			// Create Object
-			var item = {
-				name: name,
-				colors: colors,
-				id: Date.now()
-			};
-
-			// Add to front? User said "FIFO" - usually means queue (add end, remove front) or stack (add front, remove end)?
-			// "Gein laew ja lob an tee kao tee sood" -> "If full, delete the oldest"
-			// So if we have [Old, Mid, New], and add Newer -> [Mid, New, Newer].
-			// Let's use array as [Oldest, ..., Newest]. Push to end. If > 4, shift() (remove first).
-
-			savedColors.push(item);
-			if (savedColors.length > 4) {
-				savedColors.shift(); // Remove oldest
-			}
-
-			localStorage.setItem('tata_saved_colors', JSON.stringify(savedColors));
-			renderSavedColors();
-
-			// Expand the section so user sees it
-			var sec = document.getElementById('saved_colors_list') ? document.getElementById('saved_colors_list').closest('.section-card') : null;
-			if (sec && sec.classList.contains('collapsed')) sec.classList.remove('collapsed');
-		}
-
-		function renderSavedColors() {
-			var container = document.getElementById('saved_colors_list');
-			if (!container) return;
-
-			if (savedColors.length === 0) {
-				container.innerHTML = '<div style="font-size:11px; color:#888; text-align:center; padding:10px;">No saved palettes yet.</div>';
-				return;
-			}
-
-			container.innerHTML = '';
-			// Render in reverse order? Usually newest on top is better UI, even if logic is FIFO.
-			// Let's render Newest First (Reverse iteration).
-			for (var i = savedColors.length - 1; i >= 0; i--) {
-				createSavedColorRow(savedColors[i], container);
-			}
-		}
-
-		function createSavedColorRow(item, container) {
-			var row = document.createElement('div');
-			row.className = 'saved-palette-row';
-			row.style.background = '#333';
-			row.style.borderRadius = '4px';
-			row.style.padding = '4px';
-			row.style.display = 'flex';
-			row.style.flexDirection = 'column';
-			row.style.gap = '4px';
-
-			// Header
-			var head = document.createElement('div');
-			head.style.display = 'flex'; head.style.justifyContent = 'space-between';
-			var nameSpan = document.createElement('span');
-			nameSpan.innerText = item.name;
-			nameSpan.style.fontSize = '10px'; nameSpan.style.color = '#ccc';
-			head.appendChild(nameSpan);
-
-			// Buttons Container
-			var btnContainer = document.createElement('div');
-			btnContainer.style.display = 'flex';
-			btnContainer.style.gap = '4px';
-
-			// Place Button
-			var btnPlace = document.createElement('button');
-			btnPlace.innerText = "Place";
-			btnPlace.style.border = "none"; btnPlace.style.background = "transparent";
-			btnPlace.style.borderRadius = "4px";
-			btnPlace.style.cursor = "pointer";
-			btnPlace.style.display = "flex";
-			btnPlace.style.alignItems = "center"; btnPlace.style.justifyContent = "center";
-			btnPlace.style.padding = "2px 6px";
-			btnPlace.style.fontSize = "9px"; btnPlace.style.color = "#888";
-			btnPlace.title = "Place on Artboard";
-			btnPlace.onclick = function () { placePalette(item.colors); };
-			btnContainer.appendChild(btnPlace);
-
-			// Swatch Button
-			var btnExp = document.createElement('button');
-			btnExp.innerText = "Swatch";
-			btnExp.style.border = "none"; btnExp.style.background = "transparent";
-			btnExp.style.borderRadius = "4px";
-			btnExp.style.cursor = "pointer"; btnExp.style.display = "flex";
-			btnExp.style.alignItems = "center"; btnExp.style.justifyContent = "center";
-			btnExp.style.padding = "2px 6px";
-			btnExp.style.fontSize = "9px"; btnExp.style.color = "#888";
-			btnExp.title = "Save to Swatches";
-			btnExp.onclick = function () { exportPalette(item.name, item.colors); };
-			btnContainer.appendChild(btnExp);
-
-			head.appendChild(btnContainer);
-			row.appendChild(head);
-
-			// Colors
-			var cRow = document.createElement('div');
-			cRow.style.display = 'flex'; cRow.style.height = '16px'; cRow.style.borderRadius = '3px'; cRow.style.overflow = 'hidden';
-			item.colors.forEach(function (c) {
-				var box = document.createElement('div');
-				box.style.flex = '1';
-				box.style.backgroundColor = c;
-				box.title = c;
-				box.style.cursor = 'pointer';
-				box.onclick = function () { updatePrimary(c); }; // Click to pick
-				cRow.appendChild(box);
-			});
-			row.appendChild(cRow);
-
-			container.appendChild(row);
-		}
-
-
-		// Init Saved Colors
-		renderSavedColors();
 
 		function renderHarmonyList() {
 			listContainer.innerHTML = '';
@@ -3051,21 +3235,21 @@
 				btnPlace.onclick = function () { placePalette(colors); };
 				header.appendChild(btnPlace);
 
-				// NEW: Save (to Saved Colors)
+				// NEW: Explore (upload to marketplace)
 				var btnSave = document.createElement('button');
-				btnSave.innerText = "Save";
+				btnSave.innerText = "Explore";
 				btnSave.style.border = "none"; btnSave.style.background = "transparent";
 				btnSave.style.borderRadius = "4px";
 				btnSave.style.cursor = "pointer";
 				btnSave.style.display = "flex";
 				btnSave.style.alignItems = "center"; btnSave.style.justifyContent = "center";
 				btnSave.style.padding = "2px 8px";
-				btnSave.style.fontSize = "9px"; btnSave.style.color = "#666";
+				btnSave.style.fontSize = "9px"; btnSave.style.color = "#8b5cf6";
 				btnSave.style.whiteSpace = "nowrap";
 				btnSave.style.flex = "none"; btnSave.style.width = "auto";
 				btnSave.style.marginLeft = "4px";
-				btnSave.title = "Save to Saved Colors";
-				btnSave.onclick = function () { savePaletteToStorage(ruleName, colors); };
+				btnSave.title = "Share to Explore Marketplace";
+				btnSave.onclick = function () { shareColorsToExplore(ruleName, colors); };
 				header.appendChild(btnSave);
 
 				// Swatch Button (Renamed from "Save to Swatches")
@@ -3100,102 +3284,7 @@
 			});
 		}
 
-		function exportPalette(name, colors) {
-			var script = "try { var doc = app.activeDocument; var grp = doc.swatchGroups.add(); grp.name = '" + name + " Theme'; var cols = " + JSON.stringify(colors) + "; for(var i=0; i<cols.length; i++){ var hex = cols[i].replace('#',''); var r = parseInt(hex.substring(0,2), 16); var g = parseInt(hex.substring(2,4), 16); var b = parseInt(hex.substring(4,6), 16); var c = new RGBColor(); c.red=r; c.green=g; c.blue=b; var s = doc.swatches.add(); s.color = c; s.name = 'Hex '+hex; grp.addSwatch(s); } 'Success'; } catch(e){e.toString();}";
-			csInterface.evalScript(script, function (res) { if (res !== 'Success') alert(res); });
-		}
 
-		function placePalette(colors) {
-			var script = "try { " +
-				"var doc = app.activeDocument;" +
-				"var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()];" +
-				"var rect = ab.artboardRect;" +
-				"var x = rect[0];" +
-				"var y = rect[1];" +
-				"var topFunc = y + 100;" + // Start 100pt above artboard
-				"var size = 80;" +
-				"var gap = 10;" +
-				"var cols = " + JSON.stringify(colors) + ";" +
-
-				// Helper: Hex to RGBColor object
-				"function getRGB(hex) {" +
-				"   hex = hex.replace('#','');" +
-				"   var r = parseInt(hex.substring(0,2), 16);" +
-				"   var g = parseInt(hex.substring(2,4), 16);" +
-				"   var b = parseInt(hex.substring(4,6), 16);" +
-				"   var c = new RGBColor(); c.red=r; c.green=g; c.blue=b;" +
-				"   return c;" +
-				"}" +
-
-				// Helper: Create Gradient
-				"function createGrad(name, colorsArr) {" +
-				"   var gName = name + '_' + Math.round(Math.random()*10000);" +
-				"   try { var existing = doc.gradients.getByName(gName); existing.remove(); } catch(e){}" +
-				"   var newGrad = doc.gradients.add();" +
-				"   newGrad.name = gName;" +
-				"   newGrad.type = GradientType.LINEAR;" +
-				"   " +
-				"   /* Safe Logic: Reuse Existing Stops */" +
-				"   var stops = newGrad.gradientStops;" +
-				"   var targetLen = colorsArr.length;" +
-				"   " +
-				"   /* 1. Add if needed */" +
-				"   while(stops.length < targetLen) { stops.add(); }" +
-				"   /* 2. Remove if too many (reverse loop) */" +
-				"   while(stops.length > targetLen) { stops[stops.length-1].remove(); }" +
-				"   " +
-				"   /* 3. Assign Values */" +
-				"   for(var i=0; i<targetLen; i++) {" +
-				"       var s = stops[i];" +
-				"       s.rampPoint = (i / (targetLen - 1)) * 100;" +
-				"       s.color = getRGB(colorsArr[i]);" +
-				"       s.midPoint = 50;" +
-				"   }" +
-				"   var gc = new GradientColor();" +
-				"   gc.gradient = newGrad;" +
-				"   return gc;" +
-				"}" +
-
-				// Create Main Group
-				"var mainGroup = doc.groupItems.add();" +
-				"mainGroup.name = 'TATA Palette';" +
-
-				// 1. Draw Solid Colors (Row 1)
-				"for(var i=0; i<cols.length; i++){" +
-				"   var box = mainGroup.pathItems.rectangle(topFunc, x + (i * (size + gap)), size, size);" +
-				"   box.fillColor = getRGB(cols[i]);" +
-				"   box.stroked = false;" +
-				"}" +
-
-				// 2. Draw Pairwise Gradients (Row 2) => Below Row 1
-				"var row2Top = topFunc - (size + gap);" +
-				"if(cols.length > 1) {" +
-				"   for(var i=0; i<cols.length-1; i++){" +
-				"       var gCol = createGrad('Pair_'+i, [cols[i], cols[i+1]]);" +
-				"       var box = mainGroup.pathItems.rectangle(row2Top, x + (i * (size + gap)), size, size);" +
-				"       box.fillColor = gCol;" +
-				"       box.stroked = false;" +
-				"       /* Rotate Gradient 0 deg default */" +
-				"   }" +
-				"}" +
-
-				// 3. Draw Global Gradient (Row 3) => Below Row 2
-				"var row3Top = row2Top - (size + gap);" +
-				"if(cols.length > 1) {" +
-				"   var totalWidth = (cols.length * size) + ((cols.length-1) * gap);" +
-				"   var gAll = createGrad('Global', cols);" +
-				"   var box = mainGroup.pathItems.rectangle(row3Top, x, totalWidth, size);" +
-				"   box.fillColor = gAll;" +
-				"   box.stroked = false;" +
-				"}" +
-
-				"'Success';" +
-				"} catch(e) { e.message + ' line:' + e.line; }";
-
-			csInterface.evalScript(script, function (res) {
-				if (res !== 'Success') alert("Place Error: " + res);
-			});
-		}
 
 		function pickColor(targetInputId) {
 			try {
@@ -4942,10 +5031,116 @@
 		location.reload();
 	});
 
+	function exportPalette(name, colors) {
+		var script = "try { var doc = app.activeDocument; var grp = doc.swatchGroups.add(); grp.name = '" + name + " Theme'; var cols = " + JSON.stringify(colors) + "; for(var i=0; i<cols.length; i++){ var hex = cols[i].replace('#',''); var r = parseInt(hex.substring(0,2), 16); var g = parseInt(hex.substring(2,4), 16); var b = parseInt(hex.substring(4,6), 16); var c = new RGBColor(); c.red=r; c.green=g; c.blue=b; var s = doc.swatches.add(); s.color = c; s.name = 'Hex '+hex; grp.addSwatch(s); } 'Success'; } catch(e){e.toString();}";
+		csInterface.evalScript(script, function (res) { if (res !== 'Success') alert(res); });
+	}
+
+	function placePalette(colors) {
+		var script = "try { " +
+			"var doc = app.activeDocument;" +
+			"var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()];" +
+			"var rect = ab.artboardRect;" +
+			"var x = rect[0];" +
+			"var y = rect[1];" +
+			"var topFunc = y + 100;" + // Start 100pt above artboard
+			"var size = 80;" +
+			"var gap = 10;" +
+			"var cols = " + JSON.stringify(colors) + ";" +
+
+			// Helper: Hex to RGBColor object
+			"function getRGB(hex) {" +
+			"   hex = hex.replace('#','');" +
+			"   var r = parseInt(hex.substring(0,2), 16);" +
+			"   var g = parseInt(hex.substring(2,4), 16);" +
+			"   var b = parseInt(hex.substring(4,6), 16);" +
+			"   var c = new RGBColor(); c.red=r; c.green=g; c.blue=b;" +
+			"   return c;" +
+			"}" +
+
+			// Helper: Create Gradient
+			"function createGrad(name, colorsArr) {" +
+			"   var gName = name + '_' + Math.round(Math.random()*10000);" +
+			"   try { var existing = doc.gradients.getByName(gName); existing.remove(); } catch(e){}" +
+			"   var newGrad = doc.gradients.add();" +
+			"   newGrad.name = gName;" +
+			"   newGrad.type = GradientType.LINEAR;" +
+			"   " +
+			"   /* Safe Logic: Reuse Existing Stops */" +
+			"   var stops = newGrad.gradientStops;" +
+			"   var targetLen = colorsArr.length;" +
+			"   " +
+			"   /* 1. Add if needed */" +
+			"   while(stops.length < targetLen) { stops.add(); }" +
+			"   /* 2. Remove if too many (reverse loop) */" +
+			"   while(stops.length > targetLen) { stops[stops.length-1].remove(); }" +
+			"   " +
+			"   /* 3. Assign Values */" +
+			"   for(var i=0; i<targetLen; i++) {" +
+			"       var s = stops[i];" +
+			"       s.rampPoint = (i / (targetLen - 1)) * 100;" +
+			"       s.color = getRGB(colorsArr[i]);" +
+			"       s.midPoint = 50;" +
+			"   }" +
+			"   var gc = new GradientColor();" +
+			"   gc.gradient = newGrad;" +
+			"   return gc;" +
+			"}" +
+
+			// Create Main Group
+			"var mainGroup = doc.groupItems.add();" +
+			"mainGroup.name = 'TATA Palette';" +
+
+			// 1. Draw Solid Colors (Row 1)
+			"for(var i=0; i<cols.length; i++){" +
+			"   var box = mainGroup.pathItems.rectangle(topFunc, x + (i * (size + gap)), size, size);" +
+			"   box.fillColor = getRGB(cols[i]);" +
+			"   box.stroked = false;" +
+			"}" +
+
+			// 2. Draw Pairwise Gradients (Row 2) => Below Row 1
+			"var row2Top = topFunc - (size + gap);" +
+			"if(cols.length > 1) {" +
+			"   for(var i=0; i<cols.length-1; i++){" +
+			"       var gCol = createGrad('Pair_'+i, [cols[i], cols[i+1]]);" +
+			"       var box = mainGroup.pathItems.rectangle(row2Top, x + (i * (size + gap)), size, size);" +
+			"       box.fillColor = gCol;" +
+			"       box.stroked = false;" +
+			"       /* Rotate Gradient 0 deg default */" +
+			"   }" +
+			"}" +
+
+			// 3. Draw Global Gradient (Row 3) => Below Row 2
+			"var row3Top = row2Top - (size + gap);" +
+			"if(cols.length > 1) {" +
+			"   var totalWidth = (cols.length * size) + ((cols.length-1) * gap);" +
+			"   var gAll = createGrad('Global', cols);" +
+			"   var box = mainGroup.pathItems.rectangle(row3Top, x, totalWidth, size);" +
+			"   box.fillColor = gAll;" +
+			"   box.stroked = false;" +
+			"}" +
+
+			"'Success';" +
+			"} catch(e) { e.message + ' line:' + e.line; }";
+
+		csInterface.evalScript(script, function (res) {
+			if (res !== 'Success') alert("Place Error: " + res);
+		});
+	}
+
+	// ==========================================
+	// V4.2: Export to Global TATA Namespace
+	// ==========================================
 	// ==========================================
 	// V4.2: Export to Global TATA Namespace
 	// ==========================================
 	window.TATA = window.TATA || {};
+
+	// Expose Critical Utils Globally (for separated IIFEs)
+	window.showToast = showToast;
+	window.placePalette = placePalette;
+	window.exportPalette = exportPalette;
+
 	TATA.showToast = showToast;
 	TATA.showInputModal = showInputModal;
 	TATA.showConfirmModal = showConfirmModal;
@@ -4958,5 +5153,84 @@
 	TATA.backupBeforeSave = backupBeforeSave;
 	TATA.DOM = DOM;
 	TATA.csInterface = csInterface;
+	TATA.placePalette = placePalette;
+	TATA.exportPalette = exportPalette;
+
+})();
+
+// -------------------------------------------------------------------------
+// CUSTOM COLORS FUNCTIONALITY
+// -------------------------------------------------------------------------
+(function () {
+	// Default custom colors
+	var customColors = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF"];
+
+	// Check if we are on the Colors panel
+	var container = document.getElementById('custom_colors_container');
+	if (!container) return; // Not on Colors panel or elements not ready
+
+	// Initialize Slots
+	function updateSlots() {
+		var slots = document.querySelectorAll('.custom-color-slot');
+		slots.forEach(function (slot, index) {
+			slot.style.backgroundColor = customColors[index];
+			slot.title = "Click to Edit: " + customColors[index];
+			slot.onclick = function () {
+				// Use GLOBAL Picker (New Script Style) as requested
+				var currentColor = customColors[index];
+				openGlobalColorPicker(function (newColor) {
+					if (newColor) {
+						customColors[index] = newColor;
+						updateSlots();
+					}
+				}, currentColor);
+			};
+		});
+	}
+
+	// Attach Button Events
+	var btnPlace = document.getElementById('btn_custom_place');
+	if (btnPlace) {
+		btnPlace.onclick = function () {
+			// Reuse TATA.run router if available, or direct eval
+			// Host script must implement placePalette logic. 
+			// existing 'placePalette' function in main.js (line 3351) generates a script string.
+			// Let's reuse that if possible, or call logic directly.
+			// Ideally we use a centralized place function.
+			// main.js has 'placePalette(colors)' function defined around line 3351.
+			if (typeof placePalette === 'function') {
+				placePalette(customColors);
+			} else {
+				showToast('⚠️ Place function missing');
+			}
+		};
+	}
+
+	var btnSwatch = document.getElementById('btn_custom_swatch');
+	if (btnSwatch) {
+		btnSwatch.onclick = function () {
+			// main.js has 'exportPalette(name, colors)' defined around line 3346.
+			if (typeof exportPalette === 'function') {
+				exportPalette("Custom Colors", customColors);
+			} else {
+				showToast('⚠️ Export function missing');
+			}
+		};
+	}
+
+	var btnExplore = document.getElementById('btn_custom_explore');
+	if (btnExplore) {
+		btnExplore.onclick = function () {
+			// Call GLOBAL share function
+			if (typeof shareColorsToExplore === 'function') {
+				shareColorsToExplore("Custom", customColors);
+			} else {
+				showToast('⚠️ Share function missing');
+			}
+		};
+	}
+
+	// Initial Render
+	updateSlots();
 
 })();
