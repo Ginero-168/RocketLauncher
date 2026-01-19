@@ -602,8 +602,9 @@
         var systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"name\": \"Short Script Name (2-4 words)\", \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
 
         if (model.startsWith('gemini')) {
-            // Gemini API - auto discover working model
-            var modelsToTry = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-pro', 'gemini-1.5-pro-latest'];
+            // Gemini API - auto discover working model (updated Jan 2026)
+            // Note: Gemini 1.5 was retired April 2025, use 2.0/2.5 models
+            var modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro'];
             var lastError = null;
 
             for (var i = 0; i < modelsToTry.length; i++) {

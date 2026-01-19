@@ -2534,7 +2534,7 @@
 
 	async function generateScriptWithGemini(apiKey, prompt) {
 		// 1. Discovery: List available models
-		var selectedModel = "gemini-1.5-flash-latest"; // Stable default fallback
+		var selectedModel = "gemini-2.0-flash"; // Updated Jan 2026 - 1.5 models retired
 
 		try {
 			var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
