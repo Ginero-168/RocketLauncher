@@ -102,73 +102,83 @@ var TATA = {
         var abWidth = Math.abs(abBounds[2] - abBounds[0]) * conversionFactor;
         var abHeight = Math.abs(abBounds[1] - abBounds[3]) * conversionFactor;
 
-        // Dynamic Arrow Size
-        var arrowSize = (((Math.abs(abBounds[2] - abBounds[0]) + Math.abs(abBounds[1] - abBounds[3])) / 2) * 0.01 / conversionFactor);
-        // Apply scaling from UI
+        // Dynamic Arrow Size (in points for internal calculations)
+        var arrowSize = (((Math.abs(abBounds[2] - abBounds[0]) + Math.abs(abBounds[1] - abBounds[3])) / 2) * 0.01);
         if (sizeVal && sizeVal != 0) {
-            // In V2 params, size is percent (e.g. 100).
-            // In Reference, size is a multiplier (default 1).
-            // We'll treat V2's 100 as 1.0
             arrowSize *= (sizeVal / 100);
         }
 
         var dimDist = arrowSize * 4;
+
+        // Helper function to safely set text attributes
+        function safeSetTextAttrs(textFrame, fontSize, justification) {
+            try {
+                if (textFrame && textFrame.textRange) {
+                    textFrame.textRange.characterAttributes.size = fontSize;
+                    textFrame.textRange.justification = justification;
+                }
+            } catch (e) {
+                // Fallback: try setting via characters if textRange fails
+                try {
+                    for (var i = 0; i < textFrame.textRange.characters.length; i++) {
+                        textFrame.textRange.characters[i].characterAttributes.size = fontSize;
+                    }
+                } catch (e2) { }
+            }
+        }
 
         // Horizontal Line
         createDimensionLine(doc, [abBounds[0], abBounds[1] + dimDist], [abBounds[2], abBounds[1] + dimDist], arrowSize, 'horizontal', dimDist);
         // Vertical Line
         createDimensionLine(doc, [abBounds[0] - dimDist, abBounds[1]], [abBounds[0] - dimDist, abBounds[3]], arrowSize, 'vertical', dimDist);
 
-        // Artboard Name (Optional, Reference doesn't emphasize it but user might want it)
+        // Artboard Name (Optional)
         if (ABName !== "") {
-            var abNameText = doc.textFrames.add();
-            abNameText.contents = ABName + ' [ ' + abWidth.toFixed(2) + ' x ' + abHeight.toFixed(2) + ' ] ' + unitLabel;
-            abNameText.position = [abBounds[0], abBounds[1] + (dimDist * 4)];
-            abNameText.textRange.characterAttributes.size = dimDist * 1.5;
-            abNameText.textRange.justification = Justification.LEFT;
-            selectColorMode(doc, abNameText, '#FFFFFF', 1);
+            try {
+                var abNameText = doc.textFrames.add();
+                abNameText.contents = ABName + ' [ ' + abWidth.toFixed(2) + ' x ' + abHeight.toFixed(2) + ' ] ' + unitLabel;
+                abNameText.position = [abBounds[0], abBounds[1] + (dimDist * 4)];
+                safeSetTextAttrs(abNameText, dimDist * 1.5, Justification.LEFT);
+                selectColorMode(doc, abNameText, '#FFFFFF', 1);
+            } catch (e) { }
         }
 
         // Width Text
-        var widthText = doc.textFrames.add();
-        widthText.contents = "W: " + abWidth.toFixed(2) + " " + unitLabel;
-        // Center text on line
-        widthText.position = [(abBounds[0] + abBounds[2]) / 2, abBounds[1] + dimDist * 2];
-        widthText.textRange.characterAttributes.size = dimDist;
-        widthText.textRange.justification = Justification.CENTER;
-        selectColorMode(doc, widthText, '#000000', 1);
+        try {
+            var widthText = doc.textFrames.add();
+            widthText.contents = "W: " + abWidth.toFixed(2) + " " + unitLabel;
+            widthText.position = [(abBounds[0] + abBounds[2]) / 2, abBounds[1] + dimDist * 2];
+            safeSetTextAttrs(widthText, dimDist, Justification.CENTER);
+            selectColorMode(doc, widthText, '#000000', 1);
 
-        // Width Text BG
-        var wTop = widthText.top;
-        var wLeft = widthText.left - dimDist;
-        var wWidth = widthText.width + (dimDist * 2);
-        var wHeight = widthText.height;
-        var wBG = dimensionLayer.pathItems.roundedRectangle(wTop, wLeft, wWidth, wHeight, 30, 30);
-        selectColorMode(doc, wBG, '#FFFFFF', 2);
-        wBG.zOrder(ZOrderMethod.SENDTOBACK);
+            // Width Text BG
+            var wTop = widthText.top;
+            var wLeft = widthText.left - dimDist;
+            var wWidth = widthText.width + (dimDist * 2);
+            var wHeight = widthText.height;
+            var wBG = dimensionLayer.pathItems.roundedRectangle(wTop, wLeft, wWidth, wHeight, 30, 30);
+            selectColorMode(doc, wBG, '#FFFFFF', 2);
+            wBG.zOrder(ZOrderMethod.SENDTOBACK);
+        } catch (e) { }
 
         // Height Text
-        var heightText = doc.textFrames.add();
-        heightText.contents = "H: " + abHeight.toFixed(2) + " " + unitLabel;
-        heightText.position = [abBounds[0] - (dimDist * 2), (abBounds[1] + abBounds[3]) / 2];
-        heightText.textRange.justification = Justification.CENTER;
-        heightText.textRange.characterAttributes.size = dimDist;
-        heightText.rotate(90);
-        selectColorMode(doc, heightText, '#000000', 1);
+        try {
+            var heightText = doc.textFrames.add();
+            heightText.contents = "H: " + abHeight.toFixed(2) + " " + unitLabel;
+            heightText.position = [abBounds[0] - (dimDist * 2), (abBounds[1] + abBounds[3]) / 2];
+            safeSetTextAttrs(heightText, dimDist, Justification.CENTER);
+            heightText.rotate(90);
+            selectColorMode(doc, heightText, '#000000', 1);
 
-        // Height Text BG
-        var hTop = heightText.top + dimDist; // rotated, so top varies
-        var hLeft = heightText.left;
-        var hWidth = heightText.width;
-        var hHeight = heightText.height + (dimDist * 2);
-
-        // Note: Reference uses roundedRectangle logic which might be slightly off for rotated text bounding box
-        // But we stick to reference logic:
-        // var heightTextTop = heightText.top + DimDist;
-        // ...
-        var hBG = dimensionLayer.pathItems.roundedRectangle(hTop, hLeft, hWidth, hHeight, 30, 30);
-        selectColorMode(doc, hBG, '#FFFFFF', 2);
-        hBG.zOrder(ZOrderMethod.SENDTOBACK);
+            // Height Text BG
+            var hTop = heightText.top + dimDist;
+            var hLeft = heightText.left;
+            var hWidth = heightText.width;
+            var hHeight = heightText.height + (dimDist * 2);
+            var hBG = dimensionLayer.pathItems.roundedRectangle(hTop, hLeft, hWidth, hHeight, 30, 30);
+            selectColorMode(doc, hBG, '#FFFFFF', 2);
+            hBG.zOrder(ZOrderMethod.SENDTOBACK);
+        } catch (e) { }
 
         groupAllInLayer(doc, "Dimension", ["PreviewBG"]);
 
