@@ -153,11 +153,33 @@
         // Upload to Server
         var btnUpload = document.getElementById('btn_upload_server');
         if (btnUpload) btnUpload.addEventListener('click', handleUploadToServer);
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function (e) {
+            // Ctrl+Enter or Cmd+Enter = Run Script
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleTestRun();
+                showToast('▶ Running script... (Ctrl+Enter)');
+            }
+            // Ctrl+S or Cmd+S = Save to Library
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                var btnSave = document.getElementById('btn_save');
+                if (btnSave) btnSave.click();
+                showToast('💾 Saving... (Ctrl+S)');
+            }
+            // Escape = Close modals
+            if (e.key === 'Escape') {
+                var modals = document.querySelectorAll('.modal.active, .modal-overlay.active');
+                modals.forEach(function (m) { m.classList.remove('active'); });
+            }
+        });
     }
 
     // ==================== SUPABASE CONFIG ====================
-    var SUPABASE_URL = 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
-    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+    var SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
+    var SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
 
     function handleUploadToServer() {
         var nameInput = document.getElementById('script_name_input');

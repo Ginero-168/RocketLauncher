@@ -58,7 +58,13 @@
 
             alert("Dimension labels created!");
         } catch (err) {
-            alert("Error: " + err.toString());
+            // User-friendly error message
+            var msg = "ไม่สามารถสร้าง Dimension ได้\n\n";
+            msg += "กรุณาตรวจสอบ:\n";
+            msg += "• เอกสารเปิดอยู่และมี Artboard\n";
+            msg += "• ไม่มี Layer ที่ล็อคอยู่\n\n";
+            msg += "(Details: " + err.message + ")";
+            alert(msg);
         }
     }
 })();
