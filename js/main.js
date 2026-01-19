@@ -604,12 +604,15 @@
 		if (!scriptName) return;
 
 		var scriptPath = extensionPath + '/jsx/' + scriptName;
-		var cmd = '$.evalFile("' + scriptPath + '")';
+		var hostscriptPath = extensionPath + '/jsx/hostscript.jsx';
+
+		// CRITICAL: Always load hostscript.jsx first to ensure TATA object exists
+		var cmd = '$.evalFile("' + hostscriptPath + '"); $.evalFile("' + scriptPath + '")';
 
 		// If params, encode as JSON and pass to script
 		if (params && Object.keys(params).length > 0) {
 			var paramsJSON = JSON.stringify(params);
-			cmd = '$.evalFile("' + scriptPath + '"); TATA.run("' + scriptName.replace('.jsx', '') + '", ' + paramsJSON + ')';
+			cmd = '$.evalFile("' + hostscriptPath + '"); $.evalFile("' + scriptPath + '"); TATA.run("' + scriptName.replace('.jsx', '') + '", ' + paramsJSON + ')';
 		}
 
 		csInterface.evalScript(cmd, function (result) {
