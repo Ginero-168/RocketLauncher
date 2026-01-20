@@ -2533,33 +2533,6 @@
 	}
 
 	async function generateScriptWithGemini(apiKey, prompt) {
-		// 1. Discovery: List available models
-		var selectedModel = "gemini-2.0-flash"; // Updated Jan 2026 - 1.5 models retired
-
-		try {
-			var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
-			var listRes = await fetch(listUrl);
-			if (listRes.ok) {
-				var listData = await listRes.json();
-				if (listData.models) {
-					// Find first model that supports generateContent
-					var validModel = listData.models.find(m =>
-						m.supportedGenerationMethods &&
-						m.supportedGenerationMethods.indexOf("generateContent") !== -1 &&
-						m.name.indexOf("gemini") !== -1 // Ensure it's a gemini model
-					);
-					if (validModel) {
-						selectedModel = validModel.name.replace("models/", "");
-					}
-				}
-			}
-		} catch (e) {
-			// Silently fall back to default model
-		}
-
-		// 2. Generation: Call the selected model
-		var url = "https://generativelanguage.googleapis.com/v1beta/models/" + selectedModel + ":generateContent?key=" + apiKey;
-
 		// ENHANCED SYSTEM PROMPT with TATA Context and Examples
 		var systemPrompt = "You are an expert Adobe Illustrator JSX/ExtendScript developer for the TATA Pro extension.\n\n" +
 			"===== TATA ARCHITECTURE =====\n" +
@@ -2629,47 +2602,79 @@
 			}]
 		};
 
-		try {
-			var response = await fetch(url, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload)
-			});
+		// New Retry Logic (V7.2 - Jan 2026)
+		var modelsToTry = [
+			'gemini-3.0-pro-latest',
+			'gemini-3.0-flash-latest',
+			'gemini-3.0-pro',
+			'gemini-2.0-flash',
+			'gemini-2.5-flash',
+			'gemini-2.0-flash-lite'
+		];
 
-			if (!response.ok) {
-				var errText = await response.text();
-				throw new Error("API Error (" + selectedModel + "): " + response.status + " " + errText);
+		var lastError = null;
+		var responseData = null;
+		var usedModel = "";
+
+		for (var i = 0; i < modelsToTry.length; i++) {
+			var modelName = modelsToTry[i];
+			var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+
+			console.log("[TATA] Trying Gemini Model: " + modelName);
+
+			try {
+				var response = await fetch(url, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(payload)
+				});
+
+				if (response.ok) {
+					responseData = await response.json();
+					usedModel = modelName;
+					console.log("[TATA] Success with model: " + modelName);
+					break; // Success!
+				} else {
+					var errText = await response.text();
+					lastError = "HTTP " + response.status + " (" + modelName + ")";
+				}
+			} catch (e) {
+				lastError = e.message;
 			}
-
-			var data = await response.json();
-			if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-				throw new Error("Invalid response structure from " + selectedModel);
-			}
-
-			var text = data.candidates[0].content.parts[0].text;
-
-			// Parse Tag-Based Format
-			var nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
-			var codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
-
-			if (codeMatch) {
-				var nameStr = nameMatch ? nameMatch[1].trim() : ("AI Script " + Math.floor(Math.random() * 100));
-				var codeStr = codeMatch[1].trim();
-
-				// Clean up markdown blocks if any persist inside the [CODE] block
-				codeStr = codeStr.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
-
-				return { name: nameStr, code: codeStr };
-			} else {
-				// Fallback: If no tags found, assume whole text is code (risky but better than crashing)
-				// Or try to strip markdown
-				var raw = text.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
-				return { name: "AI Script " + Math.floor(Math.random() * 100), code: raw };
-			}
-
-		} catch (e) {
-			throw e;
 		}
+
+		if (!responseData) {
+			throw new Error("All Gemini models failed. Last error: " + lastError);
+		}
+
+		// Use data directly
+		var data = responseData;
+		if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+			throw new Error("Invalid response structure from " + usedModel);
+		}
+
+		var text = data.candidates[0].content.parts[0].text;
+
+		// Parse Tag-Based Format
+		var nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
+		var codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
+
+		if (codeMatch) {
+			var nameStr = nameMatch ? nameMatch[1].trim() : ("AI Script " + Math.floor(Math.random() * 100));
+			var codeStr = codeMatch[1].trim();
+
+			// Clean up markdown blocks if any persist inside the [CODE] block
+			codeStr = codeStr.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
+
+			return { name: nameStr, code: codeStr };
+		} else {
+			// Fallback: If no tags found, assume whole text is code (risky but better than crashing)
+			// Or try to strip markdown
+			var raw = text.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
+			return { name: "AI Script " + Math.floor(Math.random() * 100), code: raw };
+		}
+
+
 	}
 
 	/**

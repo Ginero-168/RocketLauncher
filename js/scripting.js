@@ -603,8 +603,8 @@
 
         if (model.startsWith('gemini')) {
             // Gemini API - auto discover working model (updated Jan 2026)
-            // Note: Gemini 1.5 was retired April 2025, use 2.0/2.5 models
-            var modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro'];
+            // Note: Gemini 1.5 was retired April 2025, use 2.0/2.5/3.0 models
+            var modelsToTry = ['gemini-3.0-pro-latest', 'gemini-3.0-flash-latest', 'gemini-3.0-pro', 'gemini-2.0-flash', 'gemini-2.5-flash'];
             var lastError = null;
 
             for (var i = 0; i < modelsToTry.length; i++) {
