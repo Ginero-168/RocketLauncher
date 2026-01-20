@@ -2633,6 +2633,13 @@
 					responseData = await response.json();
 					usedModel = modelName;
 					console.log("[TATA] Success with model: " + modelName);
+
+					// Update UI with used model name
+					var modelBadge = document.getElementById('ai_model_name');
+					if (modelBadge) {
+						modelBadge.textContent = "(" + modelName + ")";
+					}
+
 					break; // Success!
 				} else {
 					var errText = await response.text();
