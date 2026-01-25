@@ -2196,6 +2196,91 @@
 			});
 		}
 
+		// Check Models Logic
+		var btnCheckModels = document.getElementById('btn_check_models');
+		if (btnCheckModels) {
+			btnCheckModels.addEventListener('click', async function () {
+				var key = inpApiKey.value.trim();
+				if (!key) {
+					alert("Please enter API Key first.");
+					return;
+				}
+
+				var btn = this;
+				var loader = document.getElementById('model_check_loader');
+				var msg = document.getElementById('model_check_msg');
+				var select = document.getElementById('setting_ai_model');
+
+				btn.disabled = true;
+				loader.style.display = 'block';
+				msg.textContent = "Checking API permissions...";
+				msg.style.color = "#888";
+
+				try {
+					var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + key;
+					var res = await fetch(listUrl);
+
+					if (!res.ok) {
+						throw new Error("HTTP " + res.status);
+					}
+
+					var data = await res.json();
+					if (data.models) {
+						// Filter for generateContent
+						var validModels = data.models.filter(function (m) {
+							return m.supportedGenerationMethods &&
+								m.supportedGenerationMethods.indexOf("generateContent") !== -1 &&
+								m.name.indexOf("gemini") !== -1;
+						});
+
+						if (validModels.length > 0) {
+							// Clear existing
+							select.innerHTML = "";
+
+							// Sort: Pro models first, then Flash, then others
+							validModels.sort(function (a, b) {
+								var nameA = a.name.toLowerCase();
+								var nameB = b.name.toLowerCase();
+								// Pro > Flash > Others
+								// Newer > Older (roughly based on numbers)
+								return nameB.localeCompare(nameA);
+							});
+
+							validModels.forEach(function (m) {
+								var opt = document.createElement('option');
+								var shortName = m.name.replace("models/", "");
+								opt.value = shortName;
+								opt.text = m.displayName + " (" + shortName + ")";
+								select.appendChild(opt);
+							});
+
+							msg.textContent = "✅ Found " + validModels.length + " models available for your key.";
+							msg.style.color = "#10b981"; // Success Green
+
+							// Auto-select first or previously selected if exists
+							var savedModel = localStorage.getItem('tata_ai_model');
+							if (savedModel) {
+								// Check if saved exists in new list
+								var exists = Array.from(select.options).some(o => o.value === savedModel);
+								if (exists) select.value = savedModel;
+							}
+
+						} else {
+							msg.textContent = "⚠️ No compatible Gemini models found.";
+							msg.style.color = "#f59e0b";
+						}
+					}
+
+				} catch (e) {
+					msg.textContent = "❌ Error: " + e.message + " (Check API Key)";
+					msg.style.color = "#ef4444";
+				} finally {
+					btn.disabled = false;
+					loader.style.display = 'none';
+				}
+			});
+		}
+
 		// Stepper Logic
 		var btnMinus = document.querySelector('#stepper_hotkey_count .btn-minus');
 		var btnPlus = document.querySelector('#stepper_hotkey_count .btn-plus');
@@ -2602,15 +2687,30 @@
 			}]
 		};
 
-		// New Retry Logic (V7.2 - Jan 2026)
-		var modelsToTry = [
-			'gemini-3.0-pro-latest',
-			'gemini-3.0-flash-latest',
-			'gemini-3.0-pro',
-			'gemini-2.0-flash',
-			'gemini-2.5-flash',
-			'gemini-2.0-flash-lite'
-		];
+		// New Retry Logic - Dynamic & Robust
+		var modelsToTry = [];
+
+		// 1. User Preference (if set)
+		var userModel = localStorage.getItem('tata_ai_model');
+		if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
+			// Add user model first if it's not one of the old defaults (unless they really want it)
+			// Actually just add it first regardless.
+			modelsToTry.push(userModel);
+		}
+
+		// 2. High-Tier Fallbacks (Pro)
+		modelsToTry.push('gemini-3.0-pro-latest');
+		modelsToTry.push('gemini-3-pro-preview'); // Preview
+
+		// 3. Efficiency Fallbacks (Flash)
+		modelsToTry.push('gemini-3.0-flash-latest');
+		modelsToTry.push('gemini-2.0-flash'); // Reliable fallback
+		modelsToTry.push('gemini-2.5-flash');
+
+		// Deduplicate
+		modelsToTry = modelsToTry.filter(function (item, pos) {
+			return modelsToTry.indexOf(item) == pos;
+		});
 
 		var lastError = null;
 		var responseData = null;

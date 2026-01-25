@@ -604,7 +604,27 @@
         if (model.startsWith('gemini')) {
             // Gemini API - auto discover working model (updated Jan 2026)
             // Note: Gemini 1.5 was retired April 2025, use 2.0/2.5/3.0 models
-            var modelsToTry = ['gemini-3.0-pro-latest', 'gemini-3.0-flash-latest', 'gemini-3.0-pro', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+            // Gemini API - FORCE GEMINI 3.0 ONLY (User Request)
+            var modelsToTry = [];
+
+            // 1. User Preference (if set in Settings)
+            var userModel = localStorage.getItem('tata_ai_model');
+            if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
+                modelsToTry.push(userModel);
+            }
+
+            // 2. High-Tier Fallbacks
+            modelsToTry.push('gemini-3.0-pro-latest');
+            modelsToTry.push('gemini-3-pro-preview');
+            modelsToTry.push('gemini-3.0-flash-latest');
+
+            // 3. Reliable Fallback
+            modelsToTry.push('gemini-2.0-flash');
+
+            // Deduplicate
+            modelsToTry = modelsToTry.filter(function (item, pos) {
+                return modelsToTry.indexOf(item) == pos;
+            });
             var lastError = null;
 
             for (var i = 0; i < modelsToTry.length; i++) {
@@ -619,6 +639,13 @@
                         var text = data.candidates[0].content.parts[0].text;
                         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
                         console.log('[TATA] Using Gemini model: ' + modelName);
+
+                        // Update UI with used model name (V7.3 Fix)
+                        var modelBadge = document.getElementById('ai_model_name');
+                        if (modelBadge) {
+                            modelBadge.textContent = "(" + modelName + ")";
+                        }
+
                         return JSON.parse(text);
                     }
                     lastError = "HTTP " + response.status;

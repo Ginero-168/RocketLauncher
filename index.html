@@ -167,6 +167,13 @@
 					<option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
 					<option value="claude-3-haiku">Claude 3 Haiku</option>
 				</select>
+				<button id="btn_check_models"
+					style="width: 100%; margin-top: 5px; background: #444; color: #ddd; border: 1px solid #555; padding: 4px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+					<span>🔄 Check Available Models</span>
+					<div id="model_check_loader" class="spinner"
+						style="width: 12px; height: 12px; border-width: 2px; display: none;"></div>
+				</button>
+				<div id="model_check_msg" style="font-size: 10px; margin-top: 4px; color: #888;"></div>
 			</div>
 
 			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
