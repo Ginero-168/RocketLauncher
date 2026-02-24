@@ -5,27 +5,7 @@
 #include "utils.jsx"
 #include "errorHandling.jsx"
 
-// ====================================================================================
-// ====================================   POLYFILLS   =================================
-// ====================================================================================
-
-// JSON Polyfill (Robust)
-if (typeof JSON !== 'object') { JSON = {}; }
-if (!JSON.parse) { JSON.parse = function (s) { return eval('(' + s + ')'); }; }
-if (!JSON.stringify) {
-    JSON.stringify = function (o) {
-        if (o === null) return 'null';
-        if (typeof o === 'number') return isFinite(o) ? String(o) : 'null';
-        if (typeof o === 'boolean') return String(o);
-        if (typeof o === 'object') {
-            if (o instanceof Array) {
-                var res = '['; for (var i = 0; i < o.length; i++) res += (i > 0 ? ',' : '') + JSON.stringify(o[i]); return res + ']';
-            }
-            var arr = []; for (var k in o) { if (o.hasOwnProperty(k)) arr.push('"' + k + '":' + JSON.stringify(o[k])); } return '{' + arr.join(',') + '}';
-        }
-        return '"' + String(o) + '"';
-    };
-}
+// NOTE: JSON polyfill is defined in utils.jsx (loaded via #include above)
 
 // ====================================================================================
 // ====================================   NAMESPACE   =================================

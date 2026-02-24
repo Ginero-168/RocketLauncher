@@ -330,11 +330,13 @@
 	</div>
 
 	<script src="js/libs/CSInterface.js"></script>
+	<!-- Modular Architecture: load shared modules before main.js -->
+	<script src="js/core.js"></script>
+	<script src="js/state.js"></script>
+	<script src="js/modals.js"></script>
+	<script src="js/tabs.js"></script>
 	<script src="js/config.js"></script>
-	<!-- We need the color logic, but we might need to split main.js. 
-         For now, if main.js is huge, linking it might cause issues if it tries to init the Main Panel layout.
-         Ideally, we should have split logic. 
-         TEMPORARY: I will link main.js but we must ensure init() handles 'colors.html' logic separately. -->
+	<!-- Main Logic (handles colors.html branch in init) -->
 	<script src="js/main.js"></script>
 </body>
 

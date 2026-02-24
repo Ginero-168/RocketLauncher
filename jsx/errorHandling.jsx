@@ -51,23 +51,24 @@ function safeExecute(fn, functionName) {
 // ====================================================================================
 
 /**
- * Execute function with undo group support
+ * Execute function with undo support for Illustrator.
+ * Note: Illustrator ExtendScript does not support beginUndoGroup/endUndoGroup
+ * (those are Photoshop APIs). In Illustrator, each script execution is
+ * automatically a single undo step. This wrapper provides error handling
+ * and can be used as a logical grouping boundary.
+ *
  * @param {Document} doc - The Illustrator document
- * @param {string} undoName - Name for the undo group
+ * @param {string} undoName - Name for logging purposes
  * @param {Function} fn - Function to execute
  * @returns {*} Result from function
  */
 function withUndoGroup(doc, undoName, fn) {
     try {
-        doc.activeLayer.parent.beginUndoGroup(undoName);
         var result = fn();
-        doc.activeLayer.parent.endUndoGroup();
         return result;
     } catch (e) {
-        try {
-            doc.activeLayer.parent.endUndoGroup();
-        } catch (undoError) { }
-        throw e; // Re-throw original error
+        logError("withUndoGroup[" + undoName + "]", e);
+        throw e;
     }
 }
 

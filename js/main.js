@@ -2,147 +2,24 @@
 	'use strict';
 
 	// ==========================================
-	// V3: Global Error Handler
+	// Local aliases to TATA.* modules
+	// (defined in core.js, state.js, modals.js, tabs.js)
 	// ==========================================
-	window.onerror = function (msg, url, line, col, error) {
-		console.error('[TATA Error]', { msg: msg, url: url, line: line, col: col, error: error });
-		if (typeof showToast === 'function') {
-			showToast('Error: ' + msg, 'error');
-		}
-		return true; // Prevent default browser error handling
-	};
-
-	// ==========================================
-	// V3: Debounce Utility
-	// ==========================================
-	function debounce(func, wait) {
-		var timeout;
-		return function () {
-			var context = this, args = arguments;
-			clearTimeout(timeout);
-			timeout = setTimeout(function () {
-				func.apply(context, args);
-			}, wait);
-		};
-	}
-
-	// ==========================================
-	// V3: DOM Cache
-	// ==========================================
-	var DOM = {};
-	function cacheDOM() {
-		DOM.hotkeyBar = document.getElementById('hotkey-bar');
-		DOM.footerToolbar = document.querySelector('.footer-toolbar');
-		DOM.collapsedStrip = document.getElementById('collapsed_strip');
-		DOM.tabs = document.querySelector('.tabs');
-		DOM.tabContainer = document.getElementById('tab-container');
-		DOM.settingsModal = document.getElementById('settings_modal');
-		DOM.inputModal = document.getElementById('input_modal');
-		DOM.confirmModal = document.getElementById('confirm_modal');
-		// V4.1: Context Menu Elements
-		DOM.contextMenu = document.getElementById('context_menu');
-		DOM.ctxEdit = document.getElementById('ctx_edit');
-		DOM.ctxDelete = document.getElementById('ctx_delete');
-		DOM.ctxColors = document.getElementById('ctx_colors');
-	}
-
-	// ==========================================
-	// V4.1: Safe JSON Parse Utility
-	// ==========================================
-	function safeParse(jsonString, fallback) {
-		try {
-			return JSON.parse(jsonString);
-		} catch (e) {
-			console.error('[TATA] JSON Parse Error:', e);
-			return fallback;
-		}
-	}
-
-	// ==========================================
-	// V4: Storage Versioning (for data migration)
-	// ==========================================
-	var STORAGE_VERSION = 2; // V4 Bump
-	function checkStorageVersion() {
-		var currentVersion = parseInt(localStorage.getItem('tata_storage_version') || '0');
-		if (currentVersion < STORAGE_VERSION) {
-			console.log("[TATA] Migrating to V4 Layout Structure...");
-
-			// Backup old data just in case
-			backupBeforeSave('tata_v2_layout_v' + currentVersion);
-
-			// Force V4 Defaults (Simple Reset Strategy for cleanliness)
-			// User scripts are safe in 'tata_user_scripts', only layout is reset
-			localStorage.removeItem('tata_v2_layout');
-
-			// Update Version
-			localStorage.setItem('tata_storage_version', STORAGE_VERSION.toString());
-
-			// Show Toast after init
-			setTimeout(function () {
-				if (typeof showToast === 'function') showToast("Panel Updated to V4 Layout", "success");
-			}, 1000);
-		}
-	}
-
-	// ==========================================
-	// V3: Stability Utilities
-	// ==========================================
-
-	// Safe function wrapper with error handling
-	function safeCall(fn, context, fallbackValue) {
-		try {
-			return fn.call(context);
-		} catch (e) {
-			console.error('[TATA] Error in ' + (fn.name || 'anonymous') + ':', e);
-			return fallbackValue;
-		}
-	}
-
-	// Backup localStorage before saving (for recovery)
-	function backupBeforeSave(key) {
-		var current = localStorage.getItem(key);
-		if (current) {
-			localStorage.setItem(key + '_backup', current);
-		}
-	}
-
-	// Restore from backup if main data is corrupted
-	function restoreFromBackup(key) {
-		var backup = localStorage.getItem(key + '_backup');
-		if (backup) {
-			try {
-				JSON.parse(backup); // Validate JSON
-				localStorage.setItem(key, backup);
-				return true;
-			} catch (e) {
-				return false;
-			}
-		}
-		return false;
-	}
-
-	// Health check: verify default buttons exist
-	function verifyPanelHealth() {
-		var requiredDefaults = ['btn_fit', 'btn_resize', 'btn_follow'];
-		var swiftContainer = document.getElementById('swift');
-		if (!swiftContainer) return true; // Not on main panel
-
-		var missingCount = 0;
-		requiredDefaults.forEach(function (id) {
-			if (!document.getElementById(id)) {
-				missingCount++;
-			}
-		});
-
-		if (missingCount >= 2) {
-			// More than half missing - trigger repair
-			console.warn('[TATA] Health check failed, attempting repair...');
-			localStorage.removeItem('tata_v2_layout');
-			renderGrid();
-			return false;
-		}
-		return true;
-	}
+	var debounce = TATA.debounce;
+	var safeParse = TATA.safeParse;
+	var safeCall = TATA.safeCall;
+	var cacheDOM = TATA.cacheDOM;
+	var DOM = TATA.DOM;
+	var checkStorageVersion = TATA.checkStorageVersion;
+	var backupBeforeSave = TATA.backupBeforeSave;
+	var restoreFromBackup = TATA.restoreFromBackup;
+	var verifyPanelHealth = TATA.verifyPanelHealth;
+	var showToast = TATA.showToast;
+	var showInputModal = TATA.showInputModal;
+	var showConfirmModal = TATA.showConfirmModal;
+	var switchTab = TATA.switchTab;
+	var initTabRenaming = TATA.initTabRenaming;
+	var moveButtonToTab = TATA.moveButtonToTab;
 
 	var csInterface = new CSInterface();
 	var extensionPath = "";
@@ -247,106 +124,6 @@
 		csInterface.evalScript('$.evalFile("' + extensionPath + '/jsx/hostscript.jsx")');
 	}
 
-
-	// ...
-
-
-	function setupTabs() {
-		// Legacy setup, replaced by setupTabsV2 but kept for safety if revert
-		var tabs = document.querySelectorAll('.tab-btn');
-		tabs.forEach(function (tab) {
-			tab.addEventListener('click', function () {
-				switchTab(this);
-			});
-		});
-	}
-
-	function initTabRenaming() {
-		var tabs = document.querySelectorAll('.tab-btn');
-
-		// Load Saved Names
-		var savedNames = localStorage.getItem('tata_tab_names');
-		if (savedNames) {
-			try {
-				var names = JSON.parse(savedNames);
-				tabs.forEach(function (tab) {
-					var key = tab.dataset.tab;
-					if (names[key]) tab.innerText = names[key];
-				});
-			} catch (e) { }
-		}
-
-		tabs.forEach(function (tab) {
-			tab.addEventListener('dblclick', function () {
-				var currentName = this.innerText;
-				var input = document.createElement('input');
-				input.type = 'text';
-				input.className = 'tab-rename-input';
-				input.value = currentName;
-
-				var self = this;
-				var saved = false; // Prevent double save
-
-				function save() {
-					if (saved) return; // Already saved
-					saved = true;
-
-					var newName = input.value.trim() || currentName;
-
-					// Remove input if still present
-					if (input.parentNode === self) {
-						self.removeChild(input);
-					}
-
-					// Set text directly
-					self.textContent = newName;
-
-					// Save to localStorage
-					var names = {};
-					var storedNames = localStorage.getItem('tata_tab_names');
-					if (storedNames) try { names = JSON.parse(storedNames); } catch (e) { }
-					names[self.dataset.tab] = newName;
-					localStorage.setItem('tata_tab_names', JSON.stringify(names));
-				}
-
-				input.addEventListener('blur', save);
-				input.addEventListener('keydown', function (e) {
-					if (e.key === 'Enter') {
-						input.blur(); // Trigger blur which calls save
-					}
-				});
-
-				this.innerHTML = '';
-				this.appendChild(input);
-				input.focus();
-				input.select();
-			});
-		});
-	}
-
-	function switchTab(tabBtn) {
-		// 1. Deactivate All
-		var allTabs = document.querySelectorAll('.tab-btn');
-		var allContents = document.querySelectorAll('.tab-content');
-
-		for (var i = 0; i < allTabs.length; i++) {
-			allTabs[i].classList.remove('active');
-		}
-		for (var i = 0; i < allContents.length; i++) {
-			allContents[i].classList.remove('active');
-		}
-
-		// 2. Activate Target
-		if (tabBtn) {
-			tabBtn.classList.add('active');
-			var targetId = tabBtn.getAttribute('data-tab');
-			var targetContent = document.getElementById(targetId);
-			if (targetContent) {
-				targetContent.classList.add('active');
-			}
-		}
-	}
-
 	// ==========================================
 	// GLOBAL UTILS
 	// ==========================================
@@ -415,8 +192,8 @@
 
 	// Helper for Supabase (extracted)
 	function doShareToSupabase(name, colors) {
-		var SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
-		var SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+		var SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
+		var SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
 
 		var harmonyType = 'custom'; // Default
 
@@ -444,7 +221,7 @@
 					showToast('✅ Shared to Explore!');
 				} else {
 					console.error('Supabase Error:', res.status, res.statusText);
-					return res.text().then(text => { throw new Error(text || 'Upload failed'); });
+					return res.text().then(function(text) { throw new Error(text || 'Upload failed'); });
 				}
 			})
 			.catch(function (err) {
@@ -549,42 +326,6 @@
 		modal.classList.add('active');
 	};
 
-	function moveButtonToTab(btnId, targetTabId) {
-		// 1. Find and remove from old location
-		var foundSourceTab = null;
-		var oldRowIndex = -1;
-		var oldColIndex = -1;
-
-		Object.keys(layoutState).forEach(function (tId) {
-			var rows = layoutState[tId];
-			rows.forEach(function (r, rIdx) {
-				var cIdx = r.indexOf(btnId);
-				if (cIdx !== -1) {
-					foundSourceTab = tId;
-					oldRowIndex = rIdx;
-					oldColIndex = cIdx;
-				}
-			});
-		});
-
-		if (foundSourceTab) {
-			// Remove
-			layoutState[foundSourceTab][oldRowIndex].splice(oldColIndex, 1);
-			// Cleanup empty rows
-			if (layoutState[foundSourceTab][oldRowIndex].length === 0) {
-				layoutState[foundSourceTab].splice(oldRowIndex, 1);
-			}
-		}
-
-		// 2. Add to target tab (New Row at bottom)
-		if (!layoutState[targetTabId]) layoutState[targetTabId] = [];
-		layoutState[targetTabId].push([btnId]);
-
-		// 3. Save and Render
-		saveLayout();
-		renderGrid(); // V3: Use V2 Grid system
-	}
-
 	function runScript(scriptName, params) {
 		// Map Legacy Script Names to New TATA Functions
 		var functionMap = {
@@ -623,165 +364,6 @@
 		});
 	}
 
-	// Generic Input Modal Helper (Multi-Field)
-	function showInputModal(title, fields, callback) {
-		var modal = document.getElementById('input_modal');
-		var elTitle = document.getElementById('input_modal_title');
-		var container = document.getElementById('input_container');
-		var btnConfirm = document.getElementById('btn_confirm_input');
-		var btnCancel = document.getElementById('btn_cancel_input');
-
-		if (!modal || !container) return;
-
-		elTitle.innerText = title;
-		container.innerHTML = ''; // Clear previous
-
-		// Generate Fields
-		fields.forEach(function (field) {
-			var wrapper = document.createElement('div');
-			wrapper.className = 'control-group';
-			wrapper.style.marginBottom = '10px';
-
-			// Check Type
-			if (field.type === 'checkbox') {
-				var input = document.createElement('input');
-				input.type = 'checkbox';
-				input.id = 'input_field_' + field.key;
-
-				// Checkbox specific styling
-				input.style.width = 'auto'; // Reset width
-				input.style.marginRight = '8px';
-
-				// Load Saved Value (Boolean)
-				var isChecked = field.default === true;
-				if (field.storageKey) {
-					var saved = localStorage.getItem(field.storageKey);
-					if (saved !== null) isChecked = (saved === 'true');
-				}
-				input.checked = isChecked;
-
-				var chkLabel = document.createElement('label');
-				chkLabel.appendChild(input);
-				chkLabel.appendChild(document.createTextNode(field.label));
-				chkLabel.style.display = 'flex';
-				chkLabel.style.alignItems = 'center';
-				chkLabel.style.cursor = 'pointer';
-
-				wrapper.appendChild(chkLabel);
-			} else {
-				// Default Text Input
-				var label = document.createElement('label');
-				label.innerText = field.label;
-				label.style.display = 'block';
-				label.style.marginBottom = '5px';
-
-				var input = document.createElement('input');
-				input.type = 'text';
-				input.id = 'input_field_' + field.key;
-				input.style.width = '100%';
-				input.style.boxSizing = 'border-box'; // Ensure padding doesn't overflow
-
-				// Load Saved Value
-				var val = field.default || "";
-				if (field.storageKey) {
-					var saved = localStorage.getItem(field.storageKey);
-					if (saved !== null) val = saved;
-				}
-				input.value = val;
-
-				wrapper.appendChild(label);
-				wrapper.appendChild(input);
-			}
-			container.appendChild(wrapper);
-		});
-
-		modal.classList.add('active');
-
-		// Focus first text input (skip checkboxes)
-		var firstTextInput = container.querySelector('input[type=text]');
-		if (firstTextInput) {
-			firstTextInput.focus();
-			firstTextInput.select();
-		}
-
-		// Handlers
-		var onConfirm = function () {
-			var results = {};
-			fields.forEach(function (field) {
-				var el = document.getElementById('input_field_' + field.key);
-				var val;
-				if (field.type === 'checkbox') {
-					val = el.checked;
-					if (field.storageKey) localStorage.setItem(field.storageKey, val);
-				} else {
-					val = el.value;
-					if (field.storageKey) localStorage.setItem(field.storageKey, val);
-				}
-				results[field.key] = val;
-			});
-			cleanup();
-			callback(results);
-		};
-
-		var onCancel = function () {
-			cleanup();
-			callback(null);
-		};
-
-		var onKey = function (e) {
-			if (e.key === 'Enter') onConfirm();
-			if (e.key === 'Escape') onCancel();
-		};
-
-		function cleanup() {
-			modal.classList.remove('active');
-			btnConfirm.removeEventListener('click', onConfirm);
-			btnCancel.removeEventListener('click', onCancel);
-			// Remove keydown from all inputs
-			var inputs = container.querySelectorAll('input');
-			inputs.forEach(function (inp) { inp.removeEventListener('keydown', onKey); });
-		}
-
-		btnConfirm.addEventListener('click', onConfirm);
-		btnCancel.addEventListener('click', onCancel);
-		// Add keydown to all inputs
-		var inputs = container.querySelectorAll('input');
-		inputs.forEach(function (inp) { inp.addEventListener('keydown', onKey); });
-	}
-
-	function showConfirmModal(title, text, callback) {
-		var modal = document.getElementById('confirm_modal');
-		var elTitle = document.getElementById('confirm_modal_title');
-		var elText = document.getElementById('confirm_modal_text');
-		var btnOk = document.getElementById('btn_confirm_ok');
-		var btnCancel = document.getElementById('btn_confirm_cancel');
-
-		if (!modal) return;
-
-		elTitle.innerText = title;
-		elText.innerText = text;
-		modal.classList.add('active');
-
-		var cleanup = function () {
-			modal.classList.remove('active');
-			btnOk.removeEventListener('click', onOk);
-			btnCancel.removeEventListener('click', onCancel);
-		};
-
-		var onOk = function () {
-			cleanup();
-			callback(true);
-		};
-
-		var onCancel = function () {
-			cleanup();
-			callback(false);
-		};
-
-		btnOk.addEventListener('click', onOk);
-		btnCancel.addEventListener('click', onCancel);
-		btnOk.focus();
-	}
 
 	function setupDimension() {
 		var btn = document.getElementById('btn_dimension');
@@ -1200,7 +782,8 @@
 						if (btn) {
 							btn.click();
 							this.style.opacity = '0.5';
-							setTimeout(() => this.style.opacity = '1', 100);
+							var self = this;
+							setTimeout(function() { self.style.opacity = '1'; }, 100);
 						}
 					};
 				})(data.id);
@@ -1466,7 +1049,7 @@
 
 					// Better way: iterate childNodes
 					var nodes = Array.from(btn.childNodes);
-					var textNode = nodes.find(n => n.nodeType === 3 && n.textContent.trim().length > 0);
+					var textNode = nodes.find(function(n) { return n.nodeType === 3 && n.textContent.trim().length > 0; });
 
 					if (textNode) {
 						var span = document.createElement('span');
@@ -1885,9 +1468,9 @@
 
 					// Find Data (Prioritize V2 Layout)
 					var foundItem = null;
-					['swift', 'creative', 'tool', 'custom'].forEach(t => {
+					['swift', 'creative', 'tool', 'custom'].forEach(function(t) {
 						if (v2Layout[t]) {
-							var match = v2Layout[t].find(x => x.id === id);
+							var match = v2Layout[t].find(function(x) { return x.id === id; });
 							if (match) foundItem = match;
 						}
 					});
@@ -2006,7 +1589,7 @@
 		if (ctxColors && ctxColors.children.length === 0) {
 			ctxColors.innerHTML = ''; // Clear comments
 			var COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
-			COLORS.forEach(c => {
+			COLORS.forEach(function(c) {
 				var sw = document.createElement('div');
 				sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
 				sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
@@ -2089,9 +1672,9 @@
 	function updateItemColor(targetId, newColor) {
 		// 1. Update In-Memory Layout (v2Layout)
 		var found = false;
-		['swift', 'creative', 'organize', 'tools'].forEach(tab => {
+		['swift', 'creative', 'organize', 'tools'].forEach(function(tab) {
 			if (v2Layout[tab]) {
-				v2Layout[tab].forEach(item => {
+				v2Layout[tab].forEach(function(item) {
 					if (item.id === targetId) {
 						item.color = newColor;
 						found = true;
@@ -2261,7 +1844,7 @@
 							var savedModel = localStorage.getItem('tata_ai_model');
 							if (savedModel) {
 								// Check if saved exists in new list
-								var exists = Array.from(select.options).some(o => o.value === savedModel);
+								var exists = Array.from(select.options).some(function(o) { return o.value === savedModel; });
 								if (exists) select.value = savedModel;
 							}
 
@@ -2391,8 +1974,8 @@
 		// VERSION CHECK SYSTEM
 		// ==========================================
 		var CURRENT_VERSION = '6.0.0';
-		var SUPABASE_URL = 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
-		var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+		var SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
+		var SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
 
 		function checkForUpdates() {
 			var btnCheck = document.getElementById('btn_check_update');
@@ -2591,7 +2174,7 @@
 		swatches.forEach(function (swatch) {
 			swatch.addEventListener('click', function () {
 				// Update UI
-				swatches.forEach(el => el.classList.remove('selected'));
+				swatches.forEach(function(el) { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Update Hidden Input
@@ -2608,7 +2191,7 @@
 		icons.forEach(function (opt) {
 			opt.addEventListener('click', function () {
 				// UI
-				icons.forEach(el => el.classList.remove('selected'));
+				icons.forEach(function(el) { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Value
@@ -2884,10 +2467,10 @@
 		document.getElementById('script_color').value = script.color;
 
 		// UI Updates (Icon Selection)
-		document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('selected'));
+		document.querySelectorAll('.icon-option').forEach(function(el) { el.classList.remove('selected'); });
 		// Try to find matching icon
 		var found = false;
-		document.querySelectorAll('.icon-option').forEach(el => {
+		document.querySelectorAll('.icon-option').forEach(function(el) {
 			if (el.innerHTML === script.icon) {
 				el.classList.add('selected');
 				found = true;
@@ -2895,7 +2478,7 @@
 		});
 
 		// UI Updates (Color Selection)
-		document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+		document.querySelectorAll('.color-swatch').forEach(function(el) { el.classList.remove('selected'); });
 		var colorEl = document.querySelector('.color-swatch[data-color="' + script.color + '"]');
 		if (colorEl) colorEl.classList.add('selected');
 
@@ -3579,11 +3162,11 @@
 
 		// 2. Remove from V2 Layout (Prioritized)
 		var v2Dirty = false;
-		['swift', 'creative', 'tool', 'custom'].forEach(t => {
+		['swift', 'creative', 'tool', 'custom'].forEach(function(t) {
 			var list = v2Layout[t];
 			if (!list) return;
 			// Find Index
-			var idx = list.findIndex(item => item.id === id);
+			var idx = list.findIndex(function(item) { return item.id === id; });
 			if (idx !== -1) {
 				list.splice(idx, 1);
 				v2Dirty = true;
@@ -4784,8 +4367,8 @@
 		var tabs = document.querySelectorAll('.tab-btn');
 		tabs.forEach(function (tab) {
 			tab.addEventListener('click', function () {
-				document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-				document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+				document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active'); });
+				document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
 
 				this.classList.add('active');
 				var targetId = this.dataset.tab;
@@ -4833,7 +4416,7 @@
 		});
 
 		// Ensure layout exists
-		['swift', 'creative', 'organize', 'tools'].forEach(t => {
+		['swift', 'creative', 'organize', 'tools'].forEach(function(t) {
 			if (!v2Layout[t]) v2Layout[t] = [];
 		});
 
@@ -4939,7 +4522,7 @@
 		var buttons = document.querySelectorAll('.grid-btn');
 		var draggedItem = null;
 
-		buttons.forEach(btn => {
+		buttons.forEach(function(btn) {
 			btn.addEventListener('dragstart', function (e) {
 				draggedItem = this;
 				e.dataTransfer.effectAllowed = 'move';
@@ -4986,8 +4569,8 @@
 			});
 		});
 
-		document.querySelectorAll('.tab-content').forEach(container => {
-			container.addEventListener('dragover', e => e.preventDefault());
+		document.querySelectorAll('.tab-content').forEach(function(container) {
+			container.addEventListener('dragover', function(e) { e.preventDefault(); });
 			container.addEventListener('drop', function (e) {
 				e.preventDefault();
 				if (e.target === this && draggedItem) {
@@ -5028,9 +4611,9 @@
 	function exportScript() {
 		var exportable = [];
 		var allTabs = ['swift', 'creative', 'organize', 'tools'];
-		allTabs.forEach(t => {
+		allTabs.forEach(function(t) {
 			if (!v2Layout[t]) return;
-			v2Layout[t].forEach(item => {
+			v2Layout[t].forEach(function(item) {
 				if (item.script || item.code) {
 					item._tab = t;
 					exportable.push(item);
@@ -5073,10 +4656,10 @@
 			}
 
 			document.body.classList.remove('export-mode');
-			btns.forEach(b => b.removeEventListener('click', handler, true));
+			btns.forEach(function(b) { b.removeEventListener('click', handler, true); });
 		};
 
-		btns.forEach(b => b.addEventListener('click', handler, true));
+		btns.forEach(function(b) { b.addEventListener('click', handler, true); });
 	}
 
 	function importScript() {
@@ -5112,20 +4695,6 @@
 				showToast("Import Failed: " + e, "error");
 			}
 		}
-	}
-
-	function showToast(msg, type) {
-		var toast = document.createElement('div');
-		toast.className = 'toast-notification ' + (type || 'info');
-		toast.innerText = msg;
-		document.body.appendChild(toast);
-		setTimeout(() => toast.classList.add('show'), 10);
-		setTimeout(() => {
-			toast.classList.remove('show');
-			setTimeout(() => {
-				if (toast.parentNode) toast.parentNode.removeChild(toast);
-			}, 300);
-		}, 3000);
 	}
 
 	// ==================== INITIALIZATION WIRING ====================
