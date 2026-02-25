@@ -1,7 +1,7 @@
 {
-    "name": "tata-extension",
+    "name": "rocket-launcher-extension",
     "version": "3.0.0",
-    "description": "TATA - Adobe Illustrator Extension",
+    "description": "Rocket Launcher - Adobe Illustrator Extension",
     "main": "index.html",
     "scripts": {
         "test": "jest",
@@ -27,6 +27,6 @@
         "cep",
         "extension"
     ],
-    "author": "TATA Team",
+    "author": "Rocket Launcher Team",
     "license": "MIT"
 }

@@ -76,7 +76,7 @@
 
     // ==================== INIT ====================
     function init() {
-        console.log("TATA Scripting Info: Init started");
+        console.log("Rocket Launcher Scripting: Init started");
 
         // Load default script if empty
         var editor = document.getElementById('code_editor');
@@ -85,9 +85,9 @@
         }
 
         initTabs();
-        initSmartWords();
         initIconPicker();
         initColorPicker(); // V4 Custom Color Picker
+        initRecentCode();
         initListeners();
 
         // V3: Initialize CodeMirror for Syntax Highlighting
@@ -103,7 +103,7 @@
         // Load API Key Check
         var apiKey = localStorage.getItem('tata_gemini_api_key');
         if (!apiKey) {
-            addChatBubble("ai", "⚠️ Please set your Gemini API Key in the Main TATA Panel settings first.");
+            addChatBubble("ai", "⚠️ Please set your Gemini API Key in the Main Panel settings first.");
         }
     }
 
@@ -389,7 +389,7 @@
 
             // V4: Button Text
             var btn = document.getElementById('btn_import');
-            if (btn) btn.innerText = "Import to TATA";
+            if (btn) btn.innerText = "Import";
         }
     }
 
@@ -470,6 +470,10 @@
                 setEditorCode(result.code);
                 activateTab('tab_editor');
                 showToast("Code Generated!");
+
+                // Save to Recent Code
+                var recentName = result.name || document.getElementById('script_name_input').value || 'AI Script';
+                saveRecentCode(recentName, result.code);
 
                 if (!currentScriptId) {
                     currentScriptId = 'ai_script_' + Date.now();
@@ -638,7 +642,7 @@
                         var data = await response.json();
                         var text = data.candidates[0].content.parts[0].text;
                         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                        console.log('[TATA] Using Gemini model: ' + modelName);
+                        console.log('[RocketLauncher] Using Gemini model: ' + modelName);
 
                         // Update UI with used model name (V7.3 Fix)
                         var modelBadge = document.getElementById('ai_model_name');
@@ -746,57 +750,103 @@
         setTimeout(() => t.classList.remove('show'), 3000);
     }
 
-    // ==================== SMART WORDS ====================
-    var smartGroups = [
-        ["Selected Items", "All Artboards", "Loop Selection", "Ungroup All", "Unlock All", "Select All"],
-        ["Create Dialog", "Randomize Color", "Resize to Fit", "Align Center", "Rotate 90°", "Flip Horizontal"],
-        ["Create Rectangle", "Create Circle", "Create Text", "Create Line", "Create Star", "Create Polygon"],
-        ["Set Fill Color", "Set Stroke Color", "Remove Stroke", "Opacity 50%", "Blend Mode", "Gradient Fill"],
-        ["Group Items", "Lock Layer", "Hide Selection", "Bring to Front", "Send to Back", "Ungroup"],
-        ["New Artboard", "Fit Artboard", "Rename Layer", "Delete Empty", "Duplicate Layer", "Move Layer"],
-        ["Change Font", "Outline Text", "Text Size", "Text Content", "Paragraph Style", "Area Type"],
-        ["If / Else", "For Loop", "Try / Catch", "Alert Message", "Confirm Dialog", "Console Log"],
-        ["Save as PNG", "Export SVG", "Current Path", "Close Doc", "Save as AI", "Open File"],
-        ["Input Field", "Checkbox", "Button", "Panel Window", "Dropdown List", "Progress Bar"]
-    ];
-    var currentGroupIdx = 0;
+    // ==================== RECENT CODE ====================
+    var RECENT_CODE_KEY = 'rocket_launcher_recent_code';
+    var MAX_RECENT = 5;
 
-    function initSmartWords() {
-        renderSmartWords();
+    function getRecentCodes() {
+        try {
+            var data = localStorage.getItem(RECENT_CODE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
     }
 
-    function renderSmartWords() {
-        var container = document.getElementById('smart_words_container');
+    function saveRecentCode(name, code) {
+        if (!code || code.trim().length < 10) return;
+        var list = getRecentCodes();
+        // Remove duplicate if same name exists
+        list = list.filter(function (item) { return item.name !== name; });
+        // Add to front
+        list.unshift({
+            name: name || 'Untitled',
+            code: code,
+            timestamp: Date.now()
+        });
+        // Keep only MAX_RECENT
+        if (list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT);
+        localStorage.setItem(RECENT_CODE_KEY, JSON.stringify(list));
+        renderRecentCodes();
+    }
+
+    function renderRecentCodes() {
+        var container = document.getElementById('recent_code_list');
         if (!container) return;
+
+        var list = getRecentCodes();
         container.innerHTML = '';
 
-        var cycleBtn = document.createElement('div');
-        cycleBtn.innerHTML = "↻";
-        cycleBtn.className = "cycle-btn";
-        cycleBtn.title = "Next Group";
-        cycleBtn.onclick = function () {
-            currentGroupIdx = (currentGroupIdx + 1) % smartGroups.length;
-            renderSmartWords();
-        };
-        container.appendChild(cycleBtn);
+        if (list.length === 0) {
+            container.innerHTML = '<div class="recent-code-empty">No recent code yet</div>';
+            return;
+        }
 
-        var group = smartGroups[currentGroupIdx];
-        group.forEach(word => {
-            var chip = document.createElement('div');
-            chip.innerText = word;
-            chip.className = "smart-chip";
-            chip.onclick = function () {
-                var input = document.getElementById('prompt_input');
-                var val = input.value;
-                if (val && val.slice(-1) !== ' ') input.value += ' ';
-                input.value += word;
-                input.focus();
+        list.forEach(function (item, idx) {
+            var row = document.createElement('div');
+            row.className = 'recent-code-item';
+            row.title = item.name;
+
+            var timeAgo = getTimeAgo(item.timestamp);
+
+            row.innerHTML =
+                '<span class="rc-icon">📄</span>' +
+                '<div class="rc-info">' +
+                    '<div class="rc-name">' + escapeHtml(item.name) + '</div>' +
+                    '<div class="rc-time">' + timeAgo + '</div>' +
+                '</div>' +
+                '<span class="rc-load">LOAD</span>';
+
+            row.onclick = function () {
+                setEditorCode(item.code);
+                var nameInput = document.getElementById('script_name_input');
+                if (nameInput) nameInput.value = item.name;
+                activateTab('tab_editor');
+                showToast('Loaded: ' + item.name);
             };
-            container.appendChild(chip);
+
+            container.appendChild(row);
         });
     }
 
+    function getTimeAgo(ts) {
+        var diff = Date.now() - ts;
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        var hours = Math.floor(mins / 60);
+        if (hours < 24) return hours + 'h ago';
+        var days = Math.floor(hours / 24);
+        return days + 'd ago';
+    }
 
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function initRecentCode() {
+        renderRecentCodes();
+        var btnClear = document.getElementById('btn_clear_recent');
+        if (btnClear) {
+            btnClear.addEventListener('click', function () {
+                localStorage.removeItem(RECENT_CODE_KEY);
+                renderRecentCodes();
+                showToast('Recent code cleared');
+            });
+        }
+    }
 
     // ==================== V3: CODEMIRROR ====================
     var cmEditor = null;

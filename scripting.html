@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="js/libs/codemirror/material-darker.min.css">
     <script src="js/libs/codemirror/codemirror.min.js"></script>
     <script src="js/libs/codemirror/javascript.min.js"></script>
-    <title>TATA Scripting</title>
+    <title>Rocket Launcher Scripting</title>
     <style>
         html,
         body {
@@ -304,6 +304,19 @@
                 <textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
             </div>
 
+            <!-- Recent Code (5 latest AI-generated) -->
+            <div id="recent_code_section" class="recent-code-section">
+                <div class="recent-code-header">
+                    <span class="recent-code-label">RECENT CODE</span>
+                    <button id="btn_clear_recent" class="recent-code-clear" title="Clear history">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </button>
+                </div>
+                <div id="recent_code_list" class="recent-code-list">
+                    <div class="recent-code-empty">No recent code yet</div>
+                </div>
+            </div>
+
             <!-- Description for Upload -->
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                 <label style="font-size: 10px; color: #888; text-transform: uppercase;">Description:</label>
@@ -315,8 +328,7 @@
             <div class="action-bar">
                 <button id="btn_test" class="secondary">Test Run</button>
                 <div style="flex: 1;"></div>
-                <button id="btn_import" class="primary" style="background: #27ae60; border-color: #2ecc71;">Import to
-                    TATA</button>
+                <button id="btn_import" class="primary" style="background: #27ae60; border-color: #2ecc71;">Import</button>
                 <button id="btn_upload_server" title="Upload to Explore Server"
                     style="width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: #8b5cf6; border: none; border-radius: 6px; cursor: pointer;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
@@ -345,16 +357,9 @@
             <!-- Chat Section -->
             <div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative;">
                 <div class="chat-bubble ai">
-                    Hello! I'm TATA AI. usage: "Create a circle of 50px"
+                    Hello! I'm your AI assistant. Try: "Create a circle of 50px"
                 </div>
             </div>
-
-            <!-- Smart Words Suggestions -->
-            <div id="smart_words_container"
-                style="display: flex; gap: 5px; flex-wrap: wrap; padding: 5px 0; min-height: 28px;">
-                <!-- Chips injected by JS -->
-            </div>
-
 
             <div class="prompt-box" style="margin-top: 5px;">
                 <textarea id="prompt_input" placeholder="Ask AI to create or edit script..."></textarea>

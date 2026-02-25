@@ -2201,10 +2201,10 @@
 	}
 
 	async function generateScriptWithGemini(apiKey, prompt) {
-		// ENHANCED SYSTEM PROMPT with TATA Context and Examples
-		var systemPrompt = "You are an expert Adobe Illustrator JSX/ExtendScript developer for the TATA Pro extension.\n\n" +
-			"===== TATA ARCHITECTURE =====\n" +
-			"The TATA extension has a centralized router system:\n" +
+		// ENHANCED SYSTEM PROMPT with Context and Examples
+		var systemPrompt = "You are an expert Adobe Illustrator JSX/ExtendScript developer for the Rocket Launcher extension.\n\n" +
+			"===== EXTENSION ARCHITECTURE =====\n" +
+			"The extension has a centralized router system:\n" +
 			"- Main router: TATA.run(commandName, paramsObject)\n" +
 			"- Available commands: fitSelection, followWidth, embedAll, createPreview, generateColorPalette\n" +
 			"- Utility functions: TATAUtils namespace (hexToRGB, getOrCreateLayer, etc.)\n" +
