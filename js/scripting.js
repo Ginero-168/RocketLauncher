@@ -103,7 +103,9 @@
         // Load API Key Check
         var apiKey = localStorage.getItem('tata_gemini_api_key');
         if (!apiKey) {
-            addChatBubble("ai", "⚠️ Please set your Gemini API Key in the Main Panel settings first.");
+            var keySection = document.getElementById('api_key_section');
+            if (keySection) keySection.style.display = 'flex';
+            addChatBubble("ai", "⚠️ กรุณากรอก <b>Gemini API Key</b> ในช่องด้านบนก่อนใช้งาน");
         }
     }
 
@@ -147,6 +149,9 @@
             var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
             if (data.apiKey) {
                 localStorage.setItem('tata_gemini_api_key', data.apiKey);
+                // ซ่อน inline input เมื่อได้รับ key แล้ว
+                var keySection = document.getElementById('api_key_section');
+                if (keySection) keySection.style.display = 'none';
             }
         });
 
@@ -438,8 +443,30 @@
         if (!userText) return;
 
         var apiKey = localStorage.getItem('tata_gemini_api_key');
+
+        // ถ้าไม่มี key ใน local → ลอง re-request จาก Main Panel
         if (!apiKey) {
-            alert("No API Key found. Settings -> Main Panel.");
+            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            csInterface.dispatchEvent(req);
+            // รอรับ event กลับ 500ms
+            await new Promise(function (resolve) { setTimeout(resolve, 500); });
+            apiKey = localStorage.getItem('tata_gemini_api_key');
+        }
+
+        // ถ้ายังไม่มี → ลองดึงจาก inline input (ถ้ามี)
+        if (!apiKey) {
+            var inlineInput = document.getElementById('api_key_inline_input');
+            if (inlineInput && inlineInput.value.trim()) {
+                apiKey = inlineInput.value.trim();
+                localStorage.setItem('tata_gemini_api_key', apiKey);
+            }
+        }
+
+        if (!apiKey) {
+            addChatBubble("ai", "⚠️ <b>ไม่พบ API Key</b><br>กรอก Gemini API Key ในช่องด้านบน หรือตั้งค่าในหน้า Main Panel");
+            // แสดง inline input
+            var keySection = document.getElementById('api_key_section');
+            if (keySection) keySection.style.display = 'flex';
             return;
         }
 
@@ -905,6 +932,24 @@
     // Expose to window for external access
     window.getEditorCode = getEditorCode;
     window.setEditorCode = setEditorCode;
+
+    // Save API Key จาก inline input
+    window.saveInlineApiKey = function () {
+        var input = document.getElementById('api_key_inline_input');
+        if (!input || !input.value.trim()) {
+            showToast('⚠️ กรุณากรอก API Key');
+            return;
+        }
+        var key = input.value.trim();
+        localStorage.setItem('tata_gemini_api_key', key);
+
+        // ซ่อน section
+        var keySection = document.getElementById('api_key_section');
+        if (keySection) keySection.style.display = 'none';
+
+        showToast('✅ บันทึก API Key แล้ว');
+        addChatBubble("ai", "✅ API Key บันทึกแล้ว! ลองพิมพ์คำสั่งได้เลยครับ");
+    };
 
     // Start
     init();

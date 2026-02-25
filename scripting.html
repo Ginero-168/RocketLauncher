@@ -354,6 +354,13 @@
                 </div>
             </div>
 
+            <!-- Inline API Key (แสดงเมื่อไม่มี key) -->
+            <div id="api_key_section" style="display: none; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid #333; margin-bottom: 4px;">
+                <span style="font-size: 10px; color: #f97316; white-space: nowrap;">🔑 API Key:</span>
+                <input id="api_key_inline_input" type="password" placeholder="AIza..." style="flex: 1; background: #1a1a1a; border: 1px solid #f97316; color: #e0e0e0; padding: 4px 8px; font-size: 11px; border-radius: 4px; min-width: 0;">
+                <button onclick="saveInlineApiKey()" style="padding: 4px 10px; background: #f97316; border: none; border-radius: 4px; color: #fff; font-size: 11px; cursor: pointer; white-space: nowrap;">Save</button>
+            </div>
+
             <!-- Chat Section -->
             <div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative;">
                 <div class="chat-bubble ai">
