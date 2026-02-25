@@ -31,24 +31,7 @@
     // V2 Default Button Configuration
     // ==========================================
     var v2Defaults = {
-        swift: [
-            { id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx', color: '#3b82f6' },
-            { id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx', color: '#3b82f6' },
-            { id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx', color: '#3b82f6' },
-            { id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx', color: '#8b5cf6' },
-            { id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx', color: '#8b5cf6' },
-            { id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx', color: '#f59e0b' },
-            { id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx', color: '#10b981' },
-            { id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx', color: '#64748b' },
-            { id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx', color: '#ef4444' }
-        ],
-        creative: [],
-        organize: [],
-        tools: [
-            { id: 'btn_open_explore', label: 'Explore', icon: ICONS.explore, type: 'subpanel', target: 'com.tata.pro.explore', color: '#ec4899' },
-            { id: 'btn_open_colors', label: 'Colors Panel', icon: ICONS.colors, type: 'subpanel', target: 'com.tata.pro.colors', color: '#f59e0b' },
-            { id: 'btn_open_keep', label: 'Keep Panel', icon: ICONS.folder, type: 'subpanel', target: 'com.tata.pro.keep', color: '#10b981' }
-        ]
+        tab_button: []
     };
 
     // In-memory layout state
@@ -67,7 +50,7 @@
 
         // Smart Default Merge (Only add defaults that don't exist ANYWHERE)
         var allLayoutIds = {};
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
+        ['tab_button'].forEach(function (tabName) {
             if (v2Layout[tabName]) {
                 v2Layout[tabName].forEach(function (item) {
                     if (item && item.id) allLayoutIds[item.id] = true;
@@ -85,13 +68,13 @@
             });
         });
 
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (t) {
+        ['tab_button'].forEach(function (t) {
             if (!v2Layout[t]) v2Layout[t] = [];
         });
 
         saveV2Layout();
 
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
+        ['tab_button'].forEach(function (tabName) {
             var container = document.getElementById(tabName);
             if (!container) return;
             container.innerHTML = '';

@@ -4,27 +4,40 @@
 <head>
 	<meta charset="utf-8">
 	<link rel="stylesheet" href="css/styles.css" />
+	<link rel="stylesheet" href="css/scripting_tabs.css" />
+	<!-- CodeMirror for Editor tab -->
+	<link rel="stylesheet" href="js/libs/codemirror/codemirror.min.css">
+	<link rel="stylesheet" href="js/libs/codemirror/material-darker.min.css">
+	<script src="js/libs/codemirror/codemirror.min.js"></script>
+	<script src="js/libs/codemirror/javascript.min.js"></script>
 	<title>Rocket Launcher</title>
 	<style>
-		/* V2 Specific Styles for Uniform Grid */
+		/* Tab Content - Hidden by default */
 		.tab-content {
 			padding: 10px;
 			overflow-y: auto;
 			height: calc(100vh - 120px);
-			/* Adjust based on header/footer */
 			display: none;
-			/* Hidden by default */
 		}
 
-		.tab-content.active {
+		/* Button tab uses grid */
+		#tab_button.active {
 			display: grid !important;
 			grid-template-columns: repeat(4, 1fr);
-			/* Fixed 4 columns as requested */
 			grid-auto-rows: 65px;
-			/* Slightly taller for icon+text */
 			gap: 6px;
 			padding: 8px;
 			align-content: start;
+		}
+
+		/* Flow, Editor, AI tabs use flex */
+		#tab_flow.active,
+		#tab_editor.active,
+		#tab_ai.active {
+			display: flex !important;
+			flex-direction: column;
+			padding: 10px;
+			gap: 8px;
 		}
 
 		/* Uniform Button Style */
@@ -41,7 +54,7 @@
 			font-size: 10px;
 			text-align: center;
 			padding: 4px;
-			transition: background 0.1s, transform 0.1s;
+			transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
 			width: 100%;
 			height: 100%;
 			box-sizing: border-box;
@@ -51,12 +64,12 @@
 
 		.grid-btn:hover {
 			background: #444;
-			transform: translateY(-1px);
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 		}
 
 		.grid-btn:active {
-			transform: translateY(1px);
+			transform: translateY(0);
 		}
 
 		.grid-btn svg {
@@ -74,16 +87,144 @@
 			line-height: 1.2;
 		}
 
-		/* Tab Renaming Input */
-		.tab-rename-input {
-			background: #222;
-			border: 1px solid #0078d4;
-			color: white;
+		/* Editor tab styles */
+		#tab_editor .editor-container {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			min-height: 0;
+			overflow: hidden;
+		}
+
+		#tab_editor .CodeMirror {
+			flex: 1;
+			height: 100% !important;
+			min-height: 150px;
+			border-radius: 6px;
+			border: 1px solid var(--border-color);
+			font-family: 'Fira Code', 'Menlo', 'Consolas', monospace;
+			font-size: 12px;
+			line-height: 1.6;
+		}
+
+		#tab_editor .editor-toolbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 0 4px;
+		}
+
+		#tab_editor .editor-label {
 			font-size: 11px;
-			text-align: center;
-			width: 100%;
-			box-sizing: border-box;
-			padding: 2px;
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+
+		#tab_editor #code_editor {
+			flex: 1;
+			background: var(--bg-color);
+			border: 1px solid var(--border-color);
+			color: #d4d4d4;
+			font-family: 'Consolas', monospace;
+			padding: 10px;
+			resize: none;
+			outline: none;
+		}
+
+		#tab_editor .action-bar {
+			display: flex;
+			gap: 10px;
+			padding: 8px 0;
+			border-top: 1px solid #333;
+			flex-shrink: 0;
+		}
+
+		/* AI Helper tab styles */
+		#tab_ai .chat-area {
+			flex: 1;
+			background: var(--bg-color);
+			border: 1px solid var(--border-color);
+			border-radius: 8px;
+			padding: 12px;
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+		}
+
+		.chat-bubble {
+			padding: 10px 14px;
+			border-radius: 12px;
+			max-width: 85%;
+			font-size: 12px;
+			line-height: 1.5;
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		}
+
+		.chat-bubble.ai {
+			background: var(--surface-color);
+			border: 1px solid var(--border-color);
+			align-self: flex-start;
+			border-bottom-left-radius: 2px;
+			color: var(--text-color);
+		}
+
+		.chat-bubble.user {
+			background: var(--accent-color);
+			color: #fff;
+			align-self: flex-end;
+			border-bottom-right-radius: 2px;
+		}
+
+		.prompt-box {
+			display: flex;
+			gap: 8px;
+			align-items: flex-end;
+			flex-shrink: 0;
+		}
+
+		.prompt-box textarea {
+			flex: 1;
+			background: var(--input-bg);
+			border: 1px solid var(--border-color);
+			color: var(--text-color);
+			padding: 10px 12px;
+			border-radius: 20px;
+			resize: none;
+			height: 40px;
+			font-family: inherit;
+			line-height: 1.4;
+			transition: all 0.2s ease;
+			box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+		}
+
+		.prompt-box textarea:focus {
+			background: #202020;
+			border-color: var(--accent-color);
+			box-shadow: 0 0 0 2px var(--accent-glow);
+			outline: none;
+		}
+
+		.prompt-box button {
+			width: 40px !important;
+			height: 40px;
+			padding: 0;
+			border-radius: 50%;
+			flex-shrink: 0;
+			margin: 0;
+		}
+
+		.loading-dots { display: inline-block; }
+		.loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
+		@keyframes dots {
+			0%, 20% { content: '.'; }
+			40% { content: '..'; }
+			60% { content: '...'; }
+			80%, 100% { content: ''; }
 		}
 	</style>
 </head>
@@ -100,27 +241,120 @@
 
 	<!-- TABS NAVIGATION -->
 	<div class="tabs">
-		<button class="tab-btn active" data-tab="swift" title="Double click to rename">Swift</button>
-		<button class="tab-btn" data-tab="creative" title="Double click to rename">Creative</button>
-		<button class="tab-btn" data-tab="organize" title="Double click to rename">Organize</button>
-		<button class="tab-btn" data-tab="tools" title="Double click to rename">Tools</button>
+		<button class="tab-btn active" data-tab="tab_button">Button</button>
+		<button class="tab-btn" data-tab="tab_flow">Flow</button>
+		<button class="tab-btn" data-tab="tab_editor">Editor</button>
+		<button class="tab-btn" data-tab="tab_ai">AI Helper</button>
 	</div>
 
-	<!-- TAB CONTENTS (GRID LAYOUTS) -->
-	<div id="swift" class="tab-content active">
-		<!-- Buttons injected via JS -->
+	<!-- TAB 1: Button Grid -->
+	<div id="tab_button" class="tab-content active">
+		<!-- User scripts injected via JS -->
 	</div>
 
-	<div id="creative" class="tab-content">
-		<!-- Buttons injected via JS -->
+	<!-- TAB 2: Flow (Action Playlist) -->
+	<div id="tab_flow" class="tab-content">
+		<!-- Flow UI injected by flow.js -->
 	</div>
 
-	<div id="organize" class="tab-content">
-		<!-- Buttons injected via JS -->
+	<!-- TAB 3: Editor -->
+	<div id="tab_editor" class="tab-content">
+		<div class="editor-container">
+			<div class="editor-toolbar">
+				<span class="editor-label">SCRIPT EDITOR <span id="editor_status"
+					style="color: #666; margin-left: 8px; font-weight: normal; font-size: 11px; text-transform: none;">• New Script</span></span>
+				<div style="display: flex; gap: 5px;">
+					<input type="text" id="script_name_input" placeholder="Script Name"
+						style="background: #333; border: 1px solid #444; color: #fff; padding: 2px 6px; width: 120px;">
+					<div style="position: relative;">
+						<input type="hidden" id="icon_value" value="★">
+						<button id="icon_trigger"
+							style="width: 32px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; cursor: pointer;">★</button>
+						<div id="color_trigger" title="Select Color"
+							style="width: 26px; height: 26px; margin-left: 5px; background: #3b82f6; border-radius: 4px; border: 1px solid #444; cursor: pointer; position: relative;"></div>
+						<!-- Color Picker Modal -->
+						<div id="color_picker_modal"
+							style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; background: #252525; border: 1px solid #444; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 16px; z-index: 2000; flex-direction: column; gap: 12px; align-items: stretch;">
+							<div style="font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 4px;">Select Color</div>
+							<div id="color_grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;"></div>
+							<div style="display: flex; gap: 5px; align-items: center; border-top: 1px solid #333; padding-top: 12px; margin-top: 4px;">
+								<div id="color_preview" style="width: 24px; height: 24px; border-radius: 4px; background: #3b82f6; border: 1px solid #444;"></div>
+								<input type="text" id="color_hex_input" value="#3b82f6"
+									style="flex: 1; background: #1a1a1a; border: 1px solid #333; color: #e0e0e0; padding: 4px 8px; font-size: 11px; text-transform: uppercase; border-radius: 4px; text-align: center; font-family: monospace;">
+							</div>
+						</div>
+						<div id="color_backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; backdrop-filter: blur(2px);"></div>
+						<!-- Icon Grid Popover -->
+						<div id="icon_grid_popover"
+							style="display: none; position: absolute; top: 30px; right: 0; width: 220px; background: #252525; border: 1px solid #444; padding: 8px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; grid-template-columns: repeat(5, 1fr); gap: 4px;"></div>
+					</div>
+				</div>
+			</div>
+			<textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
+		</div>
+
+		<!-- Recent Code -->
+		<div id="recent_code_section" class="recent-code-section">
+			<div class="recent-code-header">
+				<span class="recent-code-label">RECENT CODE</span>
+				<button id="btn_clear_recent" class="recent-code-clear" title="Clear history">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+				</button>
+			</div>
+			<div id="recent_code_list" class="recent-code-list">
+				<div class="recent-code-empty">No recent code yet</div>
+			</div>
+		</div>
+
+		<!-- Description for Upload -->
+		<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+			<label style="font-size: 10px; color: #888; text-transform: uppercase; margin: 0;">Description:</label>
+			<input type="text" id="script_description" placeholder="What does this script do? (for upload)"
+				style="flex: 1; background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 6px 10px; font-size: 11px; border-radius: 4px;">
+		</div>
+
+		<!-- Actions -->
+		<div class="action-bar">
+			<button id="btn_test" class="secondary">Test Run</button>
+			<div style="flex: 1;"></div>
+			<button id="btn_editor_import" class="primary" style="background: #27ae60; border-color: #2ecc71;">Import</button>
+			<button id="btn_upload_server" title="Upload to Explore Server"
+				style="width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: #8b5cf6; border: none; border-radius: 6px; cursor: pointer;">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+					<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+				</svg>
+			</button>
+		</div>
 	</div>
 
-	<div id="tools" class="tab-content">
-		<!-- Buttons injected via JS -->
+	<!-- TAB 4: AI Helper -->
+	<div id="tab_ai" class="tab-content">
+		<div id="chat_header"
+			style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; margin-bottom: 4px; border-bottom: 1px solid #333;">
+			<div style="font-size: 11px; color: #888; font-weight: 600;">AI CONTEXT <span id="ai_model_name"
+				style="color: var(--accent-color); margin-left: 8px; font-weight: normal; opacity: 0.8;"></span></div>
+			<div style="display: flex; gap: 6px;">
+				<button id="btn_clear_chat" title="Clear Chat & Context"
+					style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; font-size: 14px; margin: 0;">🗑️</button>
+			</div>
+		</div>
+
+		<!-- Inline API Key -->
+		<div id="api_key_section" style="display: none; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid #333; margin-bottom: 4px;">
+			<span style="font-size: 10px; color: #f97316; white-space: nowrap;">🔑 API Key:</span>
+			<input id="api_key_inline_input" type="password" placeholder="AIza..." style="flex: 1; background: #1a1a1a; border: 1px solid #f97316; color: #e0e0e0; padding: 4px 8px; font-size: 11px; border-radius: 4px; min-width: 0;">
+			<button id="btn_save_api_key" style="padding: 4px 10px; background: #f97316; border: none; border-radius: 4px; color: #fff; font-size: 11px; cursor: pointer; white-space: nowrap; margin: 0;">Save</button>
+		</div>
+
+		<!-- Chat -->
+		<div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative;">
+			<div class="chat-bubble ai">Hello! I'm your AI assistant. Try: "Create a circle of 50px"</div>
+		</div>
+
+		<div class="prompt-box" style="margin-top: 5px;">
+			<textarea id="prompt_input" placeholder="Ask AI to create or edit script..."></textarea>
+			<button id="btn_send_prompt" class="primary"><span class="icon">✨</span></button>
+		</div>
 	</div>
 
 
@@ -347,6 +581,9 @@
 		</div>
 	</div>
 
+	<!-- Toast for scripting/flow -->
+	<div id="toast" class="toast-notification">Code updated!</div>
+
 	<script src="js/libs/CSInterface.js"></script>
 	<!-- V4.2 Modular Architecture -->
 	<script src="js/core.js"></script>
@@ -361,6 +598,9 @@
 	<script src="js/plugins.js"></script>
 	<!-- Config (centralized API keys) -->
 	<script src="js/config.js"></script>
+	<!-- Scripting + Flow (embedded in main panel) -->
+	<script src="js/scripting.js"></script>
+	<script src="js/flow.js"></script>
 	<!-- Main Logic -->
 	<script src="js/main.js"></script>
 

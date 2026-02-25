@@ -94,16 +94,43 @@
     // ==========================================
     // Storage Versioning
     // ==========================================
-    var STORAGE_VERSION = 2;
+    var STORAGE_VERSION = 3;
     function checkStorageVersion() {
         var currentVersion = parseInt(localStorage.getItem('tata_storage_version') || '0');
         if (currentVersion < STORAGE_VERSION) {
-            console.log("[TATA] Migrating to V4 Layout Structure...");
+            console.log("[TATA] Migrating to V7 Layout (4-tab restructure)...");
             TATA.backupBeforeSave('tata_v2_layout_v' + currentVersion);
-            localStorage.removeItem('tata_v2_layout');
+
+            // Migrate: merge old tabs into single 'tab_button'
+            var oldLayout = localStorage.getItem('tata_v2_layout');
+            if (oldLayout) {
+                try {
+                    var parsed = JSON.parse(oldLayout);
+                    var merged = [];
+                    ['swift', 'creative', 'organize', 'tools'].forEach(function (tab) {
+                        if (parsed[tab] && Array.isArray(parsed[tab])) {
+                            parsed[tab].forEach(function (item) {
+                                if (item.id && item.id.indexOf('btn_') === 0) return;
+                                if (item.type === 'subpanel') return;
+                                merged.push(item);
+                            });
+                        }
+                    });
+                    // Also carry over if already migrated
+                    if (parsed['tab_button'] && Array.isArray(parsed['tab_button'])) {
+                        parsed['tab_button'].forEach(function (item) { merged.push(item); });
+                    }
+                    localStorage.setItem('tata_v2_layout', JSON.stringify({ tab_button: merged }));
+                } catch (e) {
+                    console.error('[TATA] Migration error:', e);
+                    localStorage.removeItem('tata_v2_layout');
+                }
+            }
+
+            localStorage.removeItem('tata_tab_names');
             localStorage.setItem('tata_storage_version', STORAGE_VERSION.toString());
             setTimeout(function () {
-                if (typeof TATA.showToast === 'function') TATA.showToast("Panel Updated to V4 Layout", "success");
+                if (typeof TATA.showToast === 'function') TATA.showToast("Panel updated!", "success");
             }, 1000);
         }
     }
@@ -136,21 +163,9 @@
     // Health Check
     // ==========================================
     function verifyPanelHealth() {
-        var requiredDefaults = ['btn_fit', 'btn_resize', 'btn_follow'];
-        var swiftContainer = document.getElementById('swift');
-        if (!swiftContainer) return true;
-
-        var missingCount = 0;
-        requiredDefaults.forEach(function (id) {
-            if (!document.getElementById(id)) {
-                missingCount++;
-            }
-        });
-
-        if (missingCount >= 2) {
-            console.warn('[TATA] Health check failed, attempting repair...');
-            localStorage.removeItem('tata_v2_layout');
-            if (typeof TATA.renderGrid === 'function') TATA.renderGrid();
+        var container = document.getElementById('tab_button');
+        if (!container) {
+            console.warn('[TATA] Health check: tab_button container missing');
             return false;
         }
         return true;

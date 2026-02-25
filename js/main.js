@@ -18,7 +18,6 @@
 	var showInputModal = TATA.showInputModal;
 	var showConfirmModal = TATA.showConfirmModal;
 	var switchTab = TATA.switchTab;
-	var initTabRenaming = TATA.initTabRenaming;
 	var moveButtonToTab = TATA.moveButtonToTab;
 
 	var csInterface = new CSInterface();
@@ -98,9 +97,6 @@
 
 			initUserScripts(); // Adds orphans to layout
 
-			// RESTORED Swift Tools (now as grid buttons)
-			setupSwift();
-
 			// setupPanelToggle is Main Panel only
 			setupPanelToggle();
 
@@ -111,9 +107,15 @@
 			// renderAllLayouts(); // V2 uses new grid render
 			renderGrid();
 
-			// IMPORTANT: Setup effects AFTER rendering tabs
-			// so Smart Clean button exists in DOM
-			setupEffects();
+			// Initialize Scripting (Editor + AI Helper tabs)
+			if (typeof TATA.initScripting === 'function') {
+				TATA.initScripting();
+			}
+
+			// Initialize Flow tab
+			if (typeof TATA.initFlow === 'function') {
+				TATA.initFlow();
+			}
 
 			// V3: Verify panel health after all rendering
 			setTimeout(verifyPanelHealth, 200);
@@ -882,7 +884,7 @@
 	}
 
 	// NOTE: saveHotkeys() is defined earlier at line 808
-	// NOTE: initTabRenaming() is defined earlier at line 155
+	// Tab setup handled by setupTabsV2()
 
 	// ==========================================
 	// Drag-and-Drop Layout Customization
@@ -933,45 +935,18 @@
 	}
 
 	function parseCurrentLayout() {
-		// FORCE RESET as per user request:
-		// All basic buttons in Tab 1 (Swift). Other tabs empty.
-
 		layoutState = {
-			'swift': [
-				['btn_fit', 'btn_resize', 'btn_follow'],
-				['btn_arrange', 'btn_stars', 'btn_palette'],
-				['btn_embed', 'btn_dimension', 'btn_smart_clean']
-			],
-			'creative': [],
-			'dimension': [],
-			'other': []
+			'tab_button': []
 		};
 		saveLayout();
-		renderGrid(); // V3: Use V2 Grid system
+		renderGrid();
 	}
 
 	function saveLayout() {
 		localStorage.setItem('tata_layout_v21', JSON.stringify(layoutState));
 
-		// CRITICAL: Ensure Smart Clean button is in swift tab
-		if (!layoutState['swift']) layoutState['swift'] = [];
-		var hasSmartClean = false;
-		for (var i = 0; i < layoutState['swift'].length; i++) {
-			for (var j = 0; j < layoutState['swift'][i].length; j++) {
-				if (layoutState['swift'][i][j] === 'btn_smart_clean') {
-					hasSmartClean = true;
-					break;
-				}
-			}
-			if (hasSmartClean) break;
-		}
-
-		// If Smart Clean not found, inject it at the beginning
-		if (!hasSmartClean) {
-			// Insert as first row
-			layoutState['swift'].unshift(['btn_smart_clean']);
-			localStorage.setItem('tata_layout_v17', JSON.stringify(layoutState));
-		}
+		// Ensure tab_button exists
+		if (!layoutState['tab_button']) layoutState['tab_button'] = [];
 	}
 
 	function renderAllLayouts() {
@@ -1065,7 +1040,7 @@
 
 	function renderTab(tabId) {
 		// PROTECT CUSTOM TABS FROM BEING WIPED
-		if (tabId === 'creative' || tabId === 'dimension') return;
+		if (tabId !== 'tab_button') return;
 
 		var tabEl = document.getElementById(tabId);
 		if (!tabEl) return;
@@ -1368,7 +1343,6 @@
 			// Features only for Main Panel
 			if (window.location.href.indexOf('colors.html') === -1) {
 				initHotkeys();
-				initTabRenaming();
 			}
 			initContrastChecker();
 
@@ -1383,11 +1357,7 @@
 
 					// 2. Add to Active Tab or Swift
 					var activeTabEl = document.querySelector('.tab-btn.active');
-					var targetTab = activeTabEl ? activeTabEl.dataset.tab : 'swift';
-
-					// Ensure target exists (legacy safety)
-					var validTabs = ['swift', 'creative', 'organize', 'tools'];
-					if (validTabs.indexOf(targetTab) === -1) targetTab = 'swift';
+					var targetTab = 'tab_button';
 
 					// CRITICAL: Load latest layout from storage before modifing
 					var saved = localStorage.getItem('tata_v2_layout');
@@ -1468,7 +1438,7 @@
 
 					// Find Data (Prioritize V2 Layout)
 					var foundItem = null;
-					['swift', 'creative', 'tool', 'custom'].forEach(function(t) {
+					['tab_button'].forEach(function(t) {
 						if (v2Layout[t]) {
 							var match = v2Layout[t].find(function(x) { return x.id === id; });
 							if (match) foundItem = match;
@@ -1561,9 +1531,9 @@
 				});
 
 				if (!found) {
-					// Orphan script! Add to Swift tab
-					if (!layoutState['swift']) layoutState['swift'] = [];
-					layoutState['swift'].push([id]);
+					// Orphan script! Add to Button tab
+					if (!layoutState['tab_button']) layoutState['tab_button'] = [];
+					layoutState['tab_button'].push([id]);
 					dirty = true;
 				}
 			}
@@ -1672,7 +1642,7 @@
 	function updateItemColor(targetId, newColor) {
 		// 1. Update In-Memory Layout (v2Layout)
 		var found = false;
-		['swift', 'creative', 'organize', 'tools'].forEach(function(tab) {
+		['tab_button'].forEach(function(tab) {
 			if (v2Layout[tab]) {
 				v2Layout[tab].forEach(function(item) {
 					if (item.id === targetId) {
@@ -3162,7 +3132,7 @@
 
 		// 2. Remove from V2 Layout (Prioritized)
 		var v2Dirty = false;
-		['swift', 'creative', 'tool', 'custom'].forEach(function(t) {
+		['tab_button'].forEach(function(t) {
 			var list = v2Layout[t];
 			if (!list) return;
 			// Find Index
@@ -4302,9 +4272,8 @@
 
 		// Add to Layout if new
 		if (!isUpdate) {
-			if (!layoutState['swift']) layoutState['swift'] = [];
-			// Add to a new row at the bottom
-			layoutState['swift'].push([id]);
+			if (!layoutState['tab_button']) layoutState['tab_button'] = [];
+			layoutState['tab_button'].push([id]);
 			saveLayout();
 		} else {
 			// If updating, we just need to refresh cache/render
@@ -4340,30 +4309,12 @@
 		folder: '<svg class="icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" /></svg>'
 	};
 
-	// V4 Default Structure
+	// V7 Default Structure (clean slate)
 	var v2Defaults = {
-		swift: [
-			{ id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx', color: '#3b82f6' },
-			{ id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx', color: '#3b82f6' },
-			{ id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx', color: '#3b82f6' },
-			{ id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx', color: '#8b5cf6' },
-			{ id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx', color: '#8b5cf6' },
-			{ id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx', color: '#f59e0b' },
-			{ id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx', color: '#10b981' },
-			{ id: 'btn_smart_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx', color: '#64748b' },
-			{ id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx', color: '#ef4444' }
-		],
-		creative: [],
-		organize: [], // Renamed from other
-		tools: [
-			{ id: 'btn_open_colors', label: 'Colors Panel', icon: ICONS.colors, type: 'subpanel', target: 'com.tata.pro.colors', color: '#f59e0b' },
-			{ id: 'btn_open_keep', label: 'Keep Panel', icon: ICONS.folder, type: 'subpanel', target: 'com.tata.pro.keep', color: '#10b981' }
-		]
+		tab_button: []
 	};
 
 	function setupTabsV2() {
-		initTabRenaming();
-
 		var tabs = document.querySelectorAll('.tab-btn');
 		tabs.forEach(function (tab) {
 			tab.addEventListener('click', function () {
@@ -4374,6 +4325,11 @@
 				var targetId = this.dataset.tab;
 				var target = document.getElementById(targetId);
 				if (target) target.classList.add('active');
+
+				// Refresh CodeMirror when switching to Editor tab
+				if (targetId === 'tab_editor' && window.cmEditor) {
+					setTimeout(function() { window.cmEditor.refresh(); }, 50);
+				}
 			});
 
 			// Drag Over to Switch Tab
@@ -4396,7 +4352,7 @@
 
 		// V4.1: Smart Default Merge (Only add defaults that don't exist ANYWHERE)
 		var allLayoutIds = {};
-		['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
+		['tab_button'].forEach(function (tabName) {
 			if (v2Layout[tabName]) {
 				v2Layout[tabName].forEach(function (item) {
 					if (item && item.id) allLayoutIds[item.id] = true;
@@ -4410,19 +4366,18 @@
 			v2Defaults[tabName].forEach(function (def) {
 				if (!allLayoutIds[def.id]) {
 					v2Layout[tabName].push(JSON.parse(JSON.stringify(def)));
-					console.log('[TATA] Injected missing default:', def.id);
 				}
 			});
 		});
 
 		// Ensure layout exists
-		['swift', 'creative', 'organize', 'tools'].forEach(function(t) {
+		['tab_button'].forEach(function(t) {
 			if (!v2Layout[t]) v2Layout[t] = [];
 		});
 
 		saveV2Layout();
 
-		['swift', 'creative', 'organize', 'tools'].forEach(function (tabName) {
+		['tab_button'].forEach(function (tabName) {
 			var container = document.getElementById(tabName);
 			if (!container) return;
 
@@ -4610,7 +4565,7 @@
 
 	function exportScript() {
 		var exportable = [];
-		var allTabs = ['swift', 'creative', 'organize', 'tools'];
+		var allTabs = ['tab_button'];
 		allTabs.forEach(function(t) {
 			if (!v2Layout[t]) return;
 			v2Layout[t].forEach(function(item) {
@@ -4670,11 +4625,8 @@
 				var content = fs.readFileSync(filePath, 'utf8');
 				var data = JSON.parse(content);
 
-				var activeTabEl = document.querySelector('.tab-btn.active');
-				var activeTab = activeTabEl ? activeTabEl.dataset.tab : 'swift';
-
-				// Ensure activeTab is valid (fallback to swift)
-				if (!v2Layout[activeTab]) activeTab = 'swift';
+				var activeTab = 'tab_button';
+				if (!v2Layout[activeTab]) v2Layout[activeTab] = [];
 
 				var newItem = {
 					id: 'imported_' + new Date().getTime(),
@@ -4705,11 +4657,7 @@
 	var fabExport = document.getElementById('btn_export_script');
 	if (fabExport) fabExport.addEventListener('click', exportScript);
 
-	var btnResetTabs = document.getElementById('btn_reset_tab_names');
-	if (btnResetTabs) btnResetTabs.addEventListener('click', function () {
-		localStorage.removeItem('tata_tab_names');
-		location.reload();
-	});
+	// Tab rename reset removed (tabs are no longer renamable)
 
 	function exportPalette(name, colors) {
 		var script = "try { var doc = app.activeDocument; var grp = doc.swatchGroups.add(); grp.name = '" + name + " Theme'; var cols = " + JSON.stringify(colors) + "; for(var i=0; i<cols.length; i++){ var hex = cols[i].replace('#',''); var r = parseInt(hex.substring(0,2), 16); var g = parseInt(hex.substring(2,4), 16); var b = parseInt(hex.substring(4,6), 16); var c = new RGBColor(); c.red=r; c.green=g; c.blue=b; var s = doc.swatches.add(); s.color = c; s.name = 'Hex '+hex; grp.addSwatch(s); } 'Success'; } catch(e){e.toString();}";

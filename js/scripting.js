@@ -1,9 +1,19 @@
 (function () {
     'use strict';
 
-    var csInterface = new CSInterface();
-    var extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION);
-    var currentScriptId = 'default_script'; // Track ID for edits - start with default
+    window.TATA = window.TATA || {};
+
+    var csInterface = null; // Lazy init
+    var extensionPath = '';
+    var currentScriptId = 'default_script';
+
+    function getCS() {
+        if (!csInterface) {
+            csInterface = TATA.csInterface || new CSInterface();
+            try { extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION); } catch(e) {}
+        }
+        return csInterface;
+    }
 
     // ==================== ICONS ====================
     // Expanded icon library (60+ icons)
@@ -96,9 +106,12 @@
         // V4: Status Init
         updateEditorStatus('new');
 
-        // Request Settings from Main Panel
-        var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
-        csInterface.dispatchEvent(req);
+        // Request Settings from Main Panel (only when standalone)
+        var cs = getCS();
+        try {
+            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            cs.dispatchEvent(req);
+        } catch(e) {}
 
         // Load API Key Check
         var apiKey = localStorage.getItem('tata_gemini_api_key');
@@ -121,7 +134,7 @@
         if (btnTest) btnTest.addEventListener('click', handleTestRun);
 
         // Import
-        var btnImport = document.getElementById('btn_import');
+        var btnImport = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
         if (btnImport) btnImport.addEventListener('click', handleImport);
 
         // Clear Chat
@@ -142,10 +155,11 @@
         }
 
         // Edit Mode Listener
-        csInterface.addEventListener("com.tata.pro.editScript", handleEditScriptEvent);
+        var cs = getCS();
+        cs.addEventListener("com.tata.pro.editScript", handleEditScriptEvent);
 
         // Settings Listener
-        csInterface.addEventListener("com.tata.pro.settingsData", function (event) {
+        cs.addEventListener("com.tata.pro.settingsData", function (event) {
             var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
             if (data.apiKey) {
                 localStorage.setItem('tata_gemini_api_key', data.apiKey);
@@ -158,6 +172,10 @@
         // Upload to Server
         var btnUpload = document.getElementById('btn_upload_server');
         if (btnUpload) btnUpload.addEventListener('click', handleUploadToServer);
+
+        // Save API Key button (embedded in main panel)
+        var btnSaveKey = document.getElementById('btn_save_api_key');
+        if (btnSaveKey) btnSaveKey.addEventListener('click', window.saveInlineApiKey);
 
         // Keyboard Shortcuts
         document.addEventListener('keydown', function (e) {
@@ -447,7 +465,7 @@
         // ถ้าไม่มี key ใน local → ลอง re-request จาก Main Panel
         if (!apiKey) {
             var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
-            csInterface.dispatchEvent(req);
+            getCS().dispatchEvent(req);
             // รอรับ event กลับ 500ms
             await new Promise(function (resolve) { setTimeout(resolve, 500); });
             apiKey = localStorage.getItem('tata_gemini_api_key');
@@ -530,7 +548,7 @@
     }
 
     function runCodeWithAutoFix(code, attempt) {
-        csInterface.evalScript(code, async function (res) {
+        getCS().evalScript(code, async function (res) {
             if (res && res !== 'undefined') {
                 if (/Error|Exception|ReferenceError|SyntaxError/.test(res) || res.indexOf('Line:') !== -1) {
                     // Error detected
@@ -586,11 +604,10 @@
     }
 
     function handleImport() {
-        // V3: Use getEditorCode for CodeMirror
         var scriptCode = getEditorCode();
         var scriptName = document.getElementById('script_name_input').value || "New Script";
         var scriptIcon = document.getElementById('icon_value').value || "★";
-        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6"; // V4 Custom Input
+        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6";
 
         var data = {
             id: currentScriptId || ('ai_script_' + Date.now()),
@@ -600,21 +617,27 @@
             color: scriptColor
         };
 
-        var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
-        event.data = JSON.stringify(data);
-        csInterface.dispatchEvent(event);
+        // Import directly into Button tab (since we're in main panel now)
+        if (typeof TATA.saveUserScript === 'function') {
+            TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor, false, null, false);
+            showToast("Imported to Button tab!");
+        } else {
+            // Fallback: dispatch event for external scripting panel
+            var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
+            event.data = JSON.stringify(data);
+            getCS().dispatchEvent(event);
+        }
 
-        // V4: Force Switch Focus to Main Panel
-        CSInterface.prototype.requestOpenExtension("com.tata.pro.panel", "");
-
-        var btn = document.getElementById('btn_import');
-        var original = btn.innerText;
-        btn.innerText = "Imported!";
-        btn.style.background = "#333";
-        setTimeout(() => {
-            btn.innerText = original;
-            btn.style.background = "#27ae60";
-        }, 2000);
+        var btn = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
+        if (btn) {
+            var original = btn.innerText;
+            btn.innerText = "Imported!";
+            btn.style.background = "#333";
+            setTimeout(function() {
+                btn.innerText = original;
+                btn.style.background = "#27ae60";
+            }, 2000);
+        }
     }
 
     function handleClearChat() {
@@ -885,7 +908,7 @@
             return;
         }
 
-        cmEditor = CodeMirror.fromTextArea(textarea, {
+        cmEditor = window.cmEditor = CodeMirror.fromTextArea(textarea, {
             mode: 'javascript',
             theme: 'material-darker',
             lineNumbers: true,
@@ -933,7 +956,7 @@
     window.getEditorCode = getEditorCode;
     window.setEditorCode = setEditorCode;
 
-    // Save API Key จาก inline input
+    // Save API Key from inline input
     window.saveInlineApiKey = function () {
         var input = document.getElementById('api_key_inline_input');
         if (!input || !input.value.trim()) {
@@ -951,7 +974,10 @@
         addChatBubble("ai", "✅ API Key บันทึกแล้ว! ลองพิมพ์คำสั่งได้เลยครับ");
     };
 
-    // Start
-    init();
+    // Export to TATA namespace (no auto-init)
+    TATA.initScripting = init;
+
+    // Expose editor helpers globally
+    window.cmEditor = null; // Will be set by initCodeMirror
 
 })();

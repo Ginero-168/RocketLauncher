@@ -103,7 +103,7 @@
         var found = false;
 
         // Update In-Memory Layout
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (tab) {
+        ['tab_button'].forEach(function (tab) {
             if (v2Layout[tab]) {
                 v2Layout[tab].forEach(function (item) {
                     if (item.id === targetId) {

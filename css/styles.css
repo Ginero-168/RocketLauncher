@@ -1,37 +1,28 @@
 :root {
-    /* V4 Premium Dark Tokens */
-    --bg-color: #202020;
-    /* Deep Neutral */
-    --surface-color: #2d2d2d;
-    /* Soft Surface */
-    --surface-hover: #3a3a3a;
+    /* V7 Vibrant Dark Theme */
+    --bg-color: #1a1a2e;
+    --surface-color: #252542;
+    --surface-hover: #2f2f52;
     --text-color: #e0e0e0;
-    /* Softer White */
     --text-secondary: #9ca3af;
-    /* Muted Text */
 
-    --accent-color: #3b82f6;
-    /* Vibrant Blue */
-    --accent-hover: #60a5fa;
-    --accent-glow: rgba(59, 130, 246, 0.3);
+    --accent-color: #6366f1;
+    --accent-hover: #818cf8;
+    --accent-glow: rgba(99, 102, 241, 0.3);
 
-    --border-color: #404040;
-    /* Subtle Border */
-    --input-bg: #181818;
-    /* Dark Input */
+    --border-color: #3a3a5c;
+    --input-bg: #141428;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 
     --danger-color: #ef4444;
 
-    /* Tab Accents */
-    --swift-color: #f87171;
-    /* Soft Red */
-    --creative-color: #facc15;
-    /* Soft Yellow */
-    --other-color: #c084fc;
-    /* Soft Purple */
+    /* New Tab Accents */
+    --button-color: #6366f1;
+    --flow-color: #8b5cf6;
+    --editor-color: #10b981;
+    --ai-color: #f59e0b;
 }
 
 body {
@@ -51,18 +42,17 @@ body {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
     background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 4px;
-    border: 2px solid var(--bg-color);
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: rgba(99, 102, 241, 0.5);
 }
 
 /* Tabs - Modern Underline Style */
@@ -82,22 +72,19 @@ body {
     flex: 1;
     background: transparent;
     border: none;
-    /* No border */
     border-bottom: 2px solid transparent;
-    /* Invisible underline base */
     color: var(--text-secondary);
     padding: 10px 4px;
     cursor: pointer;
-    font-size: 12px;
-    /* Slightly Larger */
+    font-size: 11px;
     font-weight: 500;
     position: relative;
     border-radius: 0;
-    /* No radius */
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
-    text-transform: capitalize;
-    /* Clean text */
+    letter-spacing: 0.3px;
+    margin: 0;
+    width: auto;
 }
 
 .tab-btn:hover {
@@ -112,28 +99,24 @@ body {
 }
 
 /* Tab Specific Glows */
-.tab-btn[data-tab="swift"].active {
+.tab-btn[data-tab="tab_button"].active {
     color: #fff;
-    border-color: var(--swift-color);
-    background: transparent;
+    border-color: var(--button-color);
 }
 
-.tab-btn[data-tab="creative"].active {
+.tab-btn[data-tab="tab_flow"].active {
     color: #fff;
-    border-color: var(--creative-color);
-    background: transparent;
+    border-color: var(--flow-color);
 }
 
-.tab-btn[data-tab="organize"].active {
+.tab-btn[data-tab="tab_editor"].active {
     color: #fff;
-    border-color: #3b82f6;
-    background: transparent;
+    border-color: var(--editor-color);
 }
 
-.tab-btn[data-tab="tools"].active {
+.tab-btn[data-tab="tab_ai"].active {
     color: #fff;
-    border-color: var(--other-color);
-    background: transparent;
+    border-color: var(--ai-color);
 }
 
 
@@ -153,11 +136,19 @@ body {
     /* V3: Extra space for footer toolbar */
 }
 
-/* Creative tab - no custom styles needed */
+/* Tab content fade-in */
+.tab-content.active {
+    animation: fadeIn 0.2s ease;
+}
 
-/* Fix Scripts Tab Padding (ID is swift) */
-#swift {
-    padding: 10px;
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 /* Controls */
@@ -271,28 +262,12 @@ button:hover .icon {
 }
 
 /* Tab Specific Button Hovers */
-#swift button:hover {
-    border-color: var(--swift-color);
+#tab_button button:hover {
+    border-color: var(--button-color);
 }
 
-#swift button:hover .icon {
-    fill: var(--swift-color);
-}
-
-#creative button:hover {
-    border-color: var(--creative-color);
-}
-
-#creative button:hover .icon {
-    fill: var(--creative-color);
-}
-
-#other button:hover {
-    border-color: var(--other-color);
-}
-
-#other button:hover .icon {
-    fill: var(--other-color);
+#tab_button button:hover .icon {
+    fill: var(--button-color);
 }
 
 /* Button Color Override Utilities - HOVER & ICON FIXES */
@@ -585,14 +560,16 @@ button:active {
 }
 
 button.primary {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
     color: white;
 }
 
 button.primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
 }
 
 button.secondary {
@@ -1488,17 +1465,18 @@ input.validation-error+.validation-message {
     top: 20px;
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
-    background: #333;
+    background: rgba(37, 37, 66, 0.95);
     color: white;
     padding: 10px 20px;
     border-radius: 20px;
-    font-size: 13px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    font-size: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 9999;
     pointer-events: none;
-    border: 1px solid #444;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .toast-notification.show {
@@ -1507,15 +1485,13 @@ input.validation-error+.validation-message {
 }
 
 .toast-notification.success {
-    background: #1b5e20;
-    /* Dark Green */
-    border-color: #2e7d32;
+    background: rgba(16, 185, 129, 0.9);
+    border-color: rgba(16, 185, 129, 0.5);
 }
 
 .toast-notification.error {
-    background: #b71c1c;
-    /* Dark Red */
-    border-color: #c62828;
+    background: rgba(239, 68, 68, 0.9);
+    border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* Export Mode Visuals */

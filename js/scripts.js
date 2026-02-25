@@ -46,8 +46,8 @@
         // Add to V2 Layout if new
         if (!isUpdate) {
             var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
-            if (!v2Layout['swift']) v2Layout['swift'] = [];
-            v2Layout['swift'].push({
+            if (!v2Layout['tab_button']) v2Layout['tab_button'] = [];
+            v2Layout['tab_button'].push({
                 id: id,
                 label: name,
                 icon: icon,
@@ -79,7 +79,7 @@
 
         // Remove from V2 Layout
         var v2Dirty = false;
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (t) {
+        ['tab_button'].forEach(function (t) {
             var list = v2Layout[t];
             if (!list) return;
             var idx = -1;
