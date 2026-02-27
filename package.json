@@ -1,6 +1,6 @@
 {
     "name": "rocket-launcher-extension",
-    "version": "3.0.0",
+    "version": "1.1.2",
     "description": "Rocket Launcher - Adobe Illustrator Extension",
     "main": "index.html",
     "scripts": {
