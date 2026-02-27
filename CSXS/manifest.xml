@@ -3,15 +3,11 @@
 	Version="5.0"
 	ExtensionBundleId="com.tata.pro"
 	ExtensionBundleVersion="1.1.0"
-	ExtensionBundleName="TATA"
+	ExtensionBundleName="Rocket Launcher"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<ExtensionList>
 		<Extension Id="com.tata.pro.panel" Version="1.1.0" />
-		<Extension Id="com.tata.pro.colors" Version="1.0.0" />
-		<Extension Id="com.tata.pro.scripting" Version="1.0.0" />
-		<Extension Id="com.tata.pro.keep" Version="1.0.0" />
-		<Extension Id="com.tata.pro.explore" Version="1.0.0" />
 	</ExtensionList>
 
 	<ExecutionEnvironment>
@@ -50,7 +46,7 @@
 			<UI>
 
 				<Type>Panel</Type>
-				<Menu>TATA</Menu>
+				<Menu>Rocket Launcher</Menu>
 
 				<Geometry>
 					<Size>
@@ -71,151 +67,8 @@
 		</DispatchInfo>
 	</Extension>
 
-	<Extension Id="com.tata.pro.colors">
-		<DispatchInfo>
-			<Resources>
-				<MainPath>./colors.html</MainPath>
-				<ScriptPath>./jsx/hostscript.jsx</ScriptPath>
-				<CEFCommandLine>
-					<Parameter>--enable-nodejs</Parameter>
-					<Parameter>--mixed-context</Parameter>
-					<Parameter>--allow-file-access</Parameter>
-					<Parameter>--allow-file-access-from-files</Parameter>
-				</CEFCommandLine>
-			</Resources>
-			<Lifecycle>
-				<AutoVisible>true</AutoVisible>
-			</Lifecycle>
-			<UI>
-				<Type>Panel</Type>
-				<Menu>T Colors</Menu>
-				<Geometry>
-					<Size>
-						<Height>400</Height>
-						<Width>300</Width>
-					</Size>
-					<MinSize>
-						<Height>200</Height>
-						<Width>200</Width>
-					</MinSize>
-					<MaxSize>
-						<Height>1000</Height>
-						<Width>1000</Width>
-					</MaxSize>
-				</Geometry>
-			</UI>
-		</DispatchInfo>
-	</Extension>
 
-	<!-- Scripting Panel Definition -->
-	<Extension Id="com.tata.pro.scripting">
-		<DispatchInfo>
-			<Resources>
-				<MainPath>./scripting.html</MainPath>
-				<ScriptPath>./jsx/hostscript.jsx</ScriptPath>
-				<CEFCommandLine>
-					<Parameter>--enable-nodejs</Parameter>
-					<Parameter>--mixed-context</Parameter>
-					<Parameter>--allow-file-access</Parameter>
-					<Parameter>--allow-file-access-from-files</Parameter>
-				</CEFCommandLine>
-			</Resources>
-			<Lifecycle>
-				<AutoVisible>true</AutoVisible>
-			</Lifecycle>
-			<UI>
-				<Type>Panel</Type>
-				<Menu>T Scripting</Menu>
-				<Geometry>
-					<Size>
-						<Height>500</Height>
-						<Width>300</Width>
-					</Size>
-					<MinSize>
-						<Height>300</Height>
-						<Width>250</Width>
-					</MinSize>
-					<MaxSize>
-						<Height>1200</Height>
-						<Width>800</Width>
-					</MaxSize>
-				</Geometry>
-			</UI>
-		</DispatchInfo>
-	</Extension>
 
-	<!-- KEEP Panel Definition -->
-	<Extension Id="com.tata.pro.keep">
-		<DispatchInfo>
-			<Resources>
-				<MainPath>./keep.html</MainPath>
-				<ScriptPath>./jsx/hostscript.jsx</ScriptPath>
-				<CEFCommandLine>
-					<Parameter>--enable-nodejs</Parameter>
-					<Parameter>--mixed-context</Parameter>
-					<Parameter>--allow-file-access</Parameter>
-					<Parameter>--allow-file-access-from-files</Parameter>
-				</CEFCommandLine>
-			</Resources>
-			<Lifecycle>
-				<AutoVisible>true</AutoVisible>
-			</Lifecycle>
-			<UI>
-				<Type>Panel</Type>
-				<Menu>T Keep</Menu>
-				<Geometry>
-					<Size>
-						<Height>400</Height>
-						<Width>280</Width>
-					</Size>
-					<MinSize>
-						<Height>200</Height>
-						<Width>200</Width>
-					</MinSize>
-					<MaxSize>
-						<Height>1000</Height>
-						<Width>1000</Width>
-					</MaxSize>
-				</Geometry>
-			</UI>
-		</DispatchInfo>
-	</Extension>
 
-	<!-- Explore Panel Definition -->
-	<Extension Id="com.tata.pro.explore">
-		<DispatchInfo>
-			<Resources>
-				<MainPath>./explore.html</MainPath>
-				<ScriptPath>./jsx/hostscript.jsx</ScriptPath>
-				<CEFCommandLine>
-					<Parameter>--enable-nodejs</Parameter>
-					<Parameter>--mixed-context</Parameter>
-					<Parameter>--allow-file-access</Parameter>
-					<Parameter>--allow-file-access-from-files</Parameter>
-				</CEFCommandLine>
-			</Resources>
-			<Lifecycle>
-				<AutoVisible>true</AutoVisible>
-			</Lifecycle>
-			<UI>
-				<Type>Panel</Type>
-				<Menu>T Explore</Menu>
-				<Geometry>
-					<Size>
-						<Height>500</Height>
-						<Width>320</Width>
-					</Size>
-					<MinSize>
-						<Height>300</Height>
-						<Width>250</Width>
-					</MinSize>
-					<MaxSize>
-						<Height>1000</Height>
-						<Width>600</Width>
-					</MaxSize>
-				</Geometry>
-			</UI>
-		</DispatchInfo>
-	</Extension>
 </DispatchInfoList>
 </ExtensionManifest>

@@ -21,72 +21,6 @@
     }
 
     // ==========================================
-    // Tab Renaming
-    // ==========================================
-    function initTabRenaming() {
-        var tabs = document.querySelectorAll('.tab-btn');
-
-        // Load Saved Names
-        var savedNames = localStorage.getItem('tata_tab_names');
-        if (savedNames) {
-            try {
-                var names = JSON.parse(savedNames);
-                tabs.forEach(function (tab) {
-                    var key = tab.dataset.tab;
-                    if (names[key]) tab.innerText = names[key];
-                });
-            } catch (e) { }
-        }
-
-        tabs.forEach(function (tab) {
-            tab.addEventListener('dblclick', function () {
-                var currentName = this.innerText;
-                var input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'tab-rename-input';
-                input.value = currentName;
-
-                var self = this;
-                var saved = false; // Prevent double save
-
-                function save() {
-                    if (saved) return; // Already saved
-                    saved = true;
-
-                    var newName = input.value.trim() || currentName;
-
-                    // Remove input if still present
-                    if (input.parentNode === self) {
-                        self.removeChild(input);
-                    }
-
-                    // Set text directly
-                    self.textContent = newName;
-
-                    // Save to localStorage
-                    var names = {};
-                    var storedNames = localStorage.getItem('tata_tab_names');
-                    if (storedNames) try { names = JSON.parse(storedNames); } catch (e) { }
-                    names[self.dataset.tab] = newName;
-                    localStorage.setItem('tata_tab_names', JSON.stringify(names));
-                }
-
-                input.addEventListener('blur', save);
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        input.blur(); // Trigger blur which calls save
-                    }
-                });
-
-                this.innerHTML = '';
-                this.appendChild(input);
-                input.focus();
-                input.select();
-            });
-        });
-    }
-
-    // ==========================================
     // Tab Switching
     // ==========================================
     function switchTab(tabBtn) {
@@ -106,6 +40,12 @@
             var targetContent = document.getElementById(targetId);
             if (targetContent) {
                 targetContent.classList.add('active');
+            }
+
+            // Show tab-actions only on Button tab
+            var tabActions = document.querySelector('.tab-actions');
+            if (tabActions) {
+                tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
             }
         }
     }
@@ -150,7 +90,6 @@
     // Export to TATA Namespace
     // ==========================================
     TATA.setupTabs = setupTabs;
-    TATA.initTabRenaming = initTabRenaming;
     TATA.switchTab = switchTab;
     TATA.moveButtonToTab = moveButtonToTab;
 

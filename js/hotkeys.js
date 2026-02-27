@@ -22,6 +22,7 @@
             hotkeys.push(null);
         }
 
+        setupSlotDelegation();
         renderHotkeys();
         setupDraggableButtons();
     }
@@ -46,7 +47,16 @@
             var data = hotkeys[i];
             if (data) {
                 slot.classList.add('filled');
-                if (data.color) slot.classList.add('btn-' + data.color);
+                if (data.color) {
+                    slot.style.background = data.color;
+                    slot.style.borderColor = data.color;
+                    slot.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
+                    slot.style.color = '#ffffff';
+                } else {
+                    slot.style.background = '';
+                    slot.style.borderColor = '';
+                    slot.style.boxShadow = '';
+                }
 
                 if (data.icon) {
                     var iconSpan = document.createElement('span');
@@ -95,24 +105,35 @@
                 slot.title = "Drag a button here";
             }
 
-            setupSlotDrag(slot, i);
             bar.appendChild(slot);
         }
     }
 
-    function setupSlotDrag(slot, index) {
-        slot.addEventListener('dragover', function (e) {
+    // Event delegation for hotkey slots (set up once)
+    function setupSlotDelegation() {
+        if (TATA._hotkeyDelegated) return;
+        var bar = document.getElementById('hotkey-bar');
+        if (!bar) return;
+        TATA._hotkeyDelegated = true;
+
+        bar.addEventListener('dragover', function (e) {
+            var slot = e.target.closest('.hotkey-slot');
+            if (!slot) return;
             e.preventDefault();
-            this.classList.add('drag-over');
+            slot.classList.add('drag-over');
         });
 
-        slot.addEventListener('dragleave', function (e) {
-            this.classList.remove('drag-over');
+        bar.addEventListener('dragleave', function (e) {
+            var slot = e.target.closest('.hotkey-slot');
+            if (slot) slot.classList.remove('drag-over');
         });
 
-        slot.addEventListener('drop', function (e) {
+        bar.addEventListener('drop', function (e) {
+            var slot = e.target.closest('.hotkey-slot');
+            if (!slot) return;
             e.preventDefault();
-            this.classList.remove('drag-over');
+            slot.classList.remove('drag-over');
+            var index = parseInt(slot.dataset.slot) - 1;
             var raw = e.dataTransfer.getData('text/plain');
             if (raw) {
                 try {
@@ -167,5 +188,7 @@
     global.TATA.initHotkeys = initHotkeys;
     global.TATA.saveHotkeys = saveHotkeys;
     global.TATA.renderHotkeys = renderHotkeys;
+    global.TATA.getHotkeys = function () { return hotkeys; };
+    global.TATA.setHotkeys = function (newHotkeys) { hotkeys = newHotkeys; };
 
 })(window);

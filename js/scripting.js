@@ -1,9 +1,19 @@
 (function () {
     'use strict';
 
-    var csInterface = new CSInterface();
-    var extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION);
-    var currentScriptId = 'default_script'; // Track ID for edits - start with default
+    window.TATA = window.TATA || {};
+
+    var csInterface = null; // Lazy init
+    var extensionPath = '';
+    var currentScriptId = 'default_script';
+
+    function getCS() {
+        if (!csInterface) {
+            csInterface = TATA.csInterface || new CSInterface();
+            try { extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION); } catch (e) { }
+        }
+        return csInterface;
+    }
 
     // ==================== ICONS ====================
     // Expanded icon library (60+ icons)
@@ -76,7 +86,7 @@
 
     // ==================== INIT ====================
     function init() {
-        console.log("TATA Scripting Info: Init started");
+        console.log("Rocket Launcher Scripting: Init started");
 
         // Load default script if empty
         var editor = document.getElementById('code_editor');
@@ -85,9 +95,9 @@
         }
 
         initTabs();
-        initSmartWords();
         initIconPicker();
         initColorPicker(); // V4 Custom Color Picker
+        initRecentCode();
         initListeners();
 
         // V3: Initialize CodeMirror for Syntax Highlighting
@@ -96,14 +106,19 @@
         // V4: Status Init
         updateEditorStatus('new');
 
-        // Request Settings from Main Panel
-        var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
-        csInterface.dispatchEvent(req);
+        // Request Settings from Main Panel (only when standalone)
+        var cs = getCS();
+        try {
+            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            cs.dispatchEvent(req);
+        } catch (e) { }
 
         // Load API Key Check
         var apiKey = localStorage.getItem('tata_gemini_api_key');
         if (!apiKey) {
-            addChatBubble("ai", "⚠️ Please set your Gemini API Key in the Main TATA Panel settings first.");
+            var keySection = document.getElementById('api_key_section');
+            if (keySection) keySection.style.display = 'flex';
+            addChatBubble("ai", "⚠️ กรุณากรอก <b>Gemini API Key</b> ในช่องด้านบนก่อนใช้งาน");
         }
     }
 
@@ -119,7 +134,7 @@
         if (btnTest) btnTest.addEventListener('click', handleTestRun);
 
         // Import
-        var btnImport = document.getElementById('btn_import');
+        var btnImport = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
         if (btnImport) btnImport.addEventListener('click', handleImport);
 
         // Clear Chat
@@ -140,19 +155,27 @@
         }
 
         // Edit Mode Listener
-        csInterface.addEventListener("com.tata.pro.editScript", handleEditScriptEvent);
+        var cs = getCS();
+        cs.addEventListener("com.tata.pro.editScript", handleEditScriptEvent);
 
         // Settings Listener
-        csInterface.addEventListener("com.tata.pro.settingsData", function (event) {
+        cs.addEventListener("com.tata.pro.settingsData", function (event) {
             var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
             if (data.apiKey) {
                 localStorage.setItem('tata_gemini_api_key', data.apiKey);
+                // ซ่อน inline input เมื่อได้รับ key แล้ว
+                var keySection = document.getElementById('api_key_section');
+                if (keySection) keySection.style.display = 'none';
             }
         });
 
         // Upload to Server
         var btnUpload = document.getElementById('btn_upload_server');
         if (btnUpload) btnUpload.addEventListener('click', handleUploadToServer);
+
+        // Save API Key button (embedded in main panel)
+        var btnSaveKey = document.getElementById('btn_save_api_key');
+        if (btnSaveKey) btnSaveKey.addEventListener('click', window.saveInlineApiKey);
 
         // Keyboard Shortcuts
         document.addEventListener('keydown', function (e) {
@@ -183,12 +206,10 @@
 
     function handleUploadToServer() {
         var nameInput = document.getElementById('script_name_input');
-        var descInput = document.getElementById('script_description');
         var iconInput = document.getElementById('icon_value');
         var colorTrigger = document.getElementById('color_trigger');
 
         var name = nameInput ? nameInput.value.trim() : '';
-        var description = descInput ? descInput.value.trim() : '';
         var code = getEditorCode();
         var icon = iconInput ? iconInput.value : '★';
 
@@ -201,10 +222,6 @@
             showToast('⚠️ Please write some code first');
             return;
         }
-        if (!description) {
-            showToast('⚠️ Please add a description for upload');
-            return;
-        }
 
         // Determine category based on color
         var color = colorTrigger ? colorTrigger.style.background : '#3b82f6';
@@ -215,7 +232,7 @@
 
         var data = {
             name: name,
-            description: description,
+            description: name,
             code: code,
             icon: icon,
             category: category,
@@ -311,6 +328,7 @@
 
     // ==================== V4 CUSTOM COLOR PICKER ====================
     var PRESET_COLORS = [
+        'transparent', // No Color option
         '#3b82f6', '#8b5cf6', '#ef4444', '#f97316',
         '#eab308', '#10b981', '#14b8a6', '#06b6d4',
         '#ec4899', '#f43f5e', '#64748b', '#FFD700'
@@ -329,7 +347,17 @@
         // Render Grid
         PRESET_COLORS.forEach(color => {
             var swatch = document.createElement('div');
-            swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+
+            // Special styling for transparent "No Color" option
+            if (color === 'transparent') {
+                swatch.style.cssText = 'width: 100%; height: 30px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: transform 0.1s; position: relative; overflow: hidden;';
+                // Add diagonal red line to indicate "No color"
+                swatch.innerHTML = '<div style="position:absolute; top:50%; left:-20%; width:140%; height:2px; background:rgba(255,255,255,0.6); transform:rotate(-25deg); transform-origin:center;"></div>';
+                swatch.title = "No Color";
+            } else {
+                swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+            }
+
             swatch.onmouseover = function () { this.style.transform = 'scale(1.1)'; };
             swatch.onmouseout = function () { this.style.transform = 'scale(1)'; };
             swatch.onclick = function () {
@@ -374,22 +402,31 @@
     // ==================== V4 EDITOR STATUS ====================
     function updateEditorStatus(mode, name) {
         var el = document.getElementById('editor_status');
+        var dot = document.getElementById('editor_status_dot');
         if (!el) return;
 
         if (mode === 'edit') {
-            el.innerHTML = "• Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
-            el.style.color = "#f97316"; // Orange for edit
+            el.innerHTML = "Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
+            el.style.color = "#f97316";
+            if (dot) dot.classList.add('editing');
 
             // V4: Button Text
-            var btn = document.getElementById('btn_import');
-            if (btn) btn.innerText = "Update";
+            var btn = document.getElementById('btn_editor_import');
+            if (btn) {
+                var spanEl = btn.querySelector('span');
+                if (spanEl) spanEl.textContent = "Update";
+            }
         } else {
-            el.innerHTML = "• New Script";
-            el.style.color = "#2ecc71"; // Green for new
+            el.innerHTML = "New Script";
+            el.style.color = "var(--text-secondary)";
+            if (dot) dot.classList.remove('editing');
 
             // V4: Button Text
-            var btn = document.getElementById('btn_import');
-            if (btn) btn.innerText = "Import to TATA";
+            var btn = document.getElementById('btn_editor_import');
+            if (btn) {
+                var spanEl = btn.querySelector('span');
+                if (spanEl) spanEl.textContent = "Import";
+            }
         }
     }
 
@@ -438,14 +475,39 @@
         if (!userText) return;
 
         var apiKey = localStorage.getItem('tata_gemini_api_key');
+
+        // ถ้าไม่มี key ใน local → ลอง re-request จาก Main Panel
         if (!apiKey) {
-            alert("No API Key found. Settings -> Main Panel.");
+            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            getCS().dispatchEvent(req);
+            // รอรับ event กลับ 500ms
+            await new Promise(function (resolve) { setTimeout(resolve, 500); });
+            apiKey = localStorage.getItem('tata_gemini_api_key');
+        }
+
+        // ถ้ายังไม่มี → ลองดึงจาก inline input (ถ้ามี)
+        if (!apiKey) {
+            var inlineInput = document.getElementById('api_key_inline_input');
+            if (inlineInput && inlineInput.value.trim()) {
+                apiKey = inlineInput.value.trim();
+                localStorage.setItem('tata_gemini_api_key', apiKey);
+            }
+        }
+
+        if (!apiKey) {
+            addChatBubble("ai", "⚠️ <b>ไม่พบ API Key</b><br>กรอก Gemini API Key ในช่องด้านบน หรือตั้งค่าในหน้า Main Panel");
+            // แสดง inline input
+            var keySection = document.getElementById('api_key_section');
+            if (keySection) keySection.style.display = 'flex';
             return;
         }
 
         addChatBubble("user", userText);
         txtPrompt.value = "";
-        var loadingId = addChatBubble("ai", "<span class='loading-dots'>Thinking</span>");
+        // Start thinking animation
+        var promptBox = document.querySelector('.prompt-box');
+        if (promptBox) promptBox.classList.add('thinking');
+        var loadingId = addChatBubble("ai", "<span class='loading-dots' data-text='Thinking...'>Thinking...</span>");
 
         try {
             // V3: Use getEditorCode for CodeMirror
@@ -471,6 +533,10 @@
                 activateTab('tab_editor');
                 showToast("Code Generated!");
 
+                // Save to Recent Code
+                var recentName = result.name || document.getElementById('script_name_input').value || 'AI Script';
+                saveRecentCode(recentName, result.code);
+
                 if (!currentScriptId) {
                     currentScriptId = 'ai_script_' + Date.now();
                 }
@@ -485,6 +551,10 @@
         } catch (e) {
             var lb = document.getElementById(loadingId);
             if (lb) lb.innerText = "Error: " + e.message;
+        } finally {
+            // Stop thinking animation
+            var promptBox = document.querySelector('.prompt-box');
+            if (promptBox) promptBox.classList.remove('thinking');
         }
     }
 
@@ -499,7 +569,7 @@
     }
 
     function runCodeWithAutoFix(code, attempt) {
-        csInterface.evalScript(code, async function (res) {
+        getCS().evalScript(code, async function (res) {
             if (res && res !== 'undefined') {
                 if (/Error|Exception|ReferenceError|SyntaxError/.test(res) || res.indexOf('Line:') !== -1) {
                     // Error detected
@@ -555,35 +625,53 @@
     }
 
     function handleImport() {
-        // V3: Use getEditorCode for CodeMirror
         var scriptCode = getEditorCode();
+        if (!scriptCode || !scriptCode.trim()) {
+            showToast("No code to import!", "error");
+            return;
+        }
+
         var scriptName = document.getElementById('script_name_input').value || "New Script";
         var scriptIcon = document.getElementById('icon_value').value || "★";
-        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6"; // V4 Custom Input
+        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6";
 
-        var data = {
-            id: currentScriptId || ('ai_script_' + Date.now()),
-            name: scriptName,
-            icon: scriptIcon,
-            code: scriptCode,
-            color: scriptColor
-        };
+        // Import directly into Button tab (since we're in main panel now)
+        if (typeof TATA.saveUserScript === 'function') {
+            TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor, false, null, false);
+            showToast("Imported to Button tab!", "success");
+        } else {
+            // Fallback: dispatch event for external scripting panel
+            var data = {
+                id: currentScriptId || ('ai_script_' + Date.now()),
+                name: scriptName,
+                icon: scriptIcon,
+                code: scriptCode,
+                color: scriptColor
+            };
+            var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
+            event.data = JSON.stringify(data);
+            getCS().dispatchEvent(event);
+        }
 
-        var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
-        event.data = JSON.stringify(data);
-        csInterface.dispatchEvent(event);
+        // Switch to Button tab so user can see the new button
+        setTimeout(function () {
+            activateTab('tab_button');
+        }, 150);
 
-        // V4: Force Switch Focus to Main Panel
-        CSInterface.prototype.requestOpenExtension("com.tata.pro.panel", "");
-
-        var btn = document.getElementById('btn_import');
-        var original = btn.innerText;
-        btn.innerText = "Imported!";
-        btn.style.background = "#333";
-        setTimeout(() => {
-            btn.innerText = original;
-            btn.style.background = "#27ae60";
-        }, 2000);
+        // UI Feedback on Import button
+        var btn = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
+        if (btn) {
+            var spanEl = btn.querySelector('span');
+            var original = spanEl ? spanEl.textContent : btn.innerText;
+            if (spanEl) spanEl.textContent = "Imported!";
+            else btn.innerText = "Imported!";
+            btn.style.opacity = '0.6';
+            setTimeout(function () {
+                if (spanEl) spanEl.textContent = original;
+                else btn.innerText = original;
+                btn.style.opacity = '1';
+            }, 2000);
+        }
     }
 
     function handleClearChat() {
@@ -638,7 +726,7 @@
                         var data = await response.json();
                         var text = data.candidates[0].content.parts[0].text;
                         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                        console.log('[TATA] Using Gemini model: ' + modelName);
+                        console.log('[RocketLauncher] Using Gemini model: ' + modelName);
 
                         // Update UI with used model name (V7.3 Fix)
                         var modelBadge = document.getElementById('ai_model_name');
@@ -746,57 +834,103 @@
         setTimeout(() => t.classList.remove('show'), 3000);
     }
 
-    // ==================== SMART WORDS ====================
-    var smartGroups = [
-        ["Selected Items", "All Artboards", "Loop Selection", "Ungroup All", "Unlock All", "Select All"],
-        ["Create Dialog", "Randomize Color", "Resize to Fit", "Align Center", "Rotate 90°", "Flip Horizontal"],
-        ["Create Rectangle", "Create Circle", "Create Text", "Create Line", "Create Star", "Create Polygon"],
-        ["Set Fill Color", "Set Stroke Color", "Remove Stroke", "Opacity 50%", "Blend Mode", "Gradient Fill"],
-        ["Group Items", "Lock Layer", "Hide Selection", "Bring to Front", "Send to Back", "Ungroup"],
-        ["New Artboard", "Fit Artboard", "Rename Layer", "Delete Empty", "Duplicate Layer", "Move Layer"],
-        ["Change Font", "Outline Text", "Text Size", "Text Content", "Paragraph Style", "Area Type"],
-        ["If / Else", "For Loop", "Try / Catch", "Alert Message", "Confirm Dialog", "Console Log"],
-        ["Save as PNG", "Export SVG", "Current Path", "Close Doc", "Save as AI", "Open File"],
-        ["Input Field", "Checkbox", "Button", "Panel Window", "Dropdown List", "Progress Bar"]
-    ];
-    var currentGroupIdx = 0;
+    // ==================== RECENT CODE ====================
+    var RECENT_CODE_KEY = 'rocket_launcher_recent_code';
+    var MAX_RECENT = 5;
 
-    function initSmartWords() {
-        renderSmartWords();
+    function getRecentCodes() {
+        try {
+            var data = localStorage.getItem(RECENT_CODE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
     }
 
-    function renderSmartWords() {
-        var container = document.getElementById('smart_words_container');
+    function saveRecentCode(name, code) {
+        if (!code || code.trim().length < 10) return;
+        var list = getRecentCodes();
+        // Remove duplicate if same name exists
+        list = list.filter(function (item) { return item.name !== name; });
+        // Add to front
+        list.unshift({
+            name: name || 'Untitled',
+            code: code,
+            timestamp: Date.now()
+        });
+        // Keep only MAX_RECENT
+        if (list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT);
+        localStorage.setItem(RECENT_CODE_KEY, JSON.stringify(list));
+        renderRecentCodes();
+    }
+
+    function renderRecentCodes() {
+        var container = document.getElementById('recent_code_list');
         if (!container) return;
+
+        var list = getRecentCodes();
         container.innerHTML = '';
 
-        var cycleBtn = document.createElement('div');
-        cycleBtn.innerHTML = "↻";
-        cycleBtn.className = "cycle-btn";
-        cycleBtn.title = "Next Group";
-        cycleBtn.onclick = function () {
-            currentGroupIdx = (currentGroupIdx + 1) % smartGroups.length;
-            renderSmartWords();
-        };
-        container.appendChild(cycleBtn);
+        if (list.length === 0) {
+            container.innerHTML = '<div class="recent-code-empty">No recent code yet</div>';
+            return;
+        }
 
-        var group = smartGroups[currentGroupIdx];
-        group.forEach(word => {
-            var chip = document.createElement('div');
-            chip.innerText = word;
-            chip.className = "smart-chip";
-            chip.onclick = function () {
-                var input = document.getElementById('prompt_input');
-                var val = input.value;
-                if (val && val.slice(-1) !== ' ') input.value += ' ';
-                input.value += word;
-                input.focus();
+        list.forEach(function (item, idx) {
+            var row = document.createElement('div');
+            row.className = 'recent-code-item';
+            row.title = item.name;
+
+            var timeAgo = getTimeAgo(item.timestamp);
+
+            row.innerHTML =
+                '<span class="rc-icon">📄</span>' +
+                '<div class="rc-info">' +
+                '<div class="rc-name">' + escapeHtml(item.name) + '</div>' +
+                '<div class="rc-time">' + timeAgo + '</div>' +
+                '</div>' +
+                '<span class="rc-load">LOAD</span>';
+
+            row.onclick = function () {
+                setEditorCode(item.code);
+                var nameInput = document.getElementById('script_name_input');
+                if (nameInput) nameInput.value = item.name;
+                activateTab('tab_editor');
+                showToast('Loaded: ' + item.name);
             };
-            container.appendChild(chip);
+
+            container.appendChild(row);
         });
     }
 
+    function getTimeAgo(ts) {
+        var diff = Date.now() - ts;
+        var mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + 'm ago';
+        var hours = Math.floor(mins / 60);
+        if (hours < 24) return hours + 'h ago';
+        var days = Math.floor(hours / 24);
+        return days + 'd ago';
+    }
 
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function initRecentCode() {
+        renderRecentCodes();
+        var btnClear = document.getElementById('btn_clear_recent');
+        if (btnClear) {
+            btnClear.addEventListener('click', function () {
+                localStorage.removeItem(RECENT_CODE_KEY);
+                renderRecentCodes();
+                showToast('Recent code cleared');
+            });
+        }
+    }
 
     // ==================== V3: CODEMIRROR ====================
     var cmEditor = null;
@@ -808,7 +942,7 @@
             return;
         }
 
-        cmEditor = CodeMirror.fromTextArea(textarea, {
+        cmEditor = window.cmEditor = CodeMirror.fromTextArea(textarea, {
             mode: 'javascript',
             theme: 'material-darker',
             lineNumbers: true,
@@ -856,7 +990,28 @@
     window.getEditorCode = getEditorCode;
     window.setEditorCode = setEditorCode;
 
-    // Start
-    init();
+    // Save API Key from inline input
+    window.saveInlineApiKey = function () {
+        var input = document.getElementById('api_key_inline_input');
+        if (!input || !input.value.trim()) {
+            showToast('⚠️ กรุณากรอก API Key');
+            return;
+        }
+        var key = input.value.trim();
+        localStorage.setItem('tata_gemini_api_key', key);
+
+        // ซ่อน section
+        var keySection = document.getElementById('api_key_section');
+        if (keySection) keySection.style.display = 'none';
+
+        showToast('✅ บันทึก API Key แล้ว');
+        addChatBubble("ai", "✅ API Key บันทึกแล้ว! ลองพิมพ์คำสั่งได้เลยครับ");
+    };
+
+    // Export to TATA namespace (no auto-init)
+    TATA.initScripting = init;
+
+    // Expose editor helpers globally
+    window.cmEditor = null; // Will be set by initCodeMirror
 
 })();

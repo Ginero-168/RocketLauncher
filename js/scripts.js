@@ -30,12 +30,18 @@
     // ==========================================
     function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender) {
         var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
-        var id = isUpdate ? targetId : 'script_' + Date.now();
+
+        // Use targetId if provided, otherwise generate a new script_ ID
+        var id = targetId ? targetId : 'script_' + Date.now();
+
+        var isScriptFile = (typeof code === 'string' && code.endsWith('.jsx'));
+        var filePath = isScriptFile ? code.trim() : null;
 
         userScripts[id] = {
             name: name,
             icon: icon,
-            code: code,
+            code: isScriptFile ? '' : code,
+            script: filePath, // Store the .jsx path if applicable
             color: color,
             date: Date.now()
         };
@@ -46,20 +52,32 @@
         // Add to V2 Layout if new
         if (!isUpdate) {
             var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
-            if (!v2Layout['swift']) v2Layout['swift'] = [];
-            v2Layout['swift'].push({
+            if (!v2Layout['tab_button']) v2Layout['tab_button'] = [];
+
+            var newButtonSettings = {
                 id: id,
                 label: name,
                 icon: icon,
-                code: code,
-                type: 'code',
+                type: isScriptFile ? 'script' : 'code',
                 color: color
-            });
+            };
+
+            if (isScriptFile) {
+                newButtonSettings.script = filePath;
+            } else {
+                newButtonSettings.code = code;
+            }
+
+            v2Layout['tab_button'].push(newButtonSettings);
             if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
-            if (TATA.saveV2Layout) TATA.saveV2Layout();
+            // Save directly to localStorage (avoids split-brain with main.js's saveV2Layout)
+            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
         }
 
-        if (!skipRender && TATA.renderGrid) TATA.renderGrid();
+        if (!skipRender) {
+            var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+            if (renderFn) renderFn();
+        }
         return id;
     }
 
@@ -79,7 +97,7 @@
 
         // Remove from V2 Layout
         var v2Dirty = false;
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (t) {
+        ['tab_button'].forEach(function (t) {
             var list = v2Layout[t];
             if (!list) return;
             var idx = -1;
@@ -97,48 +115,13 @@
 
         if (v2Dirty) {
             if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
-            if (TATA.saveV2Layout) TATA.saveV2Layout();
+            // Save directly to localStorage (avoids split-brain with main.js's saveV2Layout)
+            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
         }
 
-        if (TATA.renderGrid) TATA.renderGrid();
+        var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+        if (renderFn) renderFn();
         if (TATA.showToast) TATA.showToast("Script deleted!", "success");
-    }
-
-    // ==========================================
-    // Create User Button (Legacy support)
-    // ==========================================
-    function createUserButton(id, script) {
-        var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
-
-        if (!script && userScripts[id]) {
-            script = userScripts[id];
-        }
-        if (!script) return null;
-
-        var btn = document.createElement('button');
-        btn.id = id;
-        btn.className = 'btn-' + (script.color || 'red');
-        btn.innerHTML = (script.icon || '★') + ' ' + script.name;
-        btn.title = script.name;
-
-        btn.onclick = function () {
-            var cs = TATA.getCSInterface ? TATA.getCSInterface() : null;
-            if (cs) cs.evalScript(script.code);
-        };
-
-        btn.oncontextmenu = function (e) {
-            e.preventDefault();
-            window.currentContextScriptId = id;
-            if (TATA.setCurrentContextId) TATA.setCurrentContextId(id);
-            var contextMenuEl = document.getElementById('context_menu');
-            if (contextMenuEl) {
-                contextMenuEl.style.top = e.clientY + 'px';
-                contextMenuEl.style.left = e.clientX + 'px';
-                contextMenuEl.style.display = 'block';
-            }
-        };
-
-        return btn;
     }
 
     // ==========================================
@@ -177,7 +160,6 @@
     TATA.initUserScripts = initUserScripts;
     TATA.saveUserScript = saveUserScript;
     TATA.deleteUserScript = deleteUserScript;
-    TATA.createUserButton = createUserButton;
     TATA.runScript = runScript;
 
 })();

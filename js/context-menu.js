@@ -13,7 +13,7 @@
     var currentContextScriptId = null;
 
     // Quick Color Palette
-    var COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
+    var COLORS = ['', '#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
 
     // ==========================================
     // Start Context Menu
@@ -29,7 +29,14 @@
             ctxColors.innerHTML = '';
             COLORS.forEach(function (c) {
                 var sw = document.createElement('div');
-                sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
+                if (c === '') {
+                    sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: transparent; cursor: pointer; border: 1px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.1s;';
+                    sw.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1;">×</span>';
+                    sw.title = "No Color";
+                } else {
+                    sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
+                }
+
                 sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
                 sw.onmouseout = function () { this.style.transform = 'scale(1)'; };
                 sw.onclick = function (e) {
@@ -44,10 +51,83 @@
             });
         }
 
-        // Global Hide
-        window.onclick = function (e) {
-            if (contextMenuEl) contextMenuEl.style.display = 'none';
-        };
+        // Global Hide (use addEventListener with guard to prevent overwriting other handlers)
+        if (!TATA._contextMenuGlobalHandler) {
+            TATA._contextMenuGlobalHandler = true;
+            document.addEventListener('click', function (e) {
+                if (contextMenuEl) contextMenuEl.style.display = 'none';
+            });
+        }
+
+        // Copy / Duplicate Action
+        var btnCopy = document.getElementById('ctx_copy');
+        if (btnCopy) {
+            btnCopy.onclick = function (e) {
+                e.stopPropagation();
+                var targetId = window.currentContextScriptId || currentContextScriptId;
+                if (!targetId) return;
+
+                if (contextMenuEl) contextMenuEl.style.display = 'none';
+
+                // Find the existing script (could be default or user)
+                var originalScript = null;
+                var isDefault = targetId.indexOf('btn_') === 0;
+
+                if (isDefault) {
+                    var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : (TATA.v2Defaults || {});
+                    var defaults = [];
+                    // Flatten all layout arrays (in case defaults are mixed in different tabs)
+                    if (v2Layout['tab_button']) defaults = defaults.concat(v2Layout['tab_button']);
+
+                    for (var i = 0; i < defaults.length; i++) {
+                        if (defaults[i].id === targetId) {
+                            originalScript = Object.assign({}, defaults[i]); // Create a shallow copy
+                            break;
+                        }
+                    }
+                } else {
+                    var userScripts = TATA.getUserScripts();
+                    originalScript = userScripts[targetId];
+                }
+
+                if (!originalScript) {
+                    TATA.showToast && TATA.showToast("Script not found.", "error");
+                    return;
+                }
+
+                // Create a duplicate payload
+                var namePrefix = isDefault ? originalScript.label : originalScript.name;
+                var newName = namePrefix + " (Copy)";
+                var newId = "copy_" + Date.now();
+                var newIcon = originalScript.icon || "★";
+                var newColor = originalScript.color || "#60a5fa";
+                var newCode = isDefault ? (originalScript.code || "") : (originalScript.code || "");
+
+                // If it's a default script with a .jsx file, read the actual file content
+                if (isDefault && originalScript.script && originalScript.script.endsWith('.jsx')) {
+                    try {
+                        var fs = require('fs');
+                        var path = require('path');
+                        var extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
+                        var jsxPath = path.join(extensionPath, 'jsx', originalScript.script);
+                        newCode = fs.readFileSync(jsxPath, 'utf8');
+                    } catch (readErr) {
+                        console.error('[TATA] Failed to read JSX file:', readErr);
+                        newCode = "// Could not read " + originalScript.script + " - file may not exist";
+                    }
+                }
+
+                if (typeof TATA.saveUserScript === 'function') {
+                    // saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender)
+                    TATA.saveUserScript(newName, newIcon, newCode, newColor, false, newId, false);
+                    TATA.showToast && TATA.showToast("Created a copy!", "success");
+
+                    // The saveUserScript automatically renders the grid.
+                } else {
+                    TATA.showToast && TATA.showToast("Error creating copy.", "error");
+                }
+            };
+        }
 
         // Edit Action
         if (btnEdit) {
@@ -103,7 +183,7 @@
         var found = false;
 
         // Update In-Memory Layout
-        ['swift', 'creative', 'organize', 'tools'].forEach(function (tab) {
+        ['tab_button'].forEach(function (tab) {
             if (v2Layout[tab]) {
                 v2Layout[tab].forEach(function (item) {
                     if (item.id === targetId) {
@@ -118,7 +198,6 @@
         if (userScripts[targetId]) {
             userScripts[targetId].color = newColor;
             TATA.setUserScripts && TATA.setUserScripts(userScripts);
-            localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
         }
 
         // Update Hotkeys
@@ -132,14 +211,25 @@
 
         if (hotkeyUpdated) {
             TATA.setHotkeys && TATA.setHotkeys(hotkeys);
+        }
+
+        // Batch all localStorage writes together (was 3 separate writes)
+        if (found) {
+            TATA.setV2Layout && TATA.setV2Layout(v2Layout);
+            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+        }
+        if (userScripts[targetId]) {
+            localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
+        }
+        if (hotkeyUpdated) {
             TATA.saveHotkeys && TATA.saveHotkeys();
             TATA.renderHotkeys && TATA.renderHotkeys();
         }
 
+        // Render & toast
         if (found) {
-            TATA.setV2Layout && TATA.setV2Layout(v2Layout);
-            TATA.saveV2Layout && TATA.saveV2Layout();
-            TATA.renderGrid && TATA.renderGrid();
+            var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+            renderFn && renderFn();
             TATA.showToast && TATA.showToast("Color Updated!", "success");
         } else {
             TATA.showToast && TATA.showToast("Item not found in layout.", "error");
