@@ -1785,6 +1785,10 @@ body.export-mode .tab-actions {
     transition: background 0.1s;
 }
 
+.ctx-edit {
+    color: #a3e635;
+}
+
 .ctx-copy {
     color: #60a5fa;
 }
