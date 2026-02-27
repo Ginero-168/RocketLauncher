@@ -9,6 +9,25 @@
 
     var doc = app.activeDocument;
 
+    // ===== Flow Params Guard =====
+    if (typeof params !== 'undefined' && params) {
+        var targetWidth = parseFloat(params.width) || 100;
+        var selection = doc.selection;
+        var resized = 0;
+        for (var i = 0; i < selection.length; i++) {
+            try {
+                var currentWidth = selection[i].width;
+                if (currentWidth > 0) {
+                    var scale = (targetWidth / currentWidth) * 100;
+                    selection[i].resize(scale, scale);
+                    resized++;
+                }
+            } catch (e) { }
+        }
+        return "Resized " + resized + " objects";
+    }
+    // ===== End Flow Params Guard =====
+
     // Create dialog
     var dialog = new Window('dialog', 'Resize Objects');
     dialog.alignChildren = 'fill';

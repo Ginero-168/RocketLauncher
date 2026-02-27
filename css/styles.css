@@ -2112,3 +2112,31 @@ body.collapsed .footer {
 .recent-code-item:hover .rc-load {
     opacity: 1;
 }
+
+/* ===========================================
+   FLOW v2 Styles
+   =========================================== */
+
+/* Flow step running animation */
+.flow-step.running {
+    border-color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.1) !important;
+    animation: pulse 1s infinite;
+}
+
+.flow-step.completed {
+    border-color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.flow-step.error {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Flow hotkey slot */
+.hotkey-slot.flow-slot {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+    border-color: #8b5cf6 !important;
+    color: #fff !important;
+}

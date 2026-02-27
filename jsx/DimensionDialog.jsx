@@ -248,6 +248,28 @@
         restoreAndLock(doc, passActiveLayer, dimensionLayer);
     }
 
+    // ===== Flow Params Guard =====
+    if (typeof params !== 'undefined' && params) {
+        var size = parseInt(params.size) || 100;
+        var name = String(params.name || '').replace(/^\s+|\s+$/g, '');
+        var applyToAll = params.allArtboards === true || params.allArtboards === 'true';
+
+        try {
+            if (applyToAll) {
+                for (var pi = 0; pi < doc.artboards.length; pi++) {
+                    dimensionMaster(doc, pi, "", size);
+                }
+            } else {
+                var pidx = doc.artboards.getActiveArtboardIndex();
+                dimensionMaster(doc, pidx, name, size);
+            }
+            return "Dimension labels created!";
+        } catch (pe) {
+            return "Error: " + pe.message;
+        }
+    }
+    // ===== End Flow Params Guard =====
+
     // ========== Dialog ==========
 
     var dialog = new Window('dialog', 'Dimension Tool');

@@ -58,7 +58,11 @@
                     slot.style.boxShadow = '';
                 }
 
-                if (data.icon) {
+                // Flow type: show 🎬 emoji
+                if (data.type === 'flow') {
+                    slot.innerText = '🎬';
+                    slot.style.fontSize = '14px';
+                } else if (data.icon) {
                     var iconSpan = document.createElement('span');
                     iconSpan.innerHTML = data.icon;
                     var svg = iconSpan.querySelector('svg');
@@ -90,9 +94,18 @@
                 })(i);
                 slot.appendChild(removeBtn);
 
-                slot.onclick = (function (btnId) {
+                slot.onclick = (function (slotData) {
                     return function () {
-                        var btn = document.getElementById(btnId);
+                        // Flow type: run flow directly
+                        if (slotData.type === 'flow' && typeof TATA.playFlow === 'function') {
+                            TATA.playFlow(slotData.id);
+                            this.style.opacity = '0.5';
+                            var self = this;
+                            setTimeout(function () { self.style.opacity = '1'; }, 100);
+                            return;
+                        }
+                        // Default: trigger button click
+                        var btn = document.getElementById(slotData.id);
                         if (btn) {
                             btn.click();
                             this.style.opacity = '0.5';
@@ -100,7 +113,7 @@
                             setTimeout(function () { self.style.opacity = '1'; }, 100);
                         }
                     };
-                })(data.id);
+                })(data);
             } else {
                 slot.title = "Drag a button here";
             }
