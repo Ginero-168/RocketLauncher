@@ -172,6 +172,17 @@
     }
 
     // ==========================================
+    // Fetch with Timeout (AbortController)
+    // ==========================================
+    function fetchWithTimeout(url, options, timeoutMs) {
+        var controller = new AbortController();
+        var id = setTimeout(function () { controller.abort(); }, timeoutMs || 30000);
+        options = options || {};
+        options.signal = controller.signal;
+        return fetch(url, options).finally(function () { clearTimeout(id); });
+    }
+
+    // ==========================================
     // Export to Global Namespace
     // ==========================================
     TATA.debounce = debounce;
@@ -189,6 +200,7 @@
     TATA.backupBeforeSave = backupBeforeSave;
     TATA.restoreFromBackup = restoreFromBackup;
     TATA.verifyPanelHealth = verifyPanelHealth;
+    TATA.fetchWithTimeout = fetchWithTimeout;
     TATA.STORAGE_VERSION = STORAGE_VERSION;
 
 })();

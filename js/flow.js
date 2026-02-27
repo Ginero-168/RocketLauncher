@@ -301,11 +301,7 @@
         addCustom.textContent = '+ Custom Code';
         addCustom.style.cssText = 'flex: 1; padding: 8px; background: #333; border: 1px solid #444; border-radius: 6px; color: #ccc; font-size: 11px; cursor: pointer; margin: 0;';
         addCustom.onclick = function () {
-            var code = prompt('Enter JSX code for this step:');
-            if (code) {
-                var name = prompt('Step name:') || 'Custom Step';
-                addStep(flowId, { name: name, code: code });
-            }
+            showAddCustomCodeModal(flowId);
         };
 
         addArea.appendChild(addFromScripts);
@@ -412,7 +408,7 @@
     }
 
     // ==========================================
-    // Add From Scripts Modal
+    // Add From Scripts — In-Panel Overlay
     // ==========================================
     function showAddFromScriptsModal(flowId) {
         var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
@@ -424,23 +420,112 @@
             return;
         }
 
-        // Simple selection via prompt
-        var names = items.map(function (item, idx) {
-            return (idx + 1) + '. ' + (item.label || item.name || 'Script');
-        }).join('\n');
+        // Create overlay
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);';
 
-        var choice = prompt('Pick a script (enter number):\n' + names);
-        if (choice) {
-            var idx = parseInt(choice) - 1;
-            if (idx >= 0 && idx < items.length) {
-                var item = items[idx];
+        var panel = document.createElement('div');
+        panel.style.cssText = 'background: #252542; border: 1px solid #3a3a5c; border-radius: 12px; width: 260px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.6);';
+
+        // Header
+        var header = document.createElement('div');
+        header.style.cssText = 'padding: 12px 16px; border-bottom: 1px solid #3a3a5c; display: flex; justify-content: space-between; align-items: center;';
+        header.innerHTML = '<span style="font-size: 12px; font-weight: 600; color: #e0e0e0;">Select Script</span>';
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.style.cssText = 'width: 24px; height: 24px; padding: 0; background: transparent; border: none; color: #888; font-size: 18px; cursor: pointer; margin: 0; display: flex; align-items: center; justify-content: center;';
+        closeBtn.onclick = function () { document.body.removeChild(overlay); };
+        header.appendChild(closeBtn);
+        panel.appendChild(header);
+
+        // List
+        var list = document.createElement('div');
+        list.style.cssText = 'overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px;';
+
+        items.forEach(function (item) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; border-radius: 8px; cursor: pointer; transition: all 0.15s;';
+            row.onmouseenter = function () { this.style.borderColor = '#6366f1'; this.style.background = '#252542'; };
+            row.onmouseleave = function () { this.style.borderColor = '#3a3a5c'; this.style.background = '#1a1a2e'; };
+
+            var iconDiv = document.createElement('div');
+            iconDiv.style.cssText = 'width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
+            iconDiv.innerHTML = item.icon || '▶';
+            var svg = iconDiv.querySelector('svg');
+            if (svg) { svg.setAttribute('width', '18'); svg.setAttribute('height', '18'); }
+
+            var label = document.createElement('span');
+            label.style.cssText = 'font-size: 12px; color: #e0e0e0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+            label.textContent = item.label || item.name || 'Script';
+
+            row.appendChild(iconDiv);
+            row.appendChild(label);
+
+            row.onclick = function () {
                 addStep(flowId, {
                     name: item.label || item.name || 'Script',
                     code: item.code || (item.script ? ('$.evalFile("' + (TATA.extensionPath || '') + '/jsx/' + item.script + '")') : ''),
                     icon: '▶'
                 });
-            }
-        }
+                document.body.removeChild(overlay);
+            };
+
+            list.appendChild(row);
+        });
+
+        panel.appendChild(list);
+        overlay.appendChild(panel);
+        overlay.onclick = function (e) { if (e.target === overlay) document.body.removeChild(overlay); };
+        document.body.appendChild(overlay);
+    }
+
+    // ==========================================
+    // Add Custom Code — In-Panel Overlay
+    // ==========================================
+    function showAddCustomCodeModal(flowId) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);';
+
+        var panel = document.createElement('div');
+        panel.style.cssText = 'background: #252542; border: 1px solid #3a3a5c; border-radius: 12px; width: 280px; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.6); padding: 16px; gap: 12px;';
+
+        panel.innerHTML =
+            '<div style="font-size: 12px; font-weight: 600; color: #e0e0e0;">Custom Code Step</div>' +
+            '<div style="display: flex; flex-direction: column; gap: 4px;">' +
+            '  <label style="font-size: 10px; color: #888; text-transform: uppercase;">Step Name</label>' +
+            '  <input type="text" id="flow_custom_name" placeholder="My Step" style="background: #1a1a2e; border: 1px solid #3a3a5c; color: #e0e0e0; padding: 8px 10px; border-radius: 6px; font-size: 11px; outline: none; width: 100%; box-sizing: border-box;">' +
+            '</div>' +
+            '<div style="display: flex; flex-direction: column; gap: 4px;">' +
+            '  <label style="font-size: 10px; color: #888; text-transform: uppercase;">JSX Code</label>' +
+            '  <textarea id="flow_custom_code" placeholder="// Enter JSX code..." style="background: #1a1a2e; border: 1px solid #3a3a5c; color: #e0e0e0; padding: 8px 10px; border-radius: 6px; font-size: 11px; font-family: monospace; height: 100px; resize: vertical; outline: none; width: 100%; box-sizing: border-box;"></textarea>' +
+            '</div>';
+
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display: flex; gap: 8px; justify-content: flex-end;';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = 'padding: 6px 14px; background: transparent; border: 1px solid #3a3a5c; border-radius: 6px; color: #888; font-size: 11px; cursor: pointer; margin: 0; width: auto;';
+        cancelBtn.onclick = function () { document.body.removeChild(overlay); };
+
+        var addBtn = document.createElement('button');
+        addBtn.textContent = 'Add Step';
+        addBtn.style.cssText = 'padding: 6px 14px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; border-radius: 6px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; margin: 0; width: auto;';
+        addBtn.onclick = function () {
+            var code = panel.querySelector('#flow_custom_code').value.trim();
+            var name = panel.querySelector('#flow_custom_name').value.trim() || 'Custom Step';
+            if (!code) { showToast('Please enter JSX code'); return; }
+            addStep(flowId, { name: name, code: code });
+            document.body.removeChild(overlay);
+        };
+
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(addBtn);
+        panel.appendChild(btnRow);
+
+        overlay.appendChild(panel);
+        overlay.onclick = function (e) { if (e.target === overlay) document.body.removeChild(overlay); };
+        document.body.appendChild(overlay);
     }
 
     // ==========================================

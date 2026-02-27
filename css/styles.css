@@ -1,35 +1,50 @@
 :root {
-    /* V7 Vibrant Dark Theme */
-    --bg-color: #1a1a2e;
-    --surface-color: #252542;
-    --surface-hover: #2f2f52;
-    --text-color: #e0e0e0;
-    --text-secondary: #9ca3af;
+    /* V8 Premium Dark Theme */
+    --bg-color: #0f0f1a;
+    --surface-color: #1a1a2e;
+    --surface-hover: #252542;
+    --text-color: #e8e8f0;
+    --text-secondary: #8b8fa3;
 
     --accent-color: #6366f1;
     --accent-hover: #818cf8;
-    --accent-glow: rgba(99, 102, 241, 0.3);
+    --accent-glow: rgba(99, 102, 241, 0.25);
 
-    --border-color: #3a3a5c;
-    --input-bg: #141428;
+    --border-color: rgba(99, 102, 241, 0.15);
+    --input-bg: #0c0c18;
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.1);
 
     --danger-color: #ef4444;
 
-    /* New Tab Accents */
+    /* Tab Accents */
     --button-color: #6366f1;
     --flow-color: #8b5cf6;
     --editor-color: #10b981;
     --ai-color: #f59e0b;
+
+    /* Glass Effect */
+    --glass-bg: rgba(26, 26, 46, 0.7);
+    --glass-border: rgba(99, 102, 241, 0.12);
+
+    /* Reusable Alpha Shades */
+    --white-4: rgba(255, 255, 255, 0.04);
+    --white-6: rgba(255, 255, 255, 0.06);
+    --white-8: rgba(255, 255, 255, 0.08);
+    --white-10: rgba(255, 255, 255, 0.1);
+    --black-50: rgba(0, 0, 0, 0.5);
+    --accent-8: rgba(99, 102, 241, 0.08);
+    --accent-20: rgba(99, 102, 241, 0.2);
+    --accent-30: rgba(99, 102, 241, 0.3);
 }
 
 body {
     background-color: var(--bg-color);
+    background-image: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
     color: var(--text-color);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    /* Prefer Inter if available */
     margin: 0;
     padding: 0;
     font-size: 11px;
@@ -47,7 +62,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(99, 102, 241, 0.3);
+    background: var(--accent-30);
     border-radius: 3px;
 }
 
@@ -55,100 +70,204 @@ body {
     background: rgba(99, 102, 241, 0.5);
 }
 
-/* Tabs - Modern Underline Style */
+/* ==========================================
+   Tabs — Premium Reference Adapted
+   ========================================== */
 .tabs {
     display: flex;
-    background: var(--bg-color);
-    /* Match body for seamless look */
-    padding: 0 8px;
-    gap: 4px;
-    /* Tighter Spacing */
+    background: linear-gradient(180deg, rgba(15, 15, 30, 0.95) 0%, var(--bg-color) 100%);
+    padding: 0 6px;
+    gap: 2px;
     flex-shrink: 0;
-    border-bottom: 1px solid #333;
-    /* Separator line */
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none;
+    backdrop-filter: blur(20px);
+    position: relative;
+    outline: none;
 }
+
+.tabs::before,
+.tabs::after {
+    display: none !important;
+    content: none !important;
+}
+
+
 
 .tab-btn {
     flex: 1;
     background: transparent;
     border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-secondary);
-    padding: 10px 4px;
+    border-bottom: none;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 12px 4px 10px;
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10px;
+    font-weight: 600;
     position: relative;
-    border-radius: 0;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px 8px 0 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: center;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     margin: 0;
     width: auto;
+    overflow: hidden;
+}
+
+/* Hover overlay (reference: .tab-btn::before) */
+.tab-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Bottom indicator bar (reference: .tab-btn::after) */
+.tab-btn::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 70%;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+    border-radius: 4px 4px 0 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-btn:hover {
-    color: var(--text-color);
+    color: rgba(255, 255, 255, 0.8);
     background: transparent;
-    /* No hover bg */
+}
+
+.tab-btn:hover::before {
+    opacity: 0.5;
 }
 
 .tab-btn.active {
-    color: var(--text-color);
-    font-weight: 600;
+    color: #fff;
+    font-weight: 700;
 }
 
-/* Tab Specific Glows */
+.tab-btn.active::before {
+    opacity: 1;
+}
+
+.tab-btn.active::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+/* Per-Tab Accent Colors */
+.tab-btn[data-tab="tab_button"].active::after {
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+}
+
 .tab-btn[data-tab="tab_button"].active {
-    color: #fff;
-    border-color: var(--button-color);
+    color: #818cf8;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.tab-btn[data-tab="tab_flow"].active::after {
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
 }
 
 .tab-btn[data-tab="tab_flow"].active {
-    color: #fff;
-    border-color: var(--flow-color);
+    color: #a78bfa;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.tab-btn[data-tab="tab_editor"].active::after {
+    background: linear-gradient(90deg, #10b981, #34d399);
 }
 
 .tab-btn[data-tab="tab_editor"].active {
-    color: #fff;
-    border-color: var(--editor-color);
+    color: #34d399;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.tab-btn[data-tab="tab_ai"].active::after {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
 }
 
 .tab-btn[data-tab="tab_ai"].active {
-    color: #fff;
-    border-color: var(--ai-color);
+    color: #fbbf24;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-
-/* simplified tab logic */
+/* ==========================================
+   Tab Content — Animated Panels
+   ========================================== */
 .tab-content {
-    display: none !important;
+    display: none;
 }
 
 .tab-content.active {
     display: block;
-    /* Default, overridden by grid in index.html */
     flex: 1;
     min-height: 0;
     height: auto;
     overflow-y: auto;
-    padding-bottom: 100px;
-    /* V3: Extra space for footer toolbar */
+    padding-bottom: 8px;
+    animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Tab content fade-in */
-.tab-content.active {
-    animation: fadeIn 0.2s ease;
+/* ==========================================
+   Animations — Reference Adapted
+   ========================================== */
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
 }
 
 /* Controls */
@@ -231,7 +350,7 @@ button::before {
     left: 0;
     right: 0;
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--white-8);
 }
 
 button:hover {
@@ -498,6 +617,70 @@ button:hover .icon {
     font-size: 14px;
 }
 
+/* ==========================================
+   Section Collapsible Headers (V7 Tab Organization)
+   ========================================== */
+.script-section {
+    width: 100%;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.script-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    /* Extremely small */
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    /* Purple Theme */
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.script-section .section-header:hover {
+    background: #111111;
+    /* Black like current */
+}
+
+.script-section .section-title {
+    color: #ffffff;
+    font-size: 8.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin: 0;
+}
+
+.script-section .section-arrow {
+    fill: #ffffff;
+    width: 12px;
+    height: 12px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.script-section .section-header.collapsed .section-arrow {
+    transform: rotate(-180deg);
+}
+
+.section-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 32px;
+    gap: 4px;
+    padding: 4px 12px 12px 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+}
+
+.section-grid.collapsed {
+    display: none;
+    opacity: 0;
+}
+
 .swatch-blue {
     background-color: #3498db;
 }
@@ -637,7 +820,7 @@ body.dragging-mode .tab-btn {
     right: 2px;
     width: 16px;
     height: 16px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--black-50);
     border-radius: 50%;
     color: #aaa;
     display: flex;
@@ -772,7 +955,7 @@ body.dragging-mode .tab-btn {
     padding: 4px;
     gap: 4px;
     background: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--white-4);
     min-height: 40px;
     /* Base height */
     height: auto;
@@ -889,13 +1072,38 @@ body.dragging-mode .tab-btn {
     border-color: var(--accent-color);
 }
 
+/* Tab Actions Bar (New/Import/Export) — Floating bottom center */
+.tab-actions {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 14px;
+    z-index: 500;
+    background: rgba(15, 15, 30, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(99, 102, 241, 0.08);
+}
+
+.tab-actions .toolbar-btn {
+    height: 28px;
+    padding: 4px 14px;
+    font-size: 10px;
+}
+
 /* Collapsed State */
 body.collapsed .tabs,
-body.collapsed .tab-content {
+body.collapsed .tab-content,
+body.collapsed .tab-actions {
     display: none;
 }
 
-/* Modal */
+/* Modal — Premium Glass Card */
 .modal {
     display: none;
     position: fixed;
@@ -903,17 +1111,17 @@ body.collapsed .tab-content {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.65);
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    backdrop-filter: blur(8px);
 }
 
 /* Ensure AI Modal is above Script Modal */
 #ai_prompt_modal {
     z-index: 1100;
     background: rgba(0, 0, 0, 0.7);
-    /* Slightly darker backdrop for focus */
 }
 
 .modal.active {
@@ -921,12 +1129,12 @@ body.collapsed .tab-content {
 }
 
 .modal-content {
-    background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 16px;
-    width: 250px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(15, 15, 30, 0.95) 0%, rgba(25, 25, 45, 0.98) 100%);
+    border: 1px solid var(--white-8);
+    border-radius: 16px;
+    padding: 24px;
+    width: 270px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 80px rgba(99, 102, 241, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .modal-content h3 {
@@ -1367,58 +1575,77 @@ input.validation-error+.validation-message {
     font-weight: 500;
 }
 
-/* V2 Footer Toolbar */
+/* V8 Footer Toolbar — Premium Glass */
 .footer-toolbar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
     width: 100%;
-    height: 50px;
-    background: #2b2b2b;
-    border-top: 1px solid #444;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(15, 15, 30, 0.95) 0%, rgba(10, 10, 24, 0.98) 100%);
+    border-top: 1px solid var(--white-6);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10px;
+    padding: 0 12px;
     box-sizing: border-box;
     z-index: 100;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Glowing top edge */
+.footer-toolbar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
 }
 
 .toolbar-left {
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
 .toolbar-btn {
-    background: #f0f0f0;
-    color: #333;
-    border: none;
-    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+    color: #e0e0e0;
+    border: 1px solid var(--white-10);
+    border-radius: 8px;
     padding: 6px 16px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
-    height: 30px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     width: auto;
-    /* Override default button width */
     margin-bottom: 0;
-    /* Override default */
+    backdrop-filter: blur(10px);
 }
 
 .toolbar-btn:hover {
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.2);
     transform: translateY(-1px);
-    border-color: transparent;
-    /* Override default */
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 
-/* Primary Button (New) could be different, but image shows uniformity. 
-   Verify image: All 3 look like white/light gray blocks. Settings is dark. */
+.toolbar-btn.primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: white;
+}
+
+.toolbar-btn.primary:hover {
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
 
 .toolbar-right {
     display: flex;
@@ -1426,35 +1653,29 @@ input.validation-error+.validation-message {
 }
 
 .icon-btn {
-    background: transparent;
-    border: 1px solid #444;
-    color: #aaa;
-    width: 30px;
-    height: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--white-10);
+    color: #888;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    /* Circle */
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     margin-bottom: 0;
+    transition: all 0.2s;
 }
 
 .icon-btn:hover {
-    background: #444;
+    background: var(--border-color);
     color: #fff;
-    border-color: #555;
+    border-color: var(--accent-30);
     transform: rotate(30deg);
 }
 
-/* Adjust Tab Content Height to account for new Footer */
-.tab-content {
-    height: calc(100vh - 100px) !important;
-    /* Header ~50px, Footer ~50px */
-}
-
-/* Hide old footer toggle if it exists or ensure it doesn't conflict */
+/* Hide old footer toggle if it exists */
 .footer {
     display: none !important;
 }
@@ -1494,6 +1715,15 @@ input.validation-error+.validation-message {
     border-color: rgba(239, 68, 68, 0.5);
 }
 
+/* Grid Button Hover — uses --btn-color set by JS for per-button glow */
+.grid-btn {
+    --btn-color: transparent;
+}
+
+.grid-btn:hover {
+    box-shadow: 0 0 8px var(--btn-color);
+}
+
 /* Export Mode Visuals */
 body.export-mode .grid-btn {
     animation: shake 0.5s ease-in-out infinite alternate;
@@ -1504,7 +1734,8 @@ body.export-mode .grid-btn {
 }
 
 body.export-mode .tab-btn,
-body.export-mode .footer-toolbar {
+body.export-mode .footer-toolbar,
+body.export-mode .tab-actions {
     opacity: 0.3;
     pointer-events: none;
 }
@@ -1526,20 +1757,62 @@ body.export-mode .footer-toolbar {
 }
 
 #context_menu {
+    display: none;
+    position: fixed;
     z-index: 1000;
+    background: #2b2b2b;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    padding: 4px 0;
+    min-width: 140px;
 }
 
-/* Default Scripts Visual */
-/* Default Scripts Visual */
+.ctx-colors {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #444;
+    margin-bottom: 4px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.ctx-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.ctx-copy {
+    color: #60a5fa;
+}
+
+.ctx-delete {
+    color: #ff6b6b;
+}
+
+.ctx-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Modal Divider */
+.modal-divider {
+    border: 0;
+    border-top: 1px solid #444;
+    margin: 15px 0;
+}
+
+/* Default Scripts — Reference Card Style */
 .grid-btn.default-script {
-    background-color: #2c2c2c;
-    /* Distinct Grey */
-    border: 1px solid #3d3d3d;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .grid-btn.default-script:hover {
-    background-color: #383838;
-    border-color: #555;
+    background: var(--white-4);
+    border-color: var(--accent-20);
 }
 
 /* Toggle Button Fixes */
@@ -1605,12 +1878,9 @@ body.export-mode .footer-toolbar {
 
 /* Footer Toolbar Robustness */
 .footer-toolbar {
-    min-height: 50px;
-    /* Prevent squashing */
+    min-height: 40px;
     flex-shrink: 0;
-    /* Prevent flex resize */
     overflow: hidden;
-    /* Hide overflow */
 }
 
 /* Absolute Safety for Toggle Button */
@@ -1728,4 +1998,113 @@ body.collapsed .footer {
 
 .light-theme .icon-btn:hover {
     background: #ddd;
+}
+
+/* ===========================================
+   RECENT CODE (Editor Tab)
+   =========================================== */
+.recent-code-section {
+    margin-top: 12px;
+    flex-shrink: 0;
+}
+
+.recent-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    margin-bottom: 6px;
+}
+
+.recent-code-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.recent-code-clear {
+    background: var(--white-6);
+    border: 1px solid var(--white-10);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-code-clear:hover {
+    background: rgba(255, 60, 60, 0.15);
+    border-color: rgba(255, 60, 60, 0.3);
+    color: #ff6b6b;
+}
+
+.recent-code-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.recent-code-empty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 11px;
+    padding: 12px;
+}
+
+.recent-code-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--white-6);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-code-item:hover {
+    background: var(--accent-8);
+    border-color: var(--accent-20);
+}
+
+.rc-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.rc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rc-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rc-time {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.rc-load {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.recent-code-item:hover .rc-load {
+    opacity: 1;
 }

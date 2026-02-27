@@ -1,7 +1,7 @@
 /**
  * TATA Panel - Grid Module
- * Contains: V2 Layout, Icons, Defaults, renderGrid, createGridButton, setupGridDrag
- * @version 4.2
+ * Contains: V2 Layout, Icons, Defaults, renderGrid, createGridButton, Event Delegation
+ * @version 5.0 - Optimized with debounce, batched saves, event delegation
  */
 (function () {
     'use strict';
@@ -31,19 +31,39 @@
     // V2 Default Button Configuration
     // ==========================================
     var v2Defaults = {
-        tab_button: []
+        tab_button: [
+            { id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx' },
+            { id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx' },
+            { id: 'btn_follow', label: 'Follow', icon: ICONS.follow, script: 'Follow.jsx' },
+            { id: 'btn_arrange', label: 'Arrange', icon: ICONS.arrange, script: 'ArrangeDialog.jsx' },
+            { id: 'btn_stars', label: 'Stars', icon: ICONS.stars, script: 'Stars.jsx' },
+            { id: 'btn_palette', label: 'Palette', icon: ICONS.palette, script: 'PaletteGenerator.jsx' },
+            { id: 'btn_embed', label: 'Embed', icon: ICONS.embed, script: 'Embed.jsx' },
+            { id: 'btn_dimension', label: 'Dimension', icon: ICONS.dimension, script: 'DimensionDialog.jsx' },
+            { id: 'btn_clean', label: 'Smart Clean', icon: ICONS.clean, script: 'SmartClean.jsx' }
+        ]
     };
 
     // In-memory layout state
     var v2Layout = {};
 
+    // Drag state (shared across delegation handlers)
+    var _draggedItem = null;
+
+    // ==========================================
+    // Debounced/Batched Variants
+    // ==========================================
+    var renderGridDebounced = TATA.debounce(renderGrid, 80);
+    var saveV2LayoutBatched = TATA.debounce(saveV2Layout, 150);
+
     // ==========================================
     // Render Grid
     // ==========================================
     function renderGrid() {
+        var safeParse = TATA.safeParse || JSON.parse;
         var saved = localStorage.getItem('tata_v2_layout');
         if (saved) {
-            v2Layout = TATA.safeParse ? TATA.safeParse(saved, JSON.parse(JSON.stringify(v2Defaults))) : JSON.parse(saved);
+            v2Layout = safeParse(saved, JSON.parse(JSON.stringify(v2Defaults)));
         } else {
             v2Layout = JSON.parse(JSON.stringify(v2Defaults));
         }
@@ -63,7 +83,6 @@
             v2Defaults[tabName].forEach(function (def) {
                 if (!allLayoutIds[def.id]) {
                     v2Layout[tabName].push(JSON.parse(JSON.stringify(def)));
-                    console.log('[TATA] Injected missing default:', def.id);
                 }
             });
         });
@@ -78,18 +97,68 @@
             var container = document.getElementById(tabName);
             if (!container) return;
             container.innerHTML = '';
+
             var items = v2Layout[tabName] || [];
-            items.forEach(function (item, index) {
-                var btn = createGridButton(item, tabName, index);
-                container.appendChild(btn);
+            var userItems = [];
+            var defaultItems = [];
+
+            items.forEach(function (item) {
+                if (item.id && item.id.indexOf('btn_') === 0) {
+                    defaultItems.push(item);
+                } else {
+                    userItems.push(item);
+                }
             });
+
+            function createSection(title, sectionItems) {
+                if (sectionItems.length === 0) return;
+
+                var sectionWrap = document.createElement('div');
+                sectionWrap.className = 'script-section';
+
+                var header = document.createElement('div');
+                header.className = 'section-header';
+
+                var titleEl = document.createElement('h3');
+                titleEl.className = 'section-title';
+                titleEl.innerText = title;
+                header.appendChild(titleEl);
+
+                var arrowSvg = '<svg class="section-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>';
+                var arrowContainer = document.createElement('div');
+                arrowContainer.innerHTML = arrowSvg;
+                header.appendChild(arrowContainer.firstChild);
+
+                var grid = document.createElement('div');
+                grid.className = 'section-grid';
+                grid.id = 'grid_' + title.replace(/\s+/g, '_').toLowerCase();
+
+                header.addEventListener('click', function () {
+                    header.classList.toggle('collapsed');
+                    grid.classList.toggle('collapsed');
+                });
+
+                sectionItems.forEach(function (item) {
+                    var originalIndex = items.indexOf(item);
+                    var btn = createGridButton(item, tabName, originalIndex);
+                    grid.appendChild(btn);
+                });
+
+                sectionWrap.appendChild(header);
+                sectionWrap.appendChild(grid);
+                container.appendChild(sectionWrap);
+            }
+
+            createSection('User Script', userItems);
+            createSection('Default Script', defaultItems);
         });
 
-        setupGridDrag();
+        // Setup event delegation (once only)
+        setupDelegation();
     }
 
     // ==========================================
-    // Create Grid Button
+    // Create Grid Button (no per-element listeners)
     // ==========================================
     function createGridButton(item, tabName, index) {
         var btn = document.createElement('div');
@@ -99,14 +168,10 @@
         btn.dataset.index = index;
         btn.dataset.tab = tabName;
 
+        // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
         if (item.color) {
             btn.style.borderColor = item.color;
-            btn.addEventListener('mouseenter', function () {
-                btn.style.boxShadow = '0 0 8px ' + item.color + '60';
-            });
-            btn.addEventListener('mouseleave', function () {
-                btn.style.boxShadow = 'none';
-            });
+            btn.style.setProperty('--btn-color', item.color + '60');
         }
 
         if (item.id && item.id.indexOf('btn_') === 0) {
@@ -126,76 +191,101 @@
         lbl.innerText = item.label;
         btn.appendChild(lbl);
 
-        btn.addEventListener('click', function () {
-            var cs = TATA.getCSInterface ? TATA.getCSInterface() : (window.csInterface || null);
-            if (item.type === 'subpanel') {
-                CSInterface.prototype.requestOpenExtension(item.target, '');
-            } else if (item.script) {
-                if (typeof TATA.runScript === 'function') TATA.runScript(item.script);
-            } else if (item.code && cs) {
-                cs.evalScript(item.code);
-            }
-        });
-
-        btn.oncontextmenu = function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.currentContextScriptId = item.id;
-            TATA.setCurrentContextId && TATA.setCurrentContextId(item.id);
-            var menu = document.getElementById('context_menu');
-            if (menu) {
-                var isDefault = (item.id.indexOf('btn_') === 0);
-                var editBtn = document.getElementById('ctx_edit');
-                var delBtn = document.getElementById('ctx_delete');
-                var colorRow = document.getElementById('ctx_colors');
-                if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
-                if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
-                if (colorRow) colorRow.style.display = 'flex';
-                menu.style.display = 'block';
-                var menuWidth = 140;
-                var x = e.clientX;
-                if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
-                menu.style.left = x + 'px';
-                menu.style.top = e.clientY + 'px';
-            }
-        };
-
         return btn;
     }
 
     // ==========================================
-    // Setup Grid Drag
+    // Event Delegation (bound once, survives re-renders)
     // ==========================================
-    function setupGridDrag() {
-        var buttons = document.querySelectorAll('.grid-btn');
-        var draggedItem = null;
+    function setupDelegation() {
+        if (TATA._gridDelegated) return;
+        TATA._gridDelegated = true;
 
-        buttons.forEach(function (btn) {
-            btn.addEventListener('dragstart', function (e) {
-                draggedItem = this;
+        var containers = document.querySelectorAll('[id="tab_button"]');
+        containers.forEach(function (container) {
+
+            // Click delegation
+            container.addEventListener('click', function (e) {
+                var btn = e.target.closest('.grid-btn');
+                if (!btn) return;
+
+                var tab = btn.dataset.tab;
+                var idx = parseInt(btn.dataset.index, 10);
+                var item = v2Layout[tab] && v2Layout[tab][idx];
+                if (!item) return;
+
+                var cs = TATA.getCSInterface ? TATA.getCSInterface() : (window.csInterface || null);
+                if (item.type === 'subpanel') {
+                    CSInterface.prototype.requestOpenExtension(item.target, '');
+                } else if (item.script) {
+                    if (typeof TATA.runScript === 'function') TATA.runScript(item.script);
+                } else if (item.code && cs) {
+                    cs.evalScript(item.code);
+                }
+            });
+
+            // Context menu delegation
+            container.addEventListener('contextmenu', function (e) {
+                var btn = e.target.closest('.grid-btn');
+                if (!btn) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                var tab = btn.dataset.tab;
+                var idx = parseInt(btn.dataset.index, 10);
+                var item = v2Layout[tab] && v2Layout[tab][idx];
+                if (!item) return;
+
+                window.currentContextScriptId = item.id;
+                TATA.setCurrentContextId && TATA.setCurrentContextId(item.id);
+
+                var menu = document.getElementById('context_menu');
+                if (menu) {
+                    var isDefault = (item.id.indexOf('btn_') === 0);
+                    var editBtn = document.getElementById('ctx_edit');
+                    var delBtn = document.getElementById('ctx_delete');
+                    var colorRow = document.getElementById('ctx_colors');
+                    if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
+                    if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
+                    if (colorRow) colorRow.style.display = 'flex';
+                    menu.style.display = 'block';
+                    var menuWidth = 140;
+                    var x = e.clientX;
+                    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+                    menu.style.left = x + 'px';
+                    menu.style.top = e.clientY + 'px';
+                }
+            });
+
+            // Drag delegation
+            container.addEventListener('dragstart', function (e) {
+                var btn = e.target.closest('.grid-btn');
+                if (!btn) return;
+                _draggedItem = btn;
                 e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', this.innerHTML);
-                var itemData = getItemDataFromElement(this);
+                e.dataTransfer.setData('text/html', btn.innerHTML);
+                var itemData = getItemDataFromElement(btn);
                 e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
             });
 
-            btn.addEventListener('dragend', function () {
-                draggedItem = null;
+            container.addEventListener('dragend', function () {
+                _draggedItem = null;
             });
 
-            btn.addEventListener('dragover', function (e) {
+            container.addEventListener('dragover', function (e) {
                 e.preventDefault();
             });
 
-            btn.addEventListener('drop', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                try {
-                    if (draggedItem !== this) {
-                        var srcTab = draggedItem.dataset.tab;
-                        var srcIdx = parseInt(draggedItem.dataset.index);
-                        var destTab = this.dataset.tab;
-                        var destIdx = parseInt(this.dataset.index);
+            container.addEventListener('drop', function (e) {
+                var btn = e.target.closest('.grid-btn');
+                if (btn && _draggedItem && _draggedItem !== btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        var srcTab = _draggedItem.dataset.tab;
+                        var srcIdx = parseInt(_draggedItem.dataset.index, 10);
+                        var destTab = btn.dataset.tab;
+                        var destIdx = parseInt(btn.dataset.index, 10);
 
                         if (srcTab === destTab) {
                             var list = v2Layout[srcTab];
@@ -207,31 +297,30 @@
                             v2Layout[destTab].splice(destIdx, 0, item);
                         }
 
-                        saveV2Layout();
-                        renderGrid();
+                        saveV2LayoutBatched();
+                        renderGridDebounced();
+                    } catch (err) {
+                        console.error('[TATA] Drop Error:', err);
+                        if (TATA.showToast) TATA.showToast('Drag failed: ' + err.message, 'error');
                     }
-                } catch (err) {
-                    console.error('[TATA] Drop Error:', err);
-                    if (TATA.showToast) TATA.showToast('Drag failed: ' + err.message, 'error');
+                    return;
                 }
-            });
-        });
 
-        document.querySelectorAll('.tab-content').forEach(function (container) {
-            container.addEventListener('dragover', function (e) { e.preventDefault(); });
-            container.addEventListener('drop', function (e) {
-                e.preventDefault();
-                if (e.target === this && draggedItem) {
-                    var srcTab = draggedItem.dataset.tab;
-                    var srcIdx = parseInt(draggedItem.dataset.index);
-                    var destTab = this.id;
+                // Drop on section-grid (empty area)
+                var sectionGrid = e.target.closest('.section-grid');
+                if (sectionGrid && _draggedItem) {
+                    e.preventDefault();
+                    var srcTab = _draggedItem.dataset.tab;
+                    var srcIdx = parseInt(_draggedItem.dataset.index, 10);
 
-                    if (srcTab !== destTab) {
-                        var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
-                        v2Layout[destTab].push(item);
-                        saveV2Layout();
-                        renderGrid();
+                    var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
+                    if (sectionGrid.id === 'grid_default_script') {
+                        v2Layout[srcTab].push(item);
+                    } else {
+                        v2Layout[srcTab].unshift(item);
                     }
+                    saveV2LayoutBatched();
+                    renderGridDebounced();
                 }
             });
         });
@@ -259,15 +348,22 @@
         v2Layout = layout;
     }
 
+    // Direct binding for v2Layout
+    Object.defineProperty(TATA, 'v2Layout', {
+        get: function () { return v2Layout; },
+        set: function (val) { v2Layout = val; }
+    });
+
     // ==========================================
     // Export to TATA Namespace
     // ==========================================
     TATA.ICONS = ICONS;
     TATA.v2Defaults = v2Defaults;
     TATA.renderGrid = renderGrid;
+    TATA.renderGridDebounced = renderGridDebounced;
     TATA.createGridButton = createGridButton;
-    TATA.setupGridDrag = setupGridDrag;
     TATA.saveV2Layout = saveV2Layout;
+    TATA.saveV2LayoutBatched = saveV2LayoutBatched;
     TATA.getV2Layout = getV2Layout;
     TATA.setV2Layout = setV2Layout;
     TATA.getItemDataFromElement = getItemDataFromElement;

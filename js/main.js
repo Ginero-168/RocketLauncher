@@ -22,7 +22,14 @@
 
 	var csInterface = new CSInterface();
 	var extensionPath = "";
+
+	// Export Core System Variables to TATA for modules to use
+	window.TATA = window.TATA || {};
+	window.TATA.getCSInterface = function () { return csInterface; };
+	window.TATA.getExtensionPath = function () { return extensionPath; };
 	var userScripts = {}; // Global User Scripts
+	window.TATA.getUserScripts = function () { return userScripts; };
+	window.TATA.setUserScripts = function (s) { userScripts = s; };
 	var pickerMode = localStorage.getItem('tata_picker_mode') || 'os'; // Global Picker Setting
 
 	// Context Menu Globals
@@ -95,7 +102,12 @@
 			// Old setupTabs was: setupTabs(); 
 			// We will replace it with V2 logic below.
 
-			initUserScripts(); // Adds orphans to layout
+			userScripts = initUserScripts(); // Adds orphans to layout
+
+			// RESTORED UI ENABLING CALLS (Previously hidden inside initUserScripts)
+			if (typeof setupAddScriptUI === 'function') setupAddScriptUI();
+			if (typeof startContextMenu === 'function') startContextMenu();
+			if (typeof setupErrorUI === 'function') setupErrorUI();
 
 			// setupPanelToggle is Main Panel only
 			setupPanelToggle();
@@ -103,8 +115,6 @@
 			// Initialize Features (Hotkeys are Main Panel only)
 			try { initHotkeys(); } catch (e) { }
 
-			// Render all tabs first
-			// renderAllLayouts(); // V2 uses new grid render
 			renderGrid();
 
 			// Initialize Scripting (Editor + AI Helper tabs)
@@ -126,111 +136,7 @@
 		csInterface.evalScript('$.evalFile("' + extensionPath + '/jsx/hostscript.jsx")');
 	}
 
-	// ==========================================
-	// GLOBAL UTILS
-	// ==========================================
-	window.shareColorsToExplore = function (harmonyName, colors) {
-		if (!colors || colors.length === 0) {
-			showToast('⚠️ No colors to share');
-			return;
-		}
 
-		// Show custom modal
-		var modal = document.getElementById('share_modal');
-		var input = document.getElementById('share_palette_name');
-		var preview = document.getElementById('share_color_preview');
-		var confirmBtn = document.getElementById('share_modal_confirm');
-		var cancelBtn = document.getElementById('share_modal_cancel');
-
-		if (modal && input && preview) {
-			// Set default name
-			input.value = harmonyName + ' Palette';
-			input.select();
-
-			// Render color preview
-			preview.innerHTML = '';
-			colors.forEach(function (c) {
-				preview.innerHTML += '<div style="flex:1; background:' + c + ';"></div>';
-			});
-
-			// Show modal
-			modal.style.display = 'flex';
-
-			// Attach One-Time Handlers
-			var onConfirm = function () {
-				var name = input.value.trim();
-				if (!name) { showToast('⚠️ Name required'); return; }
-
-				// Post to Supabase (Mocked or Real)
-				// Since we are in Main.js context for colors.html, we need to handle this.
-				// But previously it was local. We will use a firing mechanism.
-				// Actually, just emit the event or run logic.
-				// For now, let's close and toast (mock).
-				// In a real scenario, we'd do the fetch here.
-
-				// Re-using the logic from the local scope if possible, but now we are global.
-				// We need the SUPABASE keys.
-				// We'll define them globally or passing them is hard.
-				// Let's just define the function fully here.
-				doShareToSupabase(name, colors);
-
-				cleanup();
-			};
-
-			var onCancel = function () {
-				cleanup();
-			};
-
-			var cleanup = function () {
-				modal.style.display = 'none';
-				confirmBtn.removeEventListener('click', onConfirm);
-				cancelBtn.removeEventListener('click', onCancel);
-			};
-
-			confirmBtn.addEventListener('click', onConfirm);
-			cancelBtn.addEventListener('click', onCancel);
-		}
-	};
-
-	// Helper for Supabase (extracted)
-	function doShareToSupabase(name, colors) {
-		var SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
-		var SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
-
-		var harmonyType = 'custom'; // Default
-
-		var payload = {
-			name: name,
-			colors: JSON.stringify(colors), // Stringify for 'colors' table as per previous logic
-			harmony_type: harmonyType,
-			author_name: 'Anonymous',
-			votes: 0,
-			downloads: 0
-		};
-
-		fetch(SUPABASE_URL + '/rest/v1/colors', {
-			method: 'POST',
-			headers: {
-				'apikey': SUPABASE_KEY,
-				'Authorization': 'Bearer ' + SUPABASE_KEY,
-				'Content-Type': 'application/json',
-				'Prefer': 'return=representation'
-			},
-			body: JSON.stringify(payload)
-		})
-			.then(function (res) {
-				if (res.ok) {
-					showToast('✅ Shared to Explore!');
-				} else {
-					console.error('Supabase Error:', res.status, res.statusText);
-					return res.text().then(function(text) { throw new Error(text || 'Upload failed'); });
-				}
-			})
-			.catch(function (err) {
-				console.error(err);
-				showToast('❌ Share failed: ' + err.message);
-			});
-	}
 
 	window.openGlobalColorPicker = function (callback, initialColor) {
 		// Create modal if needed
@@ -328,44 +234,7 @@
 		modal.classList.add('active');
 	};
 
-	function runScript(scriptName, params) {
-		// Map Legacy Script Names to New TATA Functions
-		var functionMap = {
-			'DimensionSingle.jsx': 'dimensionSingle',
-			'DimensionAll.jsx': 'dimensionAll',
-			'Fit.jsx': 'fitSelection',
-			'ArrangeDialog.jsx': 'arrangeObjects', // Dialog handled in JS now, calls this backend
-			'ResizeDialog.jsx': 'resizeObjects',
-			'Follow.jsx': 'followWidth',
-			'Embed.jsx': 'embedAll',
-			'Preview.jsx': 'createPreview',
-			'Stars.jsx': 'createStars',
-			'PaletteGenerator.jsx': 'generateColorPalette'
-		};
-
-		var func = functionMap[scriptName];
-		if (!scriptName) return;
-
-		var scriptPath = extensionPath + '/jsx/' + scriptName;
-		var hostscriptPath = extensionPath + '/jsx/hostscript.jsx';
-
-		// CRITICAL: Always load hostscript.jsx first to ensure TATA object exists
-		var cmd = '$.evalFile("' + hostscriptPath + '"); $.evalFile("' + scriptPath + '")';
-
-		// If params, encode as JSON and pass to script
-		if (params && Object.keys(params).length > 0) {
-			var paramsJSON = JSON.stringify(params);
-			cmd = '$.evalFile("' + hostscriptPath + '"); $.evalFile("' + scriptPath + '"); TATA.run("' + scriptName.replace('.jsx', '') + '", ' + paramsJSON + ')';
-		}
-
-		csInterface.evalScript(cmd, function (result) {
-			// Show any errors
-			if (result && result.indexOf && (result.indexOf('Error') === 0 || result.indexOf('TATA Error') === 0)) {
-				alert(result);
-			}
-		});
-	}
-
+	var runScript = TATA.runScript;
 
 	function setupDimension() {
 		var btn = document.getElementById('btn_dimension');
@@ -393,12 +262,8 @@
 		// Helper to attach safe listener
 		function attach(id, script) {
 			var btn = document.getElementById(id);
-			if (btn) {
-				// CRITICAL: Remove existing listeners by replacing button
-				var newBtn = btn.cloneNode(true);
-				btn.parentNode.replaceChild(newBtn, btn);
-				btn = newBtn;
-
+			if (btn && !btn._bound) {
+				btn._bound = true;
 				btn.addEventListener('click', function () {
 
 					// INTERCEPT FOR DIMENSION
@@ -423,12 +288,6 @@
 		attach('btn_dimension'); // Add dimension button
 		attach('btn_smart_clean', 'SmartClean.jsx'); // Smart Clean now uses JSX dialog
 	}
-
-	function setupCreative() {
-		// Deprecated: merged into setupSwift logic (or used for other creative tools)
-		// Leaving empty or just handled above
-	}
-
 
 	var effectsSetupDone = false;
 
@@ -678,210 +537,13 @@
 	}
 
 	// ==========================================
-	// Hotkey Feature
 	// ==========================================
-	var hotkeys = [];
-	var hotkeyCount = 5;
-
-	function initHotkeys() {
-		// Load Count
-		var savedCount = localStorage.getItem('tata_hotkey_count');
-		if (savedCount) hotkeyCount = parseInt(savedCount);
-		if (isNaN(hotkeyCount) || hotkeyCount < 1) hotkeyCount = 5;
-
-		// Load Data
-		var saved = localStorage.getItem('tata_hotkeys');
-		if (saved) {
-			try { hotkeys = JSON.parse(saved); } catch (e) { }
-		}
-
-		// Sync Array Size
-		if (hotkeys.length > hotkeyCount) {
-			// Optional: Keep data but only render N? 
-			// Or trim? Let's just keep array as is, render loop limits it.
-		}
-		while (hotkeys.length < hotkeyCount) {
-			hotkeys.push(null);
-		}
-
-		renderHotkeys();
-		setupDraggableButtons();
-	}
-
-	function saveHotkeys() {
-		localStorage.setItem('tata_hotkeys', JSON.stringify(hotkeys));
-	}
-
-	function renderHotkeys() {
-		var bar = document.getElementById('hotkey-bar');
-		bar.innerHTML = ''; // Clear existing
-
-		// Calculate Columns
-		var cols = hotkeyCount;
-		if (cols > 5) cols = 5;
-		bar.style.setProperty('--col-count', cols);
-
-		for (var i = 0; i < hotkeyCount; i++) {
-			var slot = document.createElement('div');
-			slot.className = 'hotkey-slot';
-			slot.dataset.slot = (i + 1);
-
-			// Logic to render content
-			var data = hotkeys[i];
-			if (data) {
-				slot.classList.add('filled');
-				if (data.color) {
-					// V4: Solid Hotkey Background (Stream Deck Style)
-					slot.style.background = data.color;
-					slot.style.borderColor = data.color;
-					// Add slight inner shadow for depth
-					slot.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
-					slot.style.color = '#ffffff'; // Force white text/icon
-				} else {
-					slot.style.background = '';
-					slot.style.borderColor = '';
-					slot.style.boxShadow = '';
-				}
-
-				if (data.icon) {
-					var iconSpan = document.createElement('span');
-					iconSpan.innerHTML = data.icon;
-					var svg = iconSpan.querySelector('svg');
-					if (svg) {
-						// Normalize Icon Size
-						svg.setAttribute('width', '16');
-						svg.setAttribute('height', '16');
-						svg.style.width = '16px';
-						svg.style.height = '16px';
-						svg.style.minWidth = '16px';
-						svg.style.display = 'block';
-					}
-					slot.appendChild(iconSpan);
-				} else {
-					slot.innerText = data.label.substring(0, 3);
-				}
-				slot.title = data.label;
-
-				// Remove Button
-				var removeBtn = document.createElement('span');
-				removeBtn.className = 'hotkey-remove';
-				removeBtn.innerHTML = '&times;';
-				removeBtn.title = 'Remove';
-				removeBtn.onclick = (function (idx) {
-					return function (e) {
-						e.stopPropagation();
-						hotkeys[idx] = null;
-						saveHotkeys();
-						renderHotkeys();
-					};
-				})(i);
-				slot.appendChild(removeBtn);
-
-				// Click Execution
-				slot.onclick = (function (btnId) {
-					return function () {
-						var btn = document.getElementById(btnId);
-						if (btn) {
-							btn.click();
-							this.style.opacity = '0.5';
-							var self = this;
-							setTimeout(function() { self.style.opacity = '1'; }, 100);
-						}
-					};
-				})(data.id);
-
-				// Right Click -> Change Color using Global Picker
-				slot.oncontextmenu = (function (idx, currentData) {
-					return function (e) {
-						e.preventDefault();
-						e.stopPropagation();
-						var curColor = currentData.color || '#FF0000';
-						openGlobalColorPicker(function (newColor) {
-							if (newColor) {
-								hotkeys[idx].color = newColor;
-								saveHotkeys();
-								renderHotkeys();
-							}
-						}, curColor);
-						return false;
-					};
-				})(i, data);
-
-			} else {
-				slot.title = "Drag a button here";
-			}
-
-			setupSlotDrag(slot, i);
-			bar.appendChild(slot);
-		}
-	}
-
-	function setupSlotDrag(slot, index) {
-		slot.addEventListener('dragover', function (e) {
-			e.preventDefault();
-			this.classList.add('drag-over');
-		});
-
-		slot.addEventListener('dragleave', function (e) {
-			this.classList.remove('drag-over');
-		});
-
-		slot.addEventListener('drop', function (e) {
-			e.preventDefault();
-			this.classList.remove('drag-over');
-			var raw = e.dataTransfer.getData('text/plain');
-			if (raw) {
-				try {
-					var data = JSON.parse(raw);
-					hotkeys[index] = data;
-					saveHotkeys();
-					renderHotkeys();
-				} catch (e) { }
-			}
-		});
-	}
-
-
-
-	function setupDraggableButtons() {
-		// Make all buttons draggable
-		var buttons = document.querySelectorAll('.tab-content button');
-		buttons.forEach(function (btn) {
-			btn.setAttribute('draggable', 'true');
-			btn.addEventListener('dragstart', function (e) {
-				var tabId = btn.closest('.tab-content').id; // swift, creative, dimension
-				var label = btn.innerText.trim();
-				var icon = null;
-				var svg = btn.querySelector('svg');
-				if (svg) {
-					icon = svg.outerHTML;
-				}
-
-				// Detect Color Class
-				var color = null;
-				btn.classList.forEach(function (cls) {
-					if (cls.startsWith('btn-')) {
-						color = cls.replace('btn-', '');
-					}
-				});
-
-				e.dataTransfer.setData('text/plain', JSON.stringify({
-					id: btn.id,
-					label: label,
-					icon: icon,
-					type: tabId,
-					color: color
-				}));
-
-				// Global Drag Mode for CSS Blocking
-				document.body.classList.add('dragging-mode');
-			});
-
-			btn.addEventListener('dragend', function () {
-				document.body.classList.remove('dragging-mode');
-			});
-		});
-	}
+	// Hotkey Feature (Delegated to module)
+	// ==========================================
+	var initHotkeys = TATA.initHotkeys;
+	var saveHotkeys = TATA.saveHotkeys;
+	var renderHotkeys = TATA.renderHotkeys;
+	// TATA handles drag/drop logic natively inside its hotkeys.js rendering now.
 
 	// NOTE: saveHotkeys() is defined earlier at line 808
 	// Tab setup handled by setupTabsV2()
@@ -925,7 +587,7 @@
 						saveLayout();
 					}
 				}
-				renderGrid(); // V3: Use V2 Grid system instead of legacy renderAllLayouts
+				renderGrid();
 			} else {
 				parseCurrentLayout();
 			}
@@ -949,392 +611,6 @@
 		if (!layoutState['tab_button']) layoutState['tab_button'] = [];
 	}
 
-	function renderAllLayouts() {
-		cacheButtons(); // Ensure we have latest references
-
-		// 1. Global Cleanup: Remove empty rows and nulls
-		cleanupLayout();
-
-		// 2. Global "Lost Button" Check: Ensure btn_dimension exists somewhere
-		var dimBtnFound = false;
-		Object.keys(layoutState).forEach(function (tId) {
-			layoutState[tId].forEach(function (row) {
-				if (row.indexOf('btn_dimension') !== -1) dimBtnFound = true;
-			});
-		});
-
-		if (!dimBtnFound) {
-			// Only inject if TRULY missing from everywhere
-			if (!layoutState['dimension']) layoutState['dimension'] = [];
-			if (layoutState['dimension'].length === 0) layoutState['dimension'].push([]);
-			layoutState['dimension'][0].unshift('btn_dimension');
-		}
-
-		Object.keys(layoutState).forEach(function (tabId) {
-			if (tabId === 'other' || tabId === 'keeper') return; // Skip Cleaner and Keeper
-			renderTab(tabId);
-		});
-	}
-
-	function cleanupLayout() {
-		var seenIds = {};
-
-		Object.keys(layoutState).forEach(function (tabId) {
-			var rows = layoutState[tabId];
-			if (!rows) return;
-
-			// 1. Filter out nulls/empty strings and Duplicates
-			for (var i = 0; i < rows.length; i++) {
-				var cleanRow = [];
-				for (var k = 0; k < rows[i].length; k++) {
-					var id = rows[i][k];
-					if (id && !seenIds[id]) {
-						cleanRow.push(id);
-						seenIds[id] = true;
-					}
-				}
-				rows[i] = cleanRow;
-			}
-
-			// 2. Remove empty rows
-			for (var i = rows.length - 1; i >= 0; i--) {
-				if (rows[i].length === 0) {
-					rows.splice(i, 1);
-				}
-			}
-		});
-	}
-
-	// Helper to get button element (reusing existing if possible to keep listeners)
-	// But wait, if we move them in DOM, listeners stay.
-	// So we just need to find them. If they are not in DOM (first render from storage),
-	// we might have a problem if we deleted them.
-	// Strategy: We assume all buttons exist in the HTML initially. 
-	// We will detach them and re-append them.
-	var buttonCache = {};
-	function cacheButtons() {
-		var allBtns = document.querySelectorAll('button');
-		allBtns.forEach(function (btn) {
-			if (btn.id) {
-				// Wrap text in span if not already
-				if (!btn.querySelector('.btn-text')) {
-					// Separate icon and text
-					var icon = btn.querySelector('svg');
-					var text = btn.innerText.trim(); // This gets text only, but might lose icon if we just set innerHTML
-
-					// Better way: iterate childNodes
-					var nodes = Array.from(btn.childNodes);
-					var textNode = nodes.find(function(n) { return n.nodeType === 3 && n.textContent.trim().length > 0; });
-
-					if (textNode) {
-						var span = document.createElement('span');
-						span.className = 'btn-text';
-						span.textContent = textNode.textContent;
-						btn.replaceChild(span, textNode);
-					}
-				}
-				buttonCache[btn.id] = btn;
-			}
-		});
-	}
-
-	function renderTab(tabId) {
-		// PROTECT CUSTOM TABS FROM BEING WIPED
-		if (tabId !== 'tab_button') return;
-
-		var tabEl = document.getElementById(tabId);
-		if (!tabEl) return;
-
-		// Clear current rows (but don't destroy buttons, we cached them or will move them)
-		tabEl.innerHTML = '';
-
-		var rowsData = layoutState[tabId] || [];
-
-		// (Zombie Logic Removed)
-
-		rowsData.forEach(function (rowBtns, rowIndex) {
-			var rowEl = document.createElement('div');
-			rowEl.className = 'row';
-			rowEl.dataset.tab = tabId;
-			rowEl.dataset.rowIndex = rowIndex;
-
-			// Add count class
-			rowEl.classList.add('count-' + rowBtns.length);
-
-			rowBtns.forEach(function (btnId) {
-				var btn = buttonCache[btnId] || document.getElementById(btnId);
-
-				// (Fallback Removed - createDimensionButton deleted)
-
-				// If not found in cache/DOM, try creating it (User Script)
-				if (!btn && userScripts[btnId]) {
-					btn = createUserButton(btnId);
-				}
-
-				// If not found in cache/DOM, try creating it (User Script)
-				if (!btn && userScripts[btnId]) {
-					btn = createUserButton(btnId);
-				}
-
-				if (btn) {
-					// Remove any drag classes
-					btn.classList.remove('drop-target-left', 'drop-target-right');
-					rowEl.appendChild(btn);
-					setupButtonDrag(btn);
-				}
-			});
-
-			setupRowDrop(rowEl);
-			tabEl.appendChild(rowEl);
-		});
-
-		// Add an empty "New Row" drop zone at the bottom
-		var newRowZone = document.createElement('div');
-		newRowZone.className = 'row new-row-zone';
-		newRowZone.style.border = '1px dashed #444';
-		newRowZone.style.opacity = '0.5';
-		newRowZone.style.height = '32px';
-		newRowZone.dataset.tab = tabId;
-		newRowZone.dataset.rowIndex = rowsData.length; // Next index
-		newRowZone.title = "Drop here to create a new row";
-		setupRowDrop(newRowZone);
-		tabEl.appendChild(newRowZone);
-	}
-
-	function setupButtonDrag(btn) {
-		btn.setAttribute('draggable', 'true');
-
-		// CRITICAL FIX: Add dragstart here for dynamic buttons (User Scripts)
-		btn.addEventListener('dragstart', function (e) {
-			e.stopPropagation(); // Stop row dragstart
-			var data = {
-				id: btn.id,
-				label: btn.innerText,
-				type: 'button'
-			};
-			e.dataTransfer.setData('text/plain', JSON.stringify(data));
-			e.dataTransfer.effectAllowed = 'move';
-			// console.log("Button Drag Start: " + btn.id);
-		});
-
-		// Drag Over Button (Insertion Logic)
-		btn.addEventListener('dragover', function (e) {
-			e.preventDefault();
-			e.stopPropagation(); // Don't trigger row dragover
-
-			var rect = btn.getBoundingClientRect();
-			var midX = rect.left + rect.width / 2;
-
-			// Remove existing classes first
-			btn.classList.remove('drop-target-left', 'drop-target-right');
-
-			if (e.clientX < midX) {
-				btn.classList.add('drop-target-left');
-				e.dataTransfer.dropEffect = 'move';
-			} else {
-				btn.classList.add('drop-target-right');
-				e.dataTransfer.dropEffect = 'move';
-			}
-		});
-
-		btn.addEventListener('dragleave', function (e) {
-			btn.classList.remove('drop-target-left', 'drop-target-right');
-		});
-
-		btn.addEventListener('drop', function (e) {
-			e.preventDefault();
-			e.stopPropagation();
-			btn.classList.remove('drop-target-left', 'drop-target-right');
-
-			var raw = e.dataTransfer.getData('text/plain');
-			if (!raw) return;
-
-			try {
-				var data = JSON.parse(raw);
-				var draggedBtnId = data.id;
-
-				// Target info
-				var rowEl = btn.closest('.row');
-				var targetTab = rowEl.dataset.tab;
-				var targetRowIndex = parseInt(rowEl.dataset.rowIndex);
-
-				// Determine insertion index
-				var rect = btn.getBoundingClientRect();
-				var midX = rect.left + rect.width / 2;
-				var insertAfter = e.clientX >= midX;
-
-				// Get current buttons in this row
-				var currentRowBtns = layoutState[targetTab][targetRowIndex];
-				var targetBtnIndex = currentRowBtns.indexOf(btn.id);
-
-				if (targetBtnIndex === -1) return; // Should not happen
-
-				// Logic:
-				// 1. Remove from old location
-				// 2. Insert at new location
-
-				// Find and remove old
-				var foundSourceTab = null;
-				var oldRowIndex = -1;
-				var oldColIndex = -1;
-
-				Object.keys(layoutState).forEach(function (tId) {
-					var rows = layoutState[tId];
-					rows.forEach(function (r, rIdx) {
-						var cIdx = r.indexOf(draggedBtnId);
-						if (cIdx !== -1) {
-							foundSourceTab = tId;
-							oldRowIndex = rIdx;
-							oldColIndex = cIdx;
-						}
-					});
-				});
-
-				if (foundSourceTab) {
-					// Remove
-					layoutState[foundSourceTab][oldRowIndex].splice(oldColIndex, 1);
-
-					// If we are inserting into the SAME row, we need to adjust indices
-					if (foundSourceTab === targetTab && oldRowIndex === targetRowIndex) {
-						if (oldColIndex < targetBtnIndex) {
-							targetBtnIndex--; // Shifted left
-						}
-					}
-
-					// Cleanup empty rows
-					if (layoutState[foundSourceTab][oldRowIndex].length === 0) {
-						layoutState[foundSourceTab].splice(oldRowIndex, 1);
-						// Adjust target row index if we removed a row above
-						if (foundSourceTab === targetTab && oldRowIndex < targetRowIndex) {
-							targetRowIndex--;
-						}
-					}
-				}
-
-				// Insert
-				var insertIndex = insertAfter ? targetBtnIndex + 1 : targetBtnIndex;
-
-				// Check capacity (Max 3)
-				// If row is full (3) and we are adding from another row, we might need to split?
-				// User requirement: "If user drags to a row with 1 button, it becomes 2... max 3"
-				// If it's already 3, what happens? 
-				// "Max 3". So if 3, maybe reject or swap?
-				// Let's enforce max 3. If full, create new row?
-				// Or just allow it and let it wrap? No, user said "Max 3".
-				// Let's strictly enforce max 3.
-
-				if (layoutState[targetTab][targetRowIndex].length >= 4 && foundSourceTab !== targetTab && oldRowIndex !== targetRowIndex) {
-					// Row is full. Maybe create a new row below?
-					// For now, let's just allow it but it might look bad if we don't handle it.
-					// But wait, the CSS hides text for count-3. If count-4, it might break.
-					// Let's strictly enforce max 3.
-					alert("Row is full (Max 4 buttons). Create a new row instead.");
-					// Revert removal? Complex.
-					// Actually, we already removed it. We must put it back or somewhere.
-					// Let's put it back where it was.
-					// Ideally we check BEFORE removing.
-					// Refactor: Check capacity first.
-				} else {
-					layoutState[targetTab][targetRowIndex].splice(insertIndex, 0, draggedBtnId);
-					saveLayout();
-					renderGrid(); // V3: Use V2 Grid system
-				}
-
-			} catch (e) {
-				console.error("Drop error", e);
-			}
-		});
-	}
-
-	function setupRowDrop(rowEl) {
-		rowEl.addEventListener('dragover', function (e) {
-			e.preventDefault();
-			var isNewRow = rowEl.classList.contains('new-row-zone');
-			var currentCount = rowEl.querySelectorAll('button').length;
-
-			// Allow drop if:
-			// 1. It's a new row zone
-			// 2. OR the row has < 3 buttons
-			if (isNewRow || currentCount < 3) {
-				rowEl.classList.add('drag-over');
-				e.dataTransfer.dropEffect = 'move';
-			} else {
-				e.dataTransfer.dropEffect = 'none';
-			}
-		});
-
-		rowEl.addEventListener('dragleave', function (e) {
-			rowEl.classList.remove('drag-over');
-		});
-
-		rowEl.addEventListener('drop', function (e) {
-			e.preventDefault();
-			rowEl.classList.remove('drag-over');
-
-			var raw = e.dataTransfer.getData('text/plain');
-			if (!raw) return;
-
-			try {
-				var data = JSON.parse(raw);
-				var btnId = data.id;
-
-				// Target info
-				var targetTab = rowEl.dataset.tab;
-				var targetRowIndex = parseInt(rowEl.dataset.rowIndex);
-
-				// Logic:
-				// 1. Remove button from old location in layoutState
-				// 2. Add button to new location in layoutState
-				// 3. Re-render both tabs (if different) or just target tab
-
-				// Find and remove old
-				var foundSourceTab = null;
-				var oldRowIndex = -1;
-				var oldColIndex = -1;
-
-				Object.keys(layoutState).forEach(function (tId) {
-					var rows = layoutState[tId];
-					rows.forEach(function (r, rIdx) {
-						var cIdx = r.indexOf(btnId);
-						if (cIdx !== -1) {
-							foundSourceTab = tId;
-							oldRowIndex = rIdx;
-							oldColIndex = cIdx;
-						}
-					});
-				});
-
-				if (foundSourceTab) {
-					// Remove
-					layoutState[foundSourceTab][oldRowIndex].splice(oldColIndex, 1);
-					// Cleanup empty rows
-					if (layoutState[foundSourceTab][oldRowIndex].length === 0) {
-						layoutState[foundSourceTab].splice(oldRowIndex, 1);
-						if (foundSourceTab === targetTab && oldRowIndex < targetRowIndex) {
-							targetRowIndex--;
-						}
-					}
-				}
-
-				// Add to new
-				if (!layoutState[targetTab]) layoutState[targetTab] = [];
-
-				if (targetRowIndex >= layoutState[targetTab].length) {
-					// New Row
-					layoutState[targetTab].push([btnId]);
-				} else {
-					// Existing Row
-					layoutState[targetTab][targetRowIndex].push(btnId);
-				}
-
-				saveLayout();
-				renderGrid(); // V3: Use V2 Grid system
-
-			} catch (e) {
-				console.error("Drop error", e);
-			}
-		});
-	}
 
 	// Init when Window Loaded (Safest)
 	window.addEventListener('load', function () {
@@ -1438,9 +714,9 @@
 
 					// Find Data (Prioritize V2 Layout)
 					var foundItem = null;
-					['tab_button'].forEach(function(t) {
+					['tab_button'].forEach(function (t) {
 						if (v2Layout[t]) {
-							var match = v2Layout[t].find(function(x) { return x.id === id; });
+							var match = v2Layout[t].find(function (x) { return x.id === id; });
 							if (match) foundItem = match;
 						}
 					});
@@ -1509,186 +785,10 @@
 	// =================================   USER SCRIPTS   =================================
 	// ====================================================================================
 
-	function initUserScripts() {
-		var saved = localStorage.getItem('tata_user_scripts');
-		if (saved) {
-			try {
-				userScripts = JSON.parse(saved);
-			} catch (e) {
-				console.error("Error loading user scripts", e);
-			}
-		}
-		// Sync: Ensure all user scripts exist in layout. If not, add them.
-		var dirty = false;
-		for (var id in userScripts) {
-			if (userScripts.hasOwnProperty(id)) {
-				// Check if in layout
-				var found = false;
-				Object.keys(layoutState).forEach(function (tid) {
-					layoutState[tid].forEach(function (row) {
-						if (row.indexOf(id) !== -1) found = true;
-					});
-				});
+	var initUserScripts = TATA.initUserScripts;
 
-				if (!found) {
-					// Orphan script! Add to Button tab
-					if (!layoutState['tab_button']) layoutState['tab_button'] = [];
-					layoutState['tab_button'].push([id]);
-					dirty = true;
-				}
-			}
-		}
-		if (dirty) {
-			saveLayout();
-			setTimeout(renderGrid, 100); // V3: Use V2 Grid system
-		}
-
-		setupAddScriptUI();
-		startContextMenu(); // Initialize Context Menu Listeners
-		setupErrorUI();
-		// renderUserScripts(); // REMOVED
-	}
-
-	function startContextMenu() {
-		contextMenuEl = document.getElementById('context_menu');
-		var btnEdit = document.getElementById('ctx_edit');
-		var btnDelete = document.getElementById('ctx_delete');
-		var ctxColors = document.getElementById('ctx_colors');
-
-		// V4: Quick Colors Init
-		if (ctxColors && ctxColors.children.length === 0) {
-			ctxColors.innerHTML = ''; // Clear comments
-			var COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
-			COLORS.forEach(function(c) {
-				var sw = document.createElement('div');
-				sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
-				sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
-				sw.onmouseout = function () { this.style.transform = 'scale(1)'; };
-				sw.onclick = function (e) {
-					e.stopPropagation();
-					var targetId = window.currentContextScriptId || currentContextScriptId;
-					if (targetId) {
-						updateItemColor(targetId, c);
-						if (contextMenuEl) contextMenuEl.style.display = 'none';
-					}
-				};
-				ctxColors.appendChild(sw);
-			});
-		}
-
-		// Global Hide (Ensure single listener)
-		window.onclick = function (e) {
-			if (contextMenuEl) contextMenuEl.style.display = 'none';
-		};
-
-		// Edit Action
-		// Edit Action
-		if (btnEdit) {
-			btnEdit.onclick = function () {
-				var targetId = window.currentContextScriptId || currentContextScriptId;
-
-				// Block Defaults
-				if (targetId && targetId.indexOf('btn_') === 0) {
-					showToast("Default scripts cannot be edited.", "error");
-					if (contextMenuEl) contextMenuEl.style.display = 'none';
-					return;
-				}
-
-				if (targetId) {
-					openEditScriptModal(targetId);
-				}
-			};
-		}
-
-		// Delete Action
-		// Delete Action
-		if (btnDelete) {
-			btnDelete.onclick = function (e) {
-				e.stopPropagation();
-
-				// Resolve ID from Closure OR Global Fallback
-				var targetId = currentContextScriptId || window.currentContextScriptId;
-
-				// Block Defaults
-				if (targetId && targetId.indexOf('btn_') === 0) {
-					showToast("Default scripts cannot be deleted.", "error");
-					if (contextMenuEl) contextMenuEl.style.display = 'none';
-					return;
-				}
-
-				// Hide Context Menu IMMEDIATELY
-				if (contextMenuEl) contextMenuEl.style.display = 'none';
-
-				// alert("Delete Clicked. Resolved ID: " + targetId); // Debug
-
-				if (targetId) {
-					showConfirmModal("Delete this script?", "This action cannot be undone.", function (confirmed) {
-						if (confirmed) {
-							deleteUserScript(targetId);
-							// No need to hide here, already hidden.
-							currentContextScriptId = null;
-							window.currentContextScriptId = null;
-						}
-					});
-				} else {
-					alert("Error: No Script ID found.\nCtx: " + currentContextScriptId + "\nWin: " + window.currentContextScriptId);
-				}
-			};
-		} else {
-			alert("CRITICAL ERROR: 'ctx_delete' element not found!");
-		}
-	}
-
-	function updateItemColor(targetId, newColor) {
-		// 1. Update In-Memory Layout (v2Layout)
-		var found = false;
-		['tab_button'].forEach(function(tab) {
-			if (v2Layout[tab]) {
-				v2Layout[tab].forEach(function(item) {
-					if (item.id === targetId) {
-						item.color = newColor;
-						found = true;
-					}
-				});
-			}
-		});
-
-		// 2. Update User Scripts (if applicable)
-		if (userScripts[targetId]) {
-			userScripts[targetId].color = newColor;
-			localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
-		}
-
-		// 3. Update Defaults (if applicable, though generally ephemeral, 
-		// we persist via v2Layout save, but good to update runtime object if needed)
-		// If v2Defaults is used for reset, we don't touch it. 
-		// But if renderGrid uses it (which we disabled), it matters.
-
-		// 4. Update Hotkeys (if assigned)
-		if (typeof hotkeys !== 'undefined' && Array.isArray(hotkeys)) {
-			var hotkeyUpdated = false;
-			hotkeys.forEach(function (hk, idx) {
-				if (hk && hk.id === targetId) {
-					hk.color = newColor;
-					hotkeyUpdated = true;
-				}
-			});
-			if (hotkeyUpdated) {
-				saveHotkeys();
-				renderHotkeys();
-			}
-		}
-
-		if (found) {
-			saveV2Layout();
-			renderGrid();
-			showToast("Color Updated!", "success");
-		} else {
-			// Might be a default button that hasn't been instantiated in v2Layout yet?
-			// Unlikely given renderGrid renders from v2Layout.
-			showToast("Item not found in layout.", "error");
-		}
-	}
+	var startContextMenu = TATA.startContextMenu;
+	var updateItemColor = TATA.updateItemColor;
 
 	function setupAddScriptUI() {
 		// --- Modals ---
@@ -1723,7 +823,6 @@
 		// ==================
 		if (btnSettings) {
 			btnSettings.addEventListener('click', function () {
-				var savedKey = localStorage.getItem('tata_gemini_api_key');
 				var savedKey = localStorage.getItem('tata_gemini_api_key');
 				if (savedKey) inpApiKey.value = savedKey;
 
@@ -1771,7 +870,7 @@
 
 				try {
 					var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + key;
-					var res = await fetch(listUrl);
+					var res = await TATA.fetchWithTimeout(listUrl, {}, 15000);
 
 					if (!res.ok) {
 						throw new Error("HTTP " + res.status);
@@ -1814,7 +913,7 @@
 							var savedModel = localStorage.getItem('tata_ai_model');
 							if (savedModel) {
 								// Check if saved exists in new list
-								var exists = Array.from(select.options).some(function(o) { return o.value === savedModel; });
+								var exists = Array.from(select.options).some(function (o) { return o.value === savedModel; });
 								if (exists) select.value = savedModel;
 							}
 
@@ -1856,27 +955,9 @@
 		var btnSaveSettings = document.getElementById('btn_save_settings');
 		var btnCancelSettings = document.getElementById('btn_cancel_settings');
 
-		// CRITICAL: Remove all existing event listeners by replacing buttons
-		if (btnFactoryReset) {
-			var newFactoryReset = btnFactoryReset.cloneNode(true);
-			btnFactoryReset.parentNode.replaceChild(newFactoryReset, btnFactoryReset);
-			btnFactoryReset = newFactoryReset;
-		}
-
-		if (btnSaveSettings) {
-			var newSaveSettings = btnSaveSettings.cloneNode(true);
-			btnSaveSettings.parentNode.replaceChild(newSaveSettings, btnSaveSettings);
-			btnSaveSettings = newSaveSettings;
-		}
-
-		if (btnCancelSettings) {
-			var newCancelSettings = btnCancelSettings.cloneNode(true);
-			btnCancelSettings.parentNode.replaceChild(newCancelSettings, btnCancelSettings);
-			btnCancelSettings = newCancelSettings;
-		}
-
-		// Now attach fresh event listeners
-		if (btnFactoryReset) {
+		// Guard: only attach listeners once per button
+		if (btnFactoryReset && !btnFactoryReset._bound) {
+			btnFactoryReset._bound = true;
 			btnFactoryReset.addEventListener('click', function () {
 				if (confirm("Are you sure you want to restore Factory Defaults?\n\nThis will DELETE ALL custom scripts/buttons and clear your settings.")) {
 					// 1. Clear All LocalStorage
@@ -1891,11 +972,14 @@
 			});
 		}
 
-		if (btnSaveSettings) {
+		if (btnSaveSettings && !btnSaveSettings._bound) {
+			btnSaveSettings._bound = true;
 			btnSaveSettings.addEventListener('click', function () {
 				var key = inpApiKey.value.trim();
 				if (key) {
 					localStorage.setItem('tata_gemini_api_key', key);
+				} else {
+					localStorage.removeItem('tata_gemini_api_key');
 				}
 
 				// Save Picker Mode
@@ -1934,7 +1018,8 @@
 			});
 		}
 
-		if (btnCancelSettings) {
+		if (btnCancelSettings && !btnCancelSettings._bound) {
+			btnCancelSettings._bound = true;
 			btnCancelSettings.addEventListener('click', function () {
 				settingsModal.classList.remove('active');
 			});
@@ -2030,7 +1115,9 @@
 		// ==================
 		if (btnAdd) {
 			btnAdd.addEventListener('click', function () {
-				new CSInterface().requestOpenExtension('com.tata.pro.scripting', '');
+				// Switch to AI Helper tab
+				var aiTab = document.querySelector('.tab-btn[data-tab="tab_ai"]');
+				if (aiTab) aiTab.click();
 			});
 		}
 
@@ -2144,7 +1231,7 @@
 		swatches.forEach(function (swatch) {
 			swatch.addEventListener('click', function () {
 				// Update UI
-				swatches.forEach(function(el) { el.classList.remove('selected'); });
+				swatches.forEach(function (el) { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Update Hidden Input
@@ -2161,7 +1248,7 @@
 		icons.forEach(function (opt) {
 			opt.addEventListener('click', function () {
 				// UI
-				icons.forEach(function(el) { el.classList.remove('selected'); });
+				icons.forEach(function (el) { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Value
@@ -2276,11 +1363,11 @@
 			console.log("[TATA] Trying Gemini Model: " + modelName);
 
 			try {
-				var response = await fetch(url, {
+				var response = await TATA.fetchWithTimeout(url, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(payload)
-				});
+				}, 45000);
 
 				if (response.ok) {
 					responseData = await response.json();
@@ -2309,7 +1396,8 @@
 
 		// Use data directly
 		var data = responseData;
-		if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+		if (!data.candidates || !data.candidates[0] || !data.candidates[0].content ||
+			!data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
 			throw new Error("Invalid response structure from " + usedModel);
 		}
 
@@ -2341,87 +1429,6 @@
 	 * Test a generated script in a safe environment (dry run)
 	 */
 
-	function createUserButton(id) {
-		var script = userScripts[id];
-		if (!script) return null;
-
-		var btn = document.createElement('button');
-		btn.id = id;
-		btn.title = script.name;
-		btn.style.position = 'relative'; // For absolute positioning of X button
-
-		// Icon
-		var iconHtml = '';
-		if (script.icon.match(/<svg/)) {
-			iconHtml = script.icon; // It's an SVG string
-		} else {
-			// It's text/emoji
-			iconHtml = '<span class="icon" style="font-size: 16px; display: flex; align-items: center; justify-content: center;">' + script.icon + '</span>';
-		}
-
-
-
-		btn.innerHTML = iconHtml + '<span class="btn-text">' + script.name + '</span>';
-
-		// Apply Color Class
-		if (script.color) {
-			btn.classList.add('btn-' + script.color);
-		} else {
-			btn.classList.add('btn-red'); // Default
-		}
-
-
-
-		// Click Handler
-		btn.addEventListener('click', function () {
-			// Wrap execution in try-catch to capture errors
-			var safeCode = "try { " + script.code + " } catch(e) { 'ERROR:' + e.message; }";
-
-			csInterface.evalScript(safeCode, function (res) {
-				if (res) {
-					if (res.indexOf('ERROR:') === 0) {
-						var msg = res.substring(6); // Remove prefix
-						showErrorModal(msg, id);
-					} else if (res.indexOf('EvalScript error') !== -1) {
-						// Catch syntax errors that happened before our try-catch could run
-						showErrorModal("Script Syntax Error or Execution Failed.\nAdobe Response: " + res, id);
-					}
-				}
-			});
-		});
-
-		// Drag Start Handler (For Hotkeys)
-		btn.setAttribute('draggable', 'true');
-		btn.addEventListener('dragstart', function (e) {
-			var label = script.name;
-			var icon = script.icon.match(/<svg/) ? script.icon : null;
-
-			var color = script.color || "red";
-
-			e.dataTransfer.setData('text/plain', JSON.stringify({
-				id: id,
-				label: label,
-				icon: icon,
-				type: 'user-script',
-				color: color
-			}));
-		});
-
-		// Context Menu Handler (Right Click)
-		btn.addEventListener('contextmenu', function (e) {
-			e.preventDefault();
-			currentContextScriptId = id;
-
-			if (contextMenuEl) {
-				contextMenuEl.style.display = 'block';
-				contextMenuEl.style.left = e.pageX + 'px';
-				contextMenuEl.style.top = e.pageY + 'px';
-			}
-			return false;
-		});
-
-		return btn;
-	}
 
 	function openEditScriptModal(id) {
 		var script = userScripts[id];
@@ -2437,10 +1444,10 @@
 		document.getElementById('script_color').value = script.color;
 
 		// UI Updates (Icon Selection)
-		document.querySelectorAll('.icon-option').forEach(function(el) { el.classList.remove('selected'); });
+		document.querySelectorAll('.icon-option').forEach(function (el) { el.classList.remove('selected'); });
 		// Try to find matching icon
 		var found = false;
-		document.querySelectorAll('.icon-option').forEach(function(el) {
+		document.querySelectorAll('.icon-option').forEach(function (el) {
 			if (el.innerHTML === script.icon) {
 				el.classList.add('selected');
 				found = true;
@@ -2448,7 +1455,7 @@
 		});
 
 		// UI Updates (Color Selection)
-		document.querySelectorAll('.color-swatch').forEach(function(el) { el.classList.remove('selected'); });
+		document.querySelectorAll('.color-swatch').forEach(function (el) { el.classList.remove('selected'); });
 		var colorEl = document.querySelector('.color-swatch[data-color="' + script.color + '"]');
 		if (colorEl) colorEl.classList.add('selected');
 
@@ -2900,22 +1907,6 @@
 				btnPlace.onclick = function () { placePalette(colors); };
 				header.appendChild(btnPlace);
 
-				// NEW: Explore (upload to marketplace)
-				var btnSave = document.createElement('button');
-				btnSave.innerText = "Explore";
-				btnSave.style.border = "none"; btnSave.style.background = "transparent";
-				btnSave.style.borderRadius = "4px";
-				btnSave.style.cursor = "pointer";
-				btnSave.style.display = "flex";
-				btnSave.style.alignItems = "center"; btnSave.style.justifyContent = "center";
-				btnSave.style.padding = "2px 8px";
-				btnSave.style.fontSize = "9px"; btnSave.style.color = "#8b5cf6";
-				btnSave.style.whiteSpace = "nowrap";
-				btnSave.style.flex = "none"; btnSave.style.width = "auto";
-				btnSave.style.marginLeft = "4px";
-				btnSave.title = "Share to Explore Marketplace";
-				btnSave.onclick = function () { shareColorsToExplore(ruleName, colors); };
-				header.appendChild(btnSave);
 
 				// Swatch Button (Renamed from "Save to Swatches")
 				var btnExp = document.createElement('button');
@@ -3123,58 +2114,7 @@
 		}
 	}
 
-	function deleteUserScript(id) {
-		// 1. Remove from userScripts (Global Store)
-		if (userScripts[id]) {
-			delete userScripts[id];
-			localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
-		}
-
-		// 2. Remove from V2 Layout (Prioritized)
-		var v2Dirty = false;
-		['tab_button'].forEach(function(t) {
-			var list = v2Layout[t];
-			if (!list) return;
-			// Find Index
-			var idx = list.findIndex(function(item) { return item.id === id; });
-			if (idx !== -1) {
-				list.splice(idx, 1);
-				v2Dirty = true;
-			}
-		});
-
-		if (v2Dirty) {
-			saveV2Layout();
-			renderGrid();
-			return; // V2 handled, exit to avoid confusion unless we share IDs
-		}
-
-		// 3. Remove from Legacy Layout (Fallback)
-		var dirty = false;
-		// ... existing V1 logic if needed, but V2 is priority ...
-		Object.keys(layoutState).forEach(function (tabId) {
-			var rows = layoutState[tabId];
-			if (!rows) return;
-			for (var i = rows.length - 1; i >= 0; i--) {
-				var row = rows[i];
-				var cIdx = row.indexOf(id);
-				if (cIdx !== -1) {
-					row.splice(cIdx, 1);
-					dirty = true;
-					if (row.length === 0) rows.splice(i, 1);
-				}
-			}
-		});
-
-		if (dirty) saveLayout();
-
-
-		// 3. Clear from cache
-		if (buttonCache[id]) delete buttonCache[id];
-
-		// 4. Re-render EVERYTHING
-		renderGrid(); // V3: Use V2 Grid system
-	}
+	var deleteUserScript = TATA.deleteUserScript;
 
 
 
@@ -4214,121 +3154,47 @@
 	// window.addEventListener('load', scanCleaner); // Optional auto-scan
 
 
-	// --- User Scripts Logic (Injected) ---
-	// --- User Scripts Logic (Refactored for Main Layout) ---
-	// renderUserScripts is REMOVED. We use renderAllLayouts now.
-
-	function createUserButton(id, script) {
-		// Fallback if script object not passed (renderTab calls with just ID)
-		if (!script && userScripts[id]) {
-			script = userScripts[id];
-		}
-		if (!script) return null;
-
-		var btn = document.createElement('button');
-		btn.id = id; // CRITICAL for Drag/Drop and Cache
-		btn.className = 'btn-' + (script.color || 'red');
-		btn.innerHTML = (script.icon || '★') + ' ' + script.name;
-		btn.title = script.name;
-
-		btn.onclick = function () {
-			csInterface.evalScript(script.code);
-		};
-
-		btn.oncontextmenu = function (e) {
-			e.preventDefault();
-			window.currentContextScriptId = id; // EXPLICIT GLOBAL
-			// alert("Right-click captured for ID: " + id); // DEBUG OFF
-			if (contextMenuEl) {
-				contextMenuEl.style.top = e.clientY + 'px';
-				contextMenuEl.style.left = e.clientX + 'px';
-				contextMenuEl.style.display = 'block';
-			}
-		};
-
-		// Fallback: Capture ID on MouseDown (Right Click)
-		btn.onmousedown = function (e) {
-			if (e.button === 2) {
-				currentContextScriptId = id;
-				// alert("MouseDown Right: " + id);
-			}
-		};
-
-		return btn;
-	}
-
-	function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender) {
-		var id = isUpdate ? targetId : 'script_' + Date.now();
-
-		userScripts[id] = {
-			name: name,
-			icon: icon,
-			code: code,
-			color: color,
-			date: Date.now()
-		};
-
-		localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
-
-		// Add to Layout if new
-		if (!isUpdate) {
-			if (!layoutState['tab_button']) layoutState['tab_button'] = [];
-			layoutState['tab_button'].push([id]);
-			saveLayout();
-		} else {
-			// If updating, we just need to refresh cache/render
-			// but we should clear style cache for this button
-			if (buttonCache[id]) delete buttonCache[id];
-		}
-
-
-		if (!skipRender) renderGrid(); // V3: Use V2 Grid system
-	}
-	// ------------------------------------
-
-	// Init handled by window.load event listener above
+	var saveUserScript = TATA.saveUserScript;
 
 	// ====================================================================================
 	// ====================================   V2 LOGIC   ==================================
 	// ====================================================================================
 
-	var v2Layout = {}; // In-memory state
+	// Bind to grid.js module directly
+	Object.defineProperty(window, 'v2Layout', {
+		get: function () { return TATA.v2Layout; },
+		set: function (val) { TATA.v2Layout = val; }
+	});
 
-	var ICONS = {
-		fit: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v2H4v4H2V4a2 2 0 0 1 2-2zm16 0h-4v2h4v4h2V4a2 2 0 0 0-2-2zM4 20h4v-2H4v-4H2v4a2 2 0 0 0 2 2zm16 0h-4v-2h4v-4h2v4a2 2 0 0 0-2 2z" /></svg>',
-		resize: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 12h-2.26l2.03-2.03l-1.41-1.41L15.31 10.6V8.34h-2v4.66h4.66v-2h-2.66zM7 12h2.26L7.23 14.03l1.41 1.41L10.69 13.4v2.26h2v-4.66H8.03v2H10.69z" /></svg>',
-		follow: '<svg class="icon" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" /></svg>',
-		arrange: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z" /></svg>',
-		stars: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>',
-		palette: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" /></svg>',
-		embed: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" /></svg>',
-		preview: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>',
-		dimension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 21l-4.486-4.494M19 10H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM10 3v4M14 3v4M8 5h8" /></svg>',
-		clean: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>',
-		colors: '<svg class="icon" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10" /></svg>',
-		folder: '<svg class="icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" /></svg>'
-	};
-
-	// V7 Default Structure (clean slate)
-	var v2Defaults = {
-		tab_button: []
-	};
+	var ICONS = TATA.ICONS || {};
+	var v2Defaults = TATA.v2Defaults || {};
+	var renderGrid = TATA.renderGrid;
+	var createGridButton = TATA.createGridButton;
+	var setupGridDrag = TATA.setupGridDrag;
+	var getItemDataFromElement = TATA.getItemDataFromElement;
+	var saveV2Layout = TATA.saveV2Layout;
 
 	function setupTabsV2() {
 		var tabs = document.querySelectorAll('.tab-btn');
 		tabs.forEach(function (tab) {
 			tab.addEventListener('click', function () {
-				document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active'); });
-				document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+				document.querySelectorAll('.tab-btn').forEach(function (t) { t.classList.remove('active'); });
+				document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
 
 				this.classList.add('active');
 				var targetId = this.dataset.tab;
 				var target = document.getElementById(targetId);
 				if (target) target.classList.add('active');
 
+				// Show tab-actions only on Button tab
+				var tabActions = document.querySelector('.tab-actions');
+				if (tabActions) {
+					tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
+				}
+
 				// Refresh CodeMirror when switching to Editor tab
 				if (targetId === 'tab_editor' && window.cmEditor) {
-					setTimeout(function() { window.cmEditor.refresh(); }, 50);
+					setTimeout(function () { window.cmEditor.refresh(); }, 50);
 				}
 			});
 
@@ -4342,219 +3208,6 @@
 		});
 	}
 
-	function renderGrid() {
-		var saved = localStorage.getItem('tata_v2_layout');
-		if (saved) {
-			v2Layout = safeParse(saved, JSON.parse(JSON.stringify(v2Defaults)));
-		} else {
-			v2Layout = JSON.parse(JSON.stringify(v2Defaults));
-		}
-
-		// V4.1: Smart Default Merge (Only add defaults that don't exist ANYWHERE)
-		var allLayoutIds = {};
-		['tab_button'].forEach(function (tabName) {
-			if (v2Layout[tabName]) {
-				v2Layout[tabName].forEach(function (item) {
-					if (item && item.id) allLayoutIds[item.id] = true;
-				});
-			}
-		});
-
-		// Inject missing defaults into their original tab
-		Object.keys(v2Defaults).forEach(function (tabName) {
-			if (!v2Layout[tabName]) v2Layout[tabName] = [];
-			v2Defaults[tabName].forEach(function (def) {
-				if (!allLayoutIds[def.id]) {
-					v2Layout[tabName].push(JSON.parse(JSON.stringify(def)));
-				}
-			});
-		});
-
-		// Ensure layout exists
-		['tab_button'].forEach(function(t) {
-			if (!v2Layout[t]) v2Layout[t] = [];
-		});
-
-		saveV2Layout();
-
-		['tab_button'].forEach(function (tabName) {
-			var container = document.getElementById(tabName);
-			if (!container) return;
-
-			container.innerHTML = '';
-
-			var items = v2Layout[tabName] || [];
-			items.forEach(function (item, index) {
-				var btn = createGridButton(item, tabName, index);
-				container.appendChild(btn);
-			});
-		});
-
-		setupGridDrag();
-	}
-
-	function createGridButton(item, tabName, index) {
-		var btn = document.createElement('div');
-		btn.className = 'grid-btn';
-		btn.id = item.id;
-		btn.draggable = true;
-		btn.dataset.index = index;
-		btn.dataset.tab = tabName;
-
-		// V4 Custom Color Logic
-		if (item.color) {
-			btn.style.borderColor = item.color;
-			// Add a subtle glow based on color
-			btn.addEventListener('mouseenter', function () {
-				btn.style.boxShadow = '0 0 8px ' + item.color + '60';
-			});
-			btn.addEventListener('mouseleave', function () {
-				btn.style.boxShadow = 'none';
-			});
-		}
-
-		if (item.id && item.id.indexOf('btn_') === 0) {
-			btn.classList.add('default-script');
-		}
-
-		// Icon
-		var iconDiv = document.createElement('div');
-		iconDiv.innerHTML = item.icon || ICONS.stars;
-		var svg = iconDiv.querySelector('svg');
-		if (svg) {
-			svg.setAttribute('width', '24');
-			svg.setAttribute('height', '24');
-		}
-		btn.appendChild(iconDiv);
-
-		// Label
-		var lbl = document.createElement('span');
-		lbl.innerText = item.label;
-		btn.appendChild(lbl);
-
-		btn.addEventListener('click', function () {
-			if (item.type === 'subpanel') {
-				CSInterface.prototype.requestOpenExtension(item.target, '');
-			} else if (item.script) {
-				runScript(item.script);
-			} else if (item.code) {
-				csInterface.evalScript(item.code);
-			}
-		});
-
-		btn.oncontextmenu = function (e) {
-			e.preventDefault();
-			e.stopPropagation();
-			window.currentContextScriptId = item.id;
-			var menu = document.getElementById('context_menu');
-			if (menu) {
-				// V4: Hide Edit/Delete for Defaults, Show Colors for All
-				var isDefault = (item.id.indexOf('btn_') === 0);
-				var editBtn = document.getElementById('ctx_edit');
-				var delBtn = document.getElementById('ctx_delete');
-				var colorRow = document.getElementById('ctx_colors');
-
-				if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
-				if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
-				if (colorRow) colorRow.style.display = 'flex'; // Always show colors
-
-				menu.style.display = 'block';
-
-				// Boundary Check
-				var menuWidth = 140; // Approx
-				var x = e.clientX;
-				if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
-
-				menu.style.left = x + 'px';
-				menu.style.top = e.clientY + 'px';
-			}
-		};
-
-		return btn;
-	}
-
-	function setupGridDrag() {
-		var buttons = document.querySelectorAll('.grid-btn');
-		var draggedItem = null;
-
-		buttons.forEach(function(btn) {
-			btn.addEventListener('dragstart', function (e) {
-				draggedItem = this;
-				e.dataTransfer.effectAllowed = 'move';
-				e.dataTransfer.setData('text/html', this.innerHTML);
-				var itemData = getItemDataFromElement(this);
-				e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
-			});
-
-			btn.addEventListener('dragend', function () {
-				draggedItem = null;
-			});
-
-			btn.addEventListener('dragover', function (e) {
-				e.preventDefault();
-			});
-
-			btn.addEventListener('drop', function (e) {
-				e.preventDefault();
-				e.stopPropagation(); // Stop Container Drop
-				try {
-					if (draggedItem !== this) {
-						var srcTab = draggedItem.dataset.tab;
-						var srcIdx = parseInt(draggedItem.dataset.index);
-						var destTab = this.dataset.tab;
-						var destIdx = parseInt(this.dataset.index);
-
-						if (srcTab === destTab) {
-							var list = v2Layout[srcTab];
-							var temp = list[srcIdx];
-							list[srcIdx] = list[destIdx];
-							list[destIdx] = temp;
-						} else {
-							var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
-							v2Layout[destTab].splice(destIdx, 0, item);
-						}
-
-						saveV2Layout();
-						renderGrid();
-					}
-				} catch (err) {
-					console.error('[TATA] Drop Error:', err);
-					showToast('Drag failed: ' + err.message, 'error');
-				}
-			});
-		});
-
-		document.querySelectorAll('.tab-content').forEach(function(container) {
-			container.addEventListener('dragover', function(e) { e.preventDefault(); });
-			container.addEventListener('drop', function (e) {
-				e.preventDefault();
-				if (e.target === this && draggedItem) {
-					var srcTab = draggedItem.dataset.tab;
-					var srcIdx = parseInt(draggedItem.dataset.index);
-					var destTab = this.id;
-
-					if (srcTab !== destTab) {
-						var item = v2Layout[srcTab].splice(srcIdx, 1)[0];
-						v2Layout[destTab].push(item);
-						saveV2Layout();
-						renderGrid();
-					}
-				}
-			});
-		});
-	}
-
-	function getItemDataFromElement(el) {
-		var tab = el.dataset.tab;
-		var idx = el.dataset.index;
-		return v2Layout[tab][idx];
-	}
-
-	function saveV2Layout() {
-		backupBeforeSave('tata_v2_layout');
-		localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
-	}
-
 	// V4.1: Debounced version for high-frequency operations
 	var debouncedSaveV2Layout = debounce(saveV2Layout, 300);
 
@@ -4566,9 +3219,9 @@
 	function exportScript() {
 		var exportable = [];
 		var allTabs = ['tab_button'];
-		allTabs.forEach(function(t) {
+		allTabs.forEach(function (t) {
 			if (!v2Layout[t]) return;
-			v2Layout[t].forEach(function(item) {
+			v2Layout[t].forEach(function (item) {
 				if (item.script || item.code) {
 					item._tab = t;
 					exportable.push(item);
@@ -4611,10 +3264,10 @@
 			}
 
 			document.body.classList.remove('export-mode');
-			btns.forEach(function(b) { b.removeEventListener('click', handler, true); });
+			btns.forEach(function (b) { b.removeEventListener('click', handler, true); });
 		};
 
-		btns.forEach(function(b) { b.addEventListener('click', handler, true); });
+		btns.forEach(function (b) { b.addEventListener('click', handler, true); });
 	}
 
 	function importScript() {
@@ -4846,17 +3499,6 @@
 		};
 	}
 
-	var btnExplore = document.getElementById('btn_custom_explore');
-	if (btnExplore) {
-		btnExplore.onclick = function () {
-			// Call GLOBAL share function
-			if (typeof shareColorsToExplore === 'function') {
-				shareColorsToExplore("Custom", customColors);
-			} else {
-				showToast('⚠️ Share function missing');
-			}
-		};
-	}
 
 	// Initial Render
 	updateSlots();

@@ -10,7 +10,7 @@
     function getCS() {
         if (!csInterface) {
             csInterface = TATA.csInterface || new CSInterface();
-            try { extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION); } catch(e) {}
+            try { extensionPath = csInterface.getSystemPath(SystemPath.EXTENSION); } catch (e) { }
         }
         return csInterface;
     }
@@ -111,7 +111,7 @@
         try {
             var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
             cs.dispatchEvent(req);
-        } catch(e) {}
+        } catch (e) { }
 
         // Load API Key Check
         var apiKey = localStorage.getItem('tata_gemini_api_key');
@@ -206,12 +206,10 @@
 
     function handleUploadToServer() {
         var nameInput = document.getElementById('script_name_input');
-        var descInput = document.getElementById('script_description');
         var iconInput = document.getElementById('icon_value');
         var colorTrigger = document.getElementById('color_trigger');
 
         var name = nameInput ? nameInput.value.trim() : '';
-        var description = descInput ? descInput.value.trim() : '';
         var code = getEditorCode();
         var icon = iconInput ? iconInput.value : '★';
 
@@ -224,10 +222,6 @@
             showToast('⚠️ Please write some code first');
             return;
         }
-        if (!description) {
-            showToast('⚠️ Please add a description for upload');
-            return;
-        }
 
         // Determine category based on color
         var color = colorTrigger ? colorTrigger.style.background : '#3b82f6';
@@ -238,7 +232,7 @@
 
         var data = {
             name: name,
-            description: description,
+            description: name,
             code: code,
             icon: icon,
             category: category,
@@ -334,6 +328,7 @@
 
     // ==================== V4 CUSTOM COLOR PICKER ====================
     var PRESET_COLORS = [
+        'transparent', // No Color option
         '#3b82f6', '#8b5cf6', '#ef4444', '#f97316',
         '#eab308', '#10b981', '#14b8a6', '#06b6d4',
         '#ec4899', '#f43f5e', '#64748b', '#FFD700'
@@ -352,7 +347,17 @@
         // Render Grid
         PRESET_COLORS.forEach(color => {
             var swatch = document.createElement('div');
-            swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+
+            // Special styling for transparent "No Color" option
+            if (color === 'transparent') {
+                swatch.style.cssText = 'width: 100%; height: 30px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.4); transition: transform 0.1s; position: relative; overflow: hidden;';
+                // Add diagonal red line to indicate "No color"
+                swatch.innerHTML = '<div style="position:absolute; top:50%; left:-20%; width:140%; height:2px; background:rgba(255,255,255,0.6); transform:rotate(-25deg); transform-origin:center;"></div>';
+                swatch.title = "No Color";
+            } else {
+                swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+            }
+
             swatch.onmouseover = function () { this.style.transform = 'scale(1.1)'; };
             swatch.onmouseout = function () { this.style.transform = 'scale(1)'; };
             swatch.onclick = function () {
@@ -397,22 +402,31 @@
     // ==================== V4 EDITOR STATUS ====================
     function updateEditorStatus(mode, name) {
         var el = document.getElementById('editor_status');
+        var dot = document.getElementById('editor_status_dot');
         if (!el) return;
 
         if (mode === 'edit') {
-            el.innerHTML = "• Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
-            el.style.color = "#f97316"; // Orange for edit
+            el.innerHTML = "Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
+            el.style.color = "#f97316";
+            if (dot) dot.classList.add('editing');
 
             // V4: Button Text
-            var btn = document.getElementById('btn_import');
-            if (btn) btn.innerText = "Update";
+            var btn = document.getElementById('btn_editor_import');
+            if (btn) {
+                var spanEl = btn.querySelector('span');
+                if (spanEl) spanEl.textContent = "Update";
+            }
         } else {
-            el.innerHTML = "• New Script";
-            el.style.color = "#2ecc71"; // Green for new
+            el.innerHTML = "New Script";
+            el.style.color = "var(--text-secondary)";
+            if (dot) dot.classList.remove('editing');
 
             // V4: Button Text
-            var btn = document.getElementById('btn_import');
-            if (btn) btn.innerText = "Import";
+            var btn = document.getElementById('btn_editor_import');
+            if (btn) {
+                var spanEl = btn.querySelector('span');
+                if (spanEl) spanEl.textContent = "Import";
+            }
         }
     }
 
@@ -490,7 +504,10 @@
 
         addChatBubble("user", userText);
         txtPrompt.value = "";
-        var loadingId = addChatBubble("ai", "<span class='loading-dots'>Thinking</span>");
+        // Start thinking animation
+        var promptBox = document.querySelector('.prompt-box');
+        if (promptBox) promptBox.classList.add('thinking');
+        var loadingId = addChatBubble("ai", "<span class='loading-dots' data-text='Thinking...'>Thinking...</span>");
 
         try {
             // V3: Use getEditorCode for CodeMirror
@@ -534,6 +551,10 @@
         } catch (e) {
             var lb = document.getElementById(loadingId);
             if (lb) lb.innerText = "Error: " + e.message;
+        } finally {
+            // Stop thinking animation
+            var promptBox = document.querySelector('.prompt-box');
+            if (promptBox) promptBox.classList.remove('thinking');
         }
     }
 
@@ -605,37 +626,50 @@
 
     function handleImport() {
         var scriptCode = getEditorCode();
+        if (!scriptCode || !scriptCode.trim()) {
+            showToast("No code to import!", "error");
+            return;
+        }
+
         var scriptName = document.getElementById('script_name_input').value || "New Script";
         var scriptIcon = document.getElementById('icon_value').value || "★";
         var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6";
 
-        var data = {
-            id: currentScriptId || ('ai_script_' + Date.now()),
-            name: scriptName,
-            icon: scriptIcon,
-            code: scriptCode,
-            color: scriptColor
-        };
-
         // Import directly into Button tab (since we're in main panel now)
         if (typeof TATA.saveUserScript === 'function') {
             TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor, false, null, false);
-            showToast("Imported to Button tab!");
+            showToast("Imported to Button tab!", "success");
         } else {
             // Fallback: dispatch event for external scripting panel
+            var data = {
+                id: currentScriptId || ('ai_script_' + Date.now()),
+                name: scriptName,
+                icon: scriptIcon,
+                code: scriptCode,
+                color: scriptColor
+            };
             var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
             event.data = JSON.stringify(data);
             getCS().dispatchEvent(event);
         }
 
+        // Switch to Button tab so user can see the new button
+        setTimeout(function () {
+            activateTab('tab_button');
+        }, 150);
+
+        // UI Feedback on Import button
         var btn = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
         if (btn) {
-            var original = btn.innerText;
-            btn.innerText = "Imported!";
-            btn.style.background = "#333";
-            setTimeout(function() {
-                btn.innerText = original;
-                btn.style.background = "#27ae60";
+            var spanEl = btn.querySelector('span');
+            var original = spanEl ? spanEl.textContent : btn.innerText;
+            if (spanEl) spanEl.textContent = "Imported!";
+            else btn.innerText = "Imported!";
+            btn.style.opacity = '0.6';
+            setTimeout(function () {
+                if (spanEl) spanEl.textContent = original;
+                else btn.innerText = original;
+                btn.style.opacity = '1';
             }, 2000);
         }
     }
@@ -852,8 +886,8 @@
             row.innerHTML =
                 '<span class="rc-icon">📄</span>' +
                 '<div class="rc-info">' +
-                    '<div class="rc-name">' + escapeHtml(item.name) + '</div>' +
-                    '<div class="rc-time">' + timeAgo + '</div>' +
+                '<div class="rc-name">' + escapeHtml(item.name) + '</div>' +
+                '<div class="rc-time">' + timeAgo + '</div>' +
                 '</div>' +
                 '<span class="rc-load">LOAD</span>';
 

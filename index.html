@@ -20,41 +20,49 @@
 			display: none;
 		}
 
-		/* Button tab uses grid */
-		#tab_button.active {
-			display: grid !important;
-			grid-template-columns: repeat(4, 1fr);
-			grid-auto-rows: 65px;
-			gap: 6px;
-			padding: 8px;
-			align-content: start;
-		}
-
-		/* Flow, Editor, AI tabs use flex */
+		/* Flow, Editor, AI, and Button tabs use flex */
+		#tab_button.active,
 		#tab_flow.active,
 		#tab_editor.active,
 		#tab_ai.active {
 			display: flex !important;
 			flex-direction: column;
-			padding: 10px;
-			gap: 8px;
+			padding: 8px 10px;
+			gap: 4px;
 		}
 
-		/* Uniform Button Style */
+		/* Collapsed State: Override ID-based !important rules */
+		body.collapsed #tab_button.active,
+		body.collapsed #tab_flow.active,
+		body.collapsed #tab_editor.active,
+		body.collapsed #tab_ai.active {
+			display: none !important;
+		}
+
+		body.collapsed .tabs,
+		body.collapsed .tab-actions {
+			display: none !important;
+		}
+
+		/* Uniform Button Style — Reference Glass Card (Miniature Horizontal) */
 		.grid-btn {
-			background: #333;
-			border: 1px solid #444;
-			border-radius: 6px;
-			color: #eee;
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			border-radius: 8px;
+			/* compact */
+			color: rgba(255, 255, 255, 0.7);
 			display: flex;
-			flex-direction: column;
+			flex-direction: row;
+			/* Horizontal like reference */
 			align-items: center;
-			justify-content: center;
+			justify-content: flex-start;
 			cursor: pointer;
-			font-size: 10px;
-			text-align: center;
-			padding: 4px;
-			transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+			font-size: 9.5px;
+			font-weight: 500;
+			text-align: left;
+			padding: 4px 6px;
+			gap: 6px;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			width: 100%;
 			height: 100%;
 			box-sizing: border-box;
@@ -63,9 +71,11 @@
 		}
 
 		.grid-btn:hover {
-			background: #444;
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+			background: rgba(255, 255, 255, 0.06);
+			border-color: rgba(99, 102, 241, 0.4);
+			color: #fff;
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 		}
 
 		.grid-btn:active {
@@ -73,10 +83,22 @@
 		}
 
 		.grid-btn svg {
-			width: 20px;
-			height: 20px;
-			fill: #ccc;
-			margin-bottom: 4px;
+			width: 13px;
+			height: 13px;
+			fill: #a78bfa;
+			background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+			border-radius: 4px;
+			padding: 4px;
+			margin-bottom: 0;
+			box-sizing: content-box;
+			flex-shrink: 0;
+			transition: all 0.3s ease;
+		}
+
+		.grid-btn:hover svg {
+			fill: #fff;
+			background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+			box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 		}
 
 		.grid-btn span {
@@ -87,59 +109,307 @@
 			line-height: 1.2;
 		}
 
-		/* Editor tab styles */
+		/* ===== Editor Tab — Redesigned ===== */
+
+		/* Header bar with status + action buttons */
+		#tab_editor .editor-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-shrink: 0;
+		}
+
+		#tab_editor .editor-header-left {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		#tab_editor .editor-status-dot {
+			width: 7px;
+			height: 7px;
+			border-radius: 50%;
+			background: var(--editor-color);
+			box-shadow: 0 0 6px var(--editor-color);
+			flex-shrink: 0;
+		}
+
+		#tab_editor .editor-status-dot.editing {
+			background: #f97316;
+			box-shadow: 0 0 6px #f97316;
+		}
+
+		#tab_editor .editor-status-text {
+			font-size: 11px;
+			color: var(--text-secondary);
+			font-weight: 500;
+		}
+
+		#tab_editor .editor-header-actions {
+			display: flex;
+			gap: 4px;
+			align-items: center;
+		}
+
+		#tab_editor .editor-action-btn {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			padding: 5px 10px;
+			border: none;
+			border-radius: 6px;
+			font-size: 10px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			color: #fff;
+			letter-spacing: 0.2px;
+			white-space: nowrap;
+		}
+
+		#tab_editor .editor-action-btn svg {
+			flex-shrink: 0;
+		}
+
+		#tab_editor .editor-btn-run {
+			background: rgba(16, 185, 129, 0.15);
+			color: #34d399;
+			border: 1px solid rgba(16, 185, 129, 0.25);
+		}
+
+		#tab_editor .editor-btn-run:hover {
+			background: rgba(16, 185, 129, 0.3);
+			box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+		}
+
+		#tab_editor .editor-btn-save {
+			background: rgba(99, 102, 241, 0.15);
+			color: #818cf8;
+			border: 1px solid rgba(99, 102, 241, 0.25);
+		}
+
+		#tab_editor .editor-btn-save:hover {
+			background: rgba(99, 102, 241, 0.3);
+			box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+		}
+
+		#tab_editor .editor-btn-upload {
+			background: rgba(139, 92, 246, 0.15);
+			color: #a78bfa;
+			border: 1px solid rgba(139, 92, 246, 0.25);
+			padding: 5px 7px;
+		}
+
+		#tab_editor .editor-btn-upload:hover {
+			background: rgba(139, 92, 246, 0.3);
+			box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+		}
+
+		/* Meta row — script name + icon/color pickers */
+		#tab_editor .editor-meta-row {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			flex-shrink: 0;
+		}
+
+		#tab_editor .editor-name-input {
+			flex: 1;
+			background: var(--input-bg);
+			border: 1px solid var(--border-color);
+			color: var(--text-color);
+			padding: 7px 12px;
+			font-size: 12px;
+			font-weight: 500;
+			border-radius: 8px;
+			outline: none;
+			transition: border-color 0.2s, box-shadow 0.2s;
+		}
+
+		#tab_editor .editor-name-input:focus {
+			border-color: var(--accent-color);
+			box-shadow: 0 0 0 2px var(--accent-glow);
+		}
+
+		#tab_editor .editor-name-input::placeholder {
+			color: rgba(255, 255, 255, 0.2);
+		}
+
+		#tab_editor .editor-meta-pickers {
+			display: flex;
+			gap: 4px;
+			align-items: center;
+			flex-shrink: 0;
+		}
+
+		#tab_editor .editor-picker-btn {
+			width: 32px;
+			height: 32px;
+			padding: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: var(--surface-color);
+			border: 1px solid var(--border-color);
+			border-radius: 8px;
+			cursor: pointer;
+			color: var(--text-color);
+			font-size: 14px;
+			transition: all 0.2s;
+		}
+
+		#tab_editor .editor-picker-btn:hover {
+			background: var(--surface-hover);
+			border-color: var(--accent-color);
+		}
+
+		#tab_editor .editor-picker-btn svg {
+			width: 18px;
+			height: 18px;
+		}
+
+		#tab_editor .editor-color-swatch {
+			width: 32px;
+			height: 32px;
+			border-radius: 8px;
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			cursor: pointer;
+			transition: all 0.2s;
+			position: relative;
+		}
+
+		#tab_editor .editor-color-swatch:hover {
+			transform: scale(1.08);
+			box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+		}
+
+		/* Icon Popover */
+		#tab_editor .editor-icon-popover {
+			display: none;
+			position: absolute;
+			top: 0;
+			right: 10px;
+			width: 220px;
+			background: var(--surface-color);
+			border: 1px solid var(--border-color);
+			padding: 8px;
+			border-radius: 10px;
+			box-shadow: var(--shadow-md);
+			z-index: 100;
+			grid-template-columns: repeat(5, 1fr);
+			gap: 4px;
+		}
+
+		/* Color Picker Modal */
+		.editor-color-modal {
+			display: none;
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 220px;
+			background: var(--surface-color);
+			border: 1px solid var(--border-color);
+			border-radius: 12px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+			padding: 16px;
+			z-index: 2000;
+			flex-direction: column;
+			gap: 12px;
+			align-items: stretch;
+		}
+
+		.editor-color-modal-title {
+			font-size: 11px;
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			text-align: center;
+			margin-bottom: 4px;
+		}
+
+		.editor-color-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 8px;
+		}
+
+		.editor-color-custom {
+			display: flex;
+			gap: 5px;
+			align-items: center;
+			border-top: 1px solid var(--border-color);
+			padding-top: 12px;
+			margin-top: 4px;
+		}
+
+		.editor-color-preview {
+			width: 24px;
+			height: 24px;
+			border-radius: 6px;
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.editor-color-hex-input {
+			flex: 1;
+			background: var(--input-bg);
+			border: 1px solid var(--border-color);
+			color: var(--text-color);
+			padding: 4px 8px;
+			font-size: 11px;
+			text-transform: uppercase;
+			border-radius: 6px;
+			text-align: center;
+			font-family: 'Fira Code', monospace;
+		}
+
+		.editor-color-backdrop {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 1999;
+			backdrop-filter: blur(2px);
+		}
+
+		/* Code editor container */
 		#tab_editor .editor-container {
 			flex: 1;
 			display: flex;
 			flex-direction: column;
-			gap: 8px;
 			min-height: 0;
 			overflow: hidden;
+			border-radius: 8px;
+			border: 1px solid var(--border-color);
+			background: var(--input-bg);
 		}
 
 		#tab_editor .CodeMirror {
 			flex: 1;
 			height: 100% !important;
 			min-height: 150px;
-			border-radius: 6px;
-			border: 1px solid var(--border-color);
+			border-radius: 8px;
+			border: none;
 			font-family: 'Fira Code', 'Menlo', 'Consolas', monospace;
 			font-size: 12px;
 			line-height: 1.6;
 		}
 
-		#tab_editor .editor-toolbar {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 0 4px;
-		}
-
-		#tab_editor .editor-label {
-			font-size: 11px;
-			font-weight: 600;
-			color: var(--text-secondary);
-			text-transform: uppercase;
-			letter-spacing: 0.5px;
-		}
-
 		#tab_editor #code_editor {
 			flex: 1;
-			background: var(--bg-color);
-			border: 1px solid var(--border-color);
+			background: transparent;
+			border: none;
 			color: #d4d4d4;
-			font-family: 'Consolas', monospace;
+			font-family: 'Fira Code', 'Consolas', monospace;
 			padding: 10px;
 			resize: none;
 			outline: none;
-		}
-
-		#tab_editor .action-bar {
-			display: flex;
-			gap: 10px;
-			padding: 8px 0;
-			border-top: 1px solid #333;
-			flex-shrink: 0;
+			font-size: 12px;
+			line-height: 1.6;
 		}
 
 		/* AI Helper tab styles */
@@ -180,51 +450,184 @@
 			border-bottom-right-radius: 2px;
 		}
 
+		/* Gemini-style animated gradient border */
+		@property --rotation {
+			syntax: '<angle>';
+			inherits: false;
+			initial-value: 0deg;
+		}
+
+		@keyframes gemini-rotate {
+			to {
+				--rotation: 360deg;
+			}
+		}
+
 		.prompt-box {
 			display: flex;
 			gap: 8px;
-			align-items: flex-end;
+			align-items: center;
 			flex-shrink: 0;
+			position: relative;
+			padding: 3px;
+			border-radius: 24px;
+			background: rgba(255, 255, 255, 0.08);
+			overflow: hidden;
+		}
+
+		/* Animated gradient border overlay */
+		.prompt-box::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: 24px;
+			padding: 2px;
+			background: conic-gradient(from var(--rotation),
+					#6366f1 0%,
+					#f59e0b 20%,
+					#10b981 35%,
+					#8b5cf6 50%,
+					#6366f1 65%,
+					#ec4899 80%,
+					#6366f1 100%);
+			-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+			-webkit-mask-composite: xor;
+			mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+			mask-composite: exclude;
+			animation: gemini-rotate 4s linear infinite;
+			z-index: 0;
+		}
+
+		/* Blurred glow behind (reference ::after) */
+		.prompt-box::after {
+			content: "";
+			position: absolute;
+			inset: -4px;
+			border-radius: 28px;
+			background: conic-gradient(from var(--rotation),
+					#6366f1 0%,
+					#f59e0b 20%,
+					#10b981 35%,
+					#8b5cf6 50%,
+					#6366f1 65%,
+					#ec4899 80%,
+					#6366f1 100%);
+			filter: blur(12px);
+			opacity: 0.25;
+			animation: gemini-rotate 4s linear infinite;
+			z-index: -1;
+		}
+
+		/* Thinking state — fast spin with ease */
+		.prompt-box.thinking::before,
+		.prompt-box.thinking::after {
+			animation: gemini-rotate 1s ease-in-out infinite;
+		}
+
+		.prompt-box.thinking::after {
+			opacity: 0.45;
+			filter: blur(16px);
 		}
 
 		.prompt-box textarea {
 			flex: 1;
-			background: var(--input-bg);
-			border: 1px solid var(--border-color);
+			background: var(--bg-color);
+			border: none;
 			color: var(--text-color);
-			padding: 10px 12px;
+			padding: 10px 14px;
 			border-radius: 20px;
 			resize: none;
 			height: 40px;
 			font-family: inherit;
 			line-height: 1.4;
 			transition: all 0.2s ease;
-			box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+			position: relative;
+			z-index: 1;
 		}
 
 		.prompt-box textarea:focus {
-			background: #202020;
-			border-color: var(--accent-color);
-			box-shadow: 0 0 0 2px var(--accent-glow);
+			background: #0c0c18;
 			outline: none;
 		}
 
 		.prompt-box button {
-			width: 40px !important;
-			height: 40px;
+			width: 36px !important;
+			height: 36px;
 			padding: 0;
 			border-radius: 50%;
 			flex-shrink: 0;
-			margin: 0;
+			margin: 1px;
+			background: transparent !important;
+			border: none !important;
+			color: rgba(255, 255, 255, 0.7) !important;
+			font-size: 16px;
+			display: flex !important;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: all 0.3s;
+			position: relative;
+			z-index: 1;
 		}
 
-		.loading-dots { display: inline-block; }
-		.loading-dots:after { content: '.'; animation: dots 1.5s steps(5, end) infinite; }
-		@keyframes dots {
-			0%, 20% { content: '.'; }
-			40% { content: '..'; }
-			60% { content: '...'; }
-			80%, 100% { content: ''; }
+		.prompt-box button:hover {
+			color: #fff !important;
+			background: rgba(99, 102, 241, 0.2) !important;
+			transform: scale(1.1);
+		}
+
+		/* Holographic Glitch — AI Thinking Text */
+		.loading-dots {
+			display: inline-block;
+			position: relative;
+			font-weight: 700;
+			font-size: 12px;
+			letter-spacing: 0.08em;
+			color: #fff;
+		}
+
+		.loading-dots::before,
+		.loading-dots::after {
+			content: attr(data-text);
+			position: absolute;
+			inset: 0;
+			opacity: 0.8;
+		}
+
+		.loading-dots::before {
+			color: #38bdf8;
+			transform: translate(2px, -1px);
+			mix-blend-mode: screen;
+			animation: glitch-text 2s infinite alternate;
+		}
+
+		.loading-dots::after {
+			color: #a855f7;
+			transform: translate(-2px, 1px);
+			mix-blend-mode: screen;
+			animation: glitch-text 1.5s infinite alternate-reverse;
+		}
+
+		@keyframes glitch-text {
+			0% {
+				clip-path: inset(0 0 70% 0);
+			}
+
+			25% {
+				clip-path: inset(20% 0 40% 0);
+			}
+
+			50% {
+				clip-path: inset(40% 0 20% 0);
+			}
+
+			75% {
+				clip-path: inset(10% 0 60% 0);
+			}
+
+			100% {
+				clip-path: inset(0 0 0 0);
+			}
 		}
 	</style>
 </head>
@@ -247,6 +650,13 @@
 		<button class="tab-btn" data-tab="tab_ai">AI Helper</button>
 	</div>
 
+	<!-- Tab Actions (New/Import/Export) -->
+	<div class="tab-actions">
+		<button id="btn_add_script" class="toolbar-btn primary">New</button>
+		<button id="btn_import_script" class="toolbar-btn">Import</button>
+		<button id="btn_export_script" class="toolbar-btn">Export</button>
+	</div>
+
 	<!-- TAB 1: Button Grid -->
 	<div id="tab_button" class="tab-content active">
 		<!-- User scripts injected via JS -->
@@ -259,37 +669,55 @@
 
 	<!-- TAB 3: Editor -->
 	<div id="tab_editor" class="tab-content">
-		<div class="editor-container">
-			<div class="editor-toolbar">
-				<span class="editor-label">SCRIPT EDITOR <span id="editor_status"
-					style="color: #666; margin-left: 8px; font-weight: normal; font-size: 11px; text-transform: none;">• New Script</span></span>
-				<div style="display: flex; gap: 5px;">
-					<input type="text" id="script_name_input" placeholder="Script Name"
-						style="background: #333; border: 1px solid #444; color: #fff; padding: 2px 6px; width: 120px;">
-					<div style="position: relative;">
-						<input type="hidden" id="icon_value" value="★">
-						<button id="icon_trigger"
-							style="width: 32px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; cursor: pointer;">★</button>
-						<div id="color_trigger" title="Select Color"
-							style="width: 26px; height: 26px; margin-left: 5px; background: #3b82f6; border-radius: 4px; border: 1px solid #444; cursor: pointer; position: relative;"></div>
-						<!-- Color Picker Modal -->
-						<div id="color_picker_modal"
-							style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; background: #252525; border: 1px solid #444; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 16px; z-index: 2000; flex-direction: column; gap: 12px; align-items: stretch;">
-							<div style="font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; margin-bottom: 4px;">Select Color</div>
-							<div id="color_grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;"></div>
-							<div style="display: flex; gap: 5px; align-items: center; border-top: 1px solid #333; padding-top: 12px; margin-top: 4px;">
-								<div id="color_preview" style="width: 24px; height: 24px; border-radius: 4px; background: #3b82f6; border: 1px solid #444;"></div>
-								<input type="text" id="color_hex_input" value="#3b82f6"
-									style="flex: 1; background: #1a1a1a; border: 1px solid #333; color: #e0e0e0; padding: 4px 8px; font-size: 11px; text-transform: uppercase; border-radius: 4px; text-align: center; font-family: monospace;">
-							</div>
-						</div>
-						<div id="color_backdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; backdrop-filter: blur(2px);"></div>
-						<!-- Icon Grid Popover -->
-						<div id="icon_grid_popover"
-							style="display: none; position: absolute; top: 30px; right: 0; width: 220px; background: #252525; border: 1px solid #444; padding: 8px; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; grid-template-columns: repeat(5, 1fr); gap: 4px;"></div>
-					</div>
+		<!-- Editor Header -->
+		<div class="editor-header">
+			<div class="editor-header-left">
+				<span class="editor-status-dot" id="editor_status_dot"></span>
+				<span id="editor_status" class="editor-status-text">New Script</span>
+			</div>
+			<div class="editor-header-actions">
+				<button id="btn_test" class="editor-action-btn editor-btn-run" title="Test Run (Ctrl+Enter)">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M8 5v14l11-7z" />
+					</svg>
+					<span>Run</span>
+				</button>
+				<button id="btn_editor_import" class="editor-action-btn editor-btn-save" title="Save to Button Grid">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+					</svg>
+					<span>Import</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- Script Meta Row -->
+		<div class="editor-meta-row">
+			<input type="text" id="script_name_input" class="editor-name-input" placeholder="Script name..."
+				spellcheck="false">
+			<input type="hidden" id="icon_value" value="★">
+			<div class="editor-meta-pickers">
+				<button id="icon_trigger" class="editor-picker-btn" title="Choose Icon">★</button>
+				<div id="color_trigger" class="editor-color-swatch" title="Choose Color" style="background: #3b82f6;">
 				</div>
 			</div>
+			<!-- Icon Grid Popover -->
+			<div id="icon_grid_popover" class="editor-icon-popover"></div>
+		</div>
+
+		<!-- Color Picker Modal -->
+		<div id="color_picker_modal" class="editor-color-modal">
+			<div class="editor-color-modal-title">Select Color</div>
+			<div id="color_grid" class="editor-color-grid"></div>
+			<div class="editor-color-custom">
+				<div id="color_preview" class="editor-color-preview" style="background: #3b82f6;"></div>
+				<input type="text" id="color_hex_input" value="#3b82f6" class="editor-color-hex-input">
+			</div>
+		</div>
+		<div id="color_backdrop" class="editor-color-backdrop"></div>
+
+		<!-- Code Editor -->
+		<div class="editor-container">
 			<textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
 		</div>
 
@@ -298,32 +726,14 @@
 			<div class="recent-code-header">
 				<span class="recent-code-label">RECENT CODE</span>
 				<button id="btn_clear_recent" class="recent-code-clear" title="Clear history">
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+					</svg>
 				</button>
 			</div>
 			<div id="recent_code_list" class="recent-code-list">
 				<div class="recent-code-empty">No recent code yet</div>
 			</div>
-		</div>
-
-		<!-- Description for Upload -->
-		<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-			<label style="font-size: 10px; color: #888; text-transform: uppercase; margin: 0;">Description:</label>
-			<input type="text" id="script_description" placeholder="What does this script do? (for upload)"
-				style="flex: 1; background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 6px 10px; font-size: 11px; border-radius: 4px;">
-		</div>
-
-		<!-- Actions -->
-		<div class="action-bar">
-			<button id="btn_test" class="secondary">Test Run</button>
-			<div style="flex: 1;"></div>
-			<button id="btn_editor_import" class="primary" style="background: #27ae60; border-color: #2ecc71;">Import</button>
-			<button id="btn_upload_server" title="Upload to Explore Server"
-				style="width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: #8b5cf6; border: none; border-radius: 6px; cursor: pointer;">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-					<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-				</svg>
-			</button>
 		</div>
 	</div>
 
@@ -332,7 +742,8 @@
 		<div id="chat_header"
 			style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; margin-bottom: 4px; border-bottom: 1px solid #333;">
 			<div style="font-size: 11px; color: #888; font-weight: 600;">AI CONTEXT <span id="ai_model_name"
-				style="color: var(--accent-color); margin-left: 8px; font-weight: normal; opacity: 0.8;"></span></div>
+					style="color: var(--accent-color); margin-left: 8px; font-weight: normal; opacity: 0.8;"></span>
+			</div>
 			<div style="display: flex; gap: 6px;">
 				<button id="btn_clear_chat" title="Clear Chat & Context"
 					style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; font-size: 14px; margin: 0;">🗑️</button>
@@ -340,11 +751,76 @@
 		</div>
 
 		<!-- Inline API Key -->
-		<div id="api_key_section" style="display: none; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid #333; margin-bottom: 4px;">
-			<span style="font-size: 10px; color: #f97316; white-space: nowrap;">🔑 API Key:</span>
-			<input id="api_key_inline_input" type="password" placeholder="AIza..." style="flex: 1; background: #1a1a1a; border: 1px solid #f97316; color: #e0e0e0; padding: 4px 8px; font-size: 11px; border-radius: 4px; min-width: 0;">
-			<button id="btn_save_api_key" style="padding: 4px 10px; background: #f97316; border: none; border-radius: 4px; color: #fff; font-size: 11px; cursor: pointer; white-space: nowrap; margin: 0;">Save</button>
+		<div id="api_key_section"
+			style="display: none; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; background: rgba(249, 115, 22, 0.05); border-radius: 8px; border: 1px solid rgba(249, 115, 22, 0.15);">
+			<span style="font-size: 10px; color: #f97316; white-space: nowrap;">🔑</span>
+			<input id="api_key_inline_input" type="password" placeholder="Paste your Gemini API Key..."
+				style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(249, 115, 22, 0.3); color: #e0e0e0; padding: 6px 10px; font-size: 11px; border-radius: 6px; min-width: 0; outline: none;">
+			<button id="btn_paste_api_key"
+				style="padding: 6px 12px; background: #666; border: none; border-radius: 6px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; margin: 0; width: auto; transition: all 0.2s;">📋
+				Paste</button>
+			<button id="btn_save_api_key"
+				style="padding: 6px 12px; background: #f97316; border: none; border-radius: 6px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; margin: 0; width: auto;">Save</button>
 		</div>
+		<script>
+			(function () {
+				var pasteBtn = document.getElementById('btn_paste_api_key');
+				var apiInput = document.getElementById('api_key_inline_input');
+				if (!pasteBtn || !apiInput) return;
+
+				// Update Paste button visibility & color
+				function updatePasteBtn() {
+					// Hide paste button if input has text
+					if (apiInput.value.trim().length > 0) {
+						pasteBtn.style.display = 'none';
+						return;
+					}
+					pasteBtn.style.display = '';
+					// Check clipboard
+					if (navigator.clipboard && navigator.clipboard.readText) {
+						navigator.clipboard.readText().then(function (text) {
+							if (text && text.trim().length > 0) {
+								pasteBtn.style.background = '#f97316';
+							} else {
+								pasteBtn.style.background = '#666';
+							}
+						}).catch(function () {
+							pasteBtn.style.background = '#666';
+						});
+					} else {
+						pasteBtn.style.background = '#666';
+					}
+				}
+
+				// Click to paste
+				pasteBtn.addEventListener('click', function () {
+					if (navigator.clipboard && navigator.clipboard.readText) {
+						navigator.clipboard.readText().then(function (text) {
+							if (text && text.trim().length > 0) {
+								apiInput.value = text.trim();
+								apiInput.type = 'text';
+								updatePasteBtn();
+								setTimeout(function () { apiInput.type = 'password'; }, 1500);
+							}
+						}).catch(function () { });
+					}
+				});
+
+				// Listen for input changes
+				apiInput.addEventListener('input', updatePasteBtn);
+
+				// Check clipboard periodically when section is visible
+				setInterval(function () {
+					var section = document.getElementById('api_key_section');
+					if (section && section.style.display !== 'none') {
+						updatePasteBtn();
+					}
+				}, 2000);
+
+				// Initial check
+				setTimeout(updatePasteBtn, 500);
+			})();
+		</script>
 
 		<!-- Chat -->
 		<div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative;">
@@ -353,7 +829,12 @@
 
 		<div class="prompt-box" style="margin-top: 5px;">
 			<textarea id="prompt_input" placeholder="Ask AI to create or edit script..."></textarea>
-			<button id="btn_send_prompt" class="primary"><span class="icon">✨</span></button>
+			<button id="btn_send_prompt" class="primary"><span class="icon"><svg width="16" height="16"
+						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<line x1="22" y1="2" x2="11" y2="13"></line>
+						<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+					</svg></span></button>
 		</div>
 	</div>
 
@@ -363,14 +844,15 @@
 	<!-- Footer Toolbar (V2 Redesign) -->
 	<div class="footer-toolbar">
 		<div class="toolbar-left">
-			<button id="btn_toggle_height" class="icon-btn" title="Collapse Panel" style="margin-right: 8px;">
+			<button id="btn_toggle_height" class="icon-btn" title="Collapse Panel">
 				<svg class="icon" viewBox="0 0 24 24">
 					<path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
 				</svg>
 			</button>
-			<button id="btn_add_script" class="toolbar-btn primary">New</button>
-			<button id="btn_import_script" class="toolbar-btn">Import</button>
-			<button id="btn_export_script" class="toolbar-btn">Export</button>
+		</div>
+		<div class="toolbar-center"
+			style="display: flex; align-items: center; justify-content: center; flex: 1; pointer-events: none; opacity: 0.8;">
+			<img src="Logo/Logo.png" alt="TATA Logo" style="height: 20px; mix-blend-mode: plus-lighter;">
 		</div>
 		<div class="toolbar-right">
 			<button id="btn_settings" class="icon-btn" title="Settings">⚙️</button>
@@ -410,7 +892,7 @@
 				<div id="model_check_msg" style="font-size: 10px; margin-top: 4px; color: #888;"></div>
 			</div>
 
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+			<hr class="modal-divider">
 
 			<div class="control-group">
 				<label>Eyedropper Mode</label>
@@ -421,18 +903,7 @@
 				</select>
 			</div>
 
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
-			<div class="control-group">
-				<label>Theme</label>
-				<select id="setting_theme"
-					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
-					<option value="dark">Dark Mode</option>
-					<option value="light">Light Mode</option>
-				</select>
-			</div>
-
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
 			<div class="control-group">
 				<label>Number of Hotkey Slots</label>
@@ -443,7 +914,7 @@
 				</div>
 			</div>
 
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+			<hr class="modal-divider">
 
 			<!-- Reset Section -->
 			<div class="control-group">
@@ -455,26 +926,7 @@
 					style="background: #d32f2f; color: white; width: 100%; border: none;">Back to Default</button>
 			</div>
 
-			<hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
 
-			<!-- Version Section -->
-			<div class="control-group">
-				<label>Version</label>
-				<div style="display: flex; align-items: center; justify-content: space-between;">
-					<span id="current_version" style="font-size: 13px; color: #10b981; font-weight: 600;">v6.0.0</span>
-					<button id="btn_check_update"
-						style="padding: 4px 10px; font-size: 10px; background: #333; border: 1px solid #555; color: #888; cursor: pointer; border-radius: 4px;">Check
-						Update</button>
-				</div>
-				<div id="update_available"
-					style="display: none; margin-top: 8px; padding: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 4px;">
-					<div style="font-size: 11px; color: #60a5fa; margin-bottom: 6px;">🆕 New version available: <strong
-							id="new_version">v6.1.0</strong></div>
-					<a id="download_link" href="#" target="_blank"
-						style="display: inline-block; padding: 4px 12px; background: #3b82f6; color: white; text-decoration: none; font-size: 10px; border-radius: 4px;">Download
-						Update</a>
-				</div>
-			</div>
 
 			<div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
 				<button id="btn_cancel_settings" class="secondary" style="width: auto;">Cancel</button>
@@ -564,21 +1016,10 @@
 	</div>
 
 	<!-- Global Context Menu -->
-	<div id="context_menu"
-		style="display: none; position: fixed; z-index: 1000; background: #2b2b2b; border: 1px solid #444; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); padding: 4px 0; min-width: 140px;">
-		<!-- V4: Quick Colors -->
-		<div id="ctx_colors"
-			style="display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid #444; margin-bottom: 4px; justify-content: center; flex-wrap: wrap;">
-			<!-- Injected by JS -->
-		</div>
-		<div id="ctx_edit"
-			style="padding: 6px 12px; color: #ddd; font-size: 12px; cursor: pointer; transition: background 0.1s;">
-			✏️ Edit Script
-		</div>
-		<div id="ctx_delete"
-			style="padding: 6px 12px; color: #ff6b6b; font-size: 12px; cursor: pointer; transition: background 0.1s;">
-			🗑️ Delete
-		</div>
+	<div id="context_menu">
+		<div id="ctx_colors" class="ctx-colors"></div>
+		<div id="ctx_copy" class="ctx-item ctx-copy">📄 Create a Copy</div>
+		<div id="ctx_delete" class="ctx-item ctx-delete">🗑️ Delete</div>
 	</div>
 
 	<!-- Toast for scripting/flow -->

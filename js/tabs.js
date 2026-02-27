@@ -41,6 +41,12 @@
             if (targetContent) {
                 targetContent.classList.add('active');
             }
+
+            // Show tab-actions only on Button tab
+            var tabActions = document.querySelector('.tab-actions');
+            if (tabActions) {
+                tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
+            }
         }
     }
 
