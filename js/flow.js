@@ -21,6 +21,9 @@
 	// Execution state for progress UI
 	var executionState = { currentStep: 0, totalSteps: 0, flowId: null };
 
+	// Flow Icon Palette
+	var FLOW_ICONS = ['🎬', '🚀', '⚡', '🔥', '💎', '🎯', '🎨', '🛠', '📦', '🧩', '🌟', '🔮', '🎭', '🏗', '⚙', '🧪', '📐', '🔄', '✨', '🎪'];
+
 	// ==========================================
 	// Step Type Config (color + icon + label)
 	// ==========================================
@@ -86,8 +89,8 @@
 		localStorage.setItem(FLOW_KEY, JSON.stringify(flows));
 	}
 
-	function createFlow(name, description) {
-		var flow = { id: 'flow_' + Date.now(), name: name || 'New Flow', description: description || '', steps: [], created: Date.now() };
+	function createFlow(name, description, icon) {
+		var flow = { id: 'flow_' + Date.now(), name: name || 'New Flow', description: description || '', icon: icon || '🎬', steps: [], created: Date.now() };
 		flows.push(flow);
 		saveFlows();
 		renderFlowList();
@@ -176,11 +179,33 @@
 		var flow = getFlow(flowId);
 		if (!flow) return;
 		var json = JSON.stringify(flow, null, 2);
+		var defaultName = flow.name.replace(/[^a-zA-Z0-9]/g, '_') + '.flow.json';
+
+		// Try CEP native save dialog first
+		if (window.cep && window.cep.fs && window.cep.fs.showSaveDialogEx) {
+			var result = window.cep.fs.showSaveDialogEx('Export Flow', '', ['json'], defaultName);
+			if (result && result.data) {
+				var savePath = result.data;
+				if (savePath) {
+					var writeResult = window.cep.fs.writeFile(savePath, json);
+					if (writeResult.err === 0) {
+						showToast('Flow exported to: ' + savePath.split('/').pop());
+					} else {
+						showToast('Export failed: write error');
+					}
+					return;
+				}
+			}
+			// User cancelled dialog
+			return;
+		}
+
+		// Fallback: browser download
 		var blob = new Blob([json], { type: 'application/json' });
 		var url = URL.createObjectURL(blob);
 		var a = document.createElement('a');
 		a.href = url;
-		a.download = flow.name.replace(/[^a-zA-Z0-9]/g, '_') + '.flow.json';
+		a.download = defaultName;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -664,7 +689,7 @@
 				e.dataTransfer.setData('text/plain', JSON.stringify({
 					id: flow.id,
 					label: flow.name,
-					icon: null,
+					icon: flow.icon || '🎬',
 					type: 'flow',
 					color: '#8b5cf6'
 				}));
@@ -676,7 +701,7 @@
 
 			var icon = document.createElement('div');
 			icon.className = 'flow-item-icon';
-			icon.textContent = '🎬';
+			icon.textContent = flow.icon || '🎬';
 
 			var info = document.createElement('div');
 			info.className = 'flow-item-info';
@@ -736,13 +761,37 @@
 		container.appendChild(list);
 	}
 
-	// Create Flow Modal (with description)
+	// Create Flow Modal (with description + icon)
 	function showCreateFlowModal() {
 		var overlay = createOverlay();
 		var panel = createPanel('Create Flow', 280);
 
 		appendField(panel, 'Flow Name', 'flow_create_name', 'text', 'My Flow');
 		appendField(panel, 'Description (optional)', 'flow_create_desc', 'text', 'What does this flow do?');
+
+		// Icon picker
+		var selectedIcon = '🎬';
+		var iconGroup = document.createElement('div');
+		iconGroup.style.cssText = 'display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;';
+		var iconLabel = document.createElement('label');
+		iconLabel.style.cssText = 'font-size: 10px; color: #888; text-transform: uppercase;';
+		iconLabel.textContent = 'Icon';
+		iconGroup.appendChild(iconLabel);
+		var iconGrid = document.createElement('div');
+		iconGrid.style.cssText = 'display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px;';
+		FLOW_ICONS.forEach(function (ic) {
+			var cell = document.createElement('div');
+			cell.textContent = ic;
+			cell.className = 'flow-icon-option' + (ic === selectedIcon ? ' selected' : '');
+			cell.onclick = function () {
+				selectedIcon = ic;
+				iconGrid.querySelectorAll('.flow-icon-option').forEach(function (el) { el.classList.remove('selected'); });
+				cell.classList.add('selected');
+			};
+			iconGrid.appendChild(cell);
+		});
+		iconGroup.appendChild(iconGrid);
+		panel.appendChild(iconGroup);
 
 		var btnRow = createButtonRow();
 		addCancelButton(btnRow, overlay);
@@ -751,7 +800,60 @@
 			if (!name) { showToast('Please enter a name'); return; }
 			var desc = panel.querySelector('#flow_create_desc').value.trim();
 			document.body.removeChild(overlay);
-			createFlow(name, desc);
+			createFlow(name, desc, selectedIcon);
+		});
+		panel.appendChild(btnRow);
+
+		overlay.appendChild(panel);
+		overlay.onclick = function (e) { if (e.target === overlay) document.body.removeChild(overlay); };
+		document.body.appendChild(overlay);
+	}
+
+	// Edit Flow Info Modal (name, description, icon)
+	function showEditFlowInfoModal(flow, flowId) {
+		var overlay = createOverlay();
+		var panel = createPanel('Edit Flow', 280);
+
+		appendField(panel, 'Flow Name', 'flow_edit_name', 'text', 'My Flow');
+		panel.querySelector('#flow_edit_name').value = flow.name;
+		appendField(panel, 'Description', 'flow_edit_desc', 'text', '');
+		panel.querySelector('#flow_edit_desc').value = flow.description || '';
+
+		// Icon picker
+		var selectedIcon = flow.icon || '🎬';
+		var iconGroup = document.createElement('div');
+		iconGroup.style.cssText = 'display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;';
+		var iconLabel = document.createElement('label');
+		iconLabel.style.cssText = 'font-size: 10px; color: #888; text-transform: uppercase;';
+		iconLabel.textContent = 'Icon';
+		iconGroup.appendChild(iconLabel);
+		var iconGrid = document.createElement('div');
+		iconGrid.style.cssText = 'display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px;';
+		FLOW_ICONS.forEach(function (ic) {
+			var cell = document.createElement('div');
+			cell.textContent = ic;
+			cell.className = 'flow-icon-option' + (ic === selectedIcon ? ' selected' : '');
+			cell.onclick = function () {
+				selectedIcon = ic;
+				iconGrid.querySelectorAll('.flow-icon-option').forEach(function (el) { el.classList.remove('selected'); });
+				cell.classList.add('selected');
+			};
+			iconGrid.appendChild(cell);
+		});
+		iconGroup.appendChild(iconGrid);
+		panel.appendChild(iconGroup);
+
+		var btnRow = createButtonRow();
+		addCancelButton(btnRow, overlay);
+		addConfirmButton(btnRow, 'Save', '#8b5cf6', '#7c3aed', function () {
+			var name = panel.querySelector('#flow_edit_name').value.trim();
+			if (!name) { showToast('Name is required'); return; }
+			flow.name = name;
+			flow.description = panel.querySelector('#flow_edit_desc').value.trim();
+			flow.icon = selectedIcon;
+			saveFlows();
+			document.body.removeChild(overlay);
+			renderFlowDetail(flowId);
 		});
 		panel.appendChild(btnRow);
 
@@ -792,11 +894,27 @@
 		backBtn.className = 'flow-detail-back';
 		backBtn.onclick = function () { renderFlowList(); };
 
+		// Flow icon (clickable to edit)
+		var flowIconBtn = document.createElement('div');
+		flowIconBtn.style.cssText = 'font-size: 18px; cursor: pointer; flex-shrink: 0;';
+		flowIconBtn.title = 'Change Icon';
+		flowIconBtn.textContent = flow.icon || '🎬';
+		flowIconBtn.onclick = function (e) {
+			e.stopPropagation();
+			showEditFlowInfoModal(flow, flowId);
+		};
+
 		var titleWrap = document.createElement('div');
 		titleWrap.style.cssText = 'flex: 1; min-width: 0;';
 		var title = document.createElement('div');
 		title.className = 'flow-detail-title';
 		title.textContent = flow.name;
+		title.style.cursor = 'pointer';
+		title.title = 'Edit Flow Info';
+		title.onclick = function (e) {
+			e.stopPropagation();
+			showEditFlowInfoModal(flow, flowId);
+		};
 		titleWrap.appendChild(title);
 		if (flow.description) {
 			var desc = document.createElement('div');
@@ -823,6 +941,7 @@
 		bigPlayBtn.onclick = function () { playFlow(flowId); };
 
 		header.appendChild(backBtn);
+		header.appendChild(flowIconBtn);
 		header.appendChild(titleWrap);
 		header.appendChild(progressEl);
 		header.appendChild(stopBtn);
@@ -1527,7 +1646,7 @@
 
 			var iconDiv = document.createElement('div');
 			iconDiv.style.cssText = 'font-size: 16px; flex-shrink: 0;';
-			iconDiv.textContent = '🎬';
+			iconDiv.textContent = f.icon || '🎬';
 
 			var labelSpan = document.createElement('span');
 			labelSpan.style.cssText = 'font-size: 11px; color: #e0e0e0; flex: 1;';
@@ -1588,7 +1707,7 @@
 
 			var iconDiv = document.createElement('div');
 			iconDiv.style.cssText = 'font-size: 16px; flex-shrink: 0;';
-			iconDiv.textContent = '🎬';
+			iconDiv.textContent = flow.icon || '🎬';
 
 			var labelSpan = document.createElement('span');
 			labelSpan.style.cssText = 'font-size: 11px; color: #e0e0e0; flex: 1;';
