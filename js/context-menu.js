@@ -22,6 +22,7 @@
         contextMenuEl = document.getElementById('context_menu');
         var btnEdit = document.getElementById('ctx_edit');
         var btnDelete = document.getElementById('ctx_delete');
+        var btnFlow = document.getElementById('ctx_flow');
         var ctxColors = document.getElementById('ctx_colors');
 
         // Quick Colors Init
@@ -168,6 +169,30 @@
                             window.currentContextScriptId = null;
                         }
                     });
+                }
+            };
+        }
+
+        // Add to Flow Action
+        if (btnFlow) {
+            btnFlow.onclick = function (e) {
+                e.stopPropagation();
+                var targetId = currentContextScriptId || window.currentContextScriptId;
+                if (contextMenuEl) contextMenuEl.style.display = 'none';
+                if (!targetId) return;
+
+                // Find item data from layout
+                var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
+                var items = v2Layout['tab_button'] || [];
+                var item = null;
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].id === targetId) { item = items[i]; break; }
+                }
+
+                if (item && typeof TATA.showAddToFlowPicker === 'function') {
+                    TATA.showAddToFlowPicker(item);
+                } else {
+                    TATA.showToast && TATA.showToast("Script not found.", "error");
                 }
             };
         }

@@ -245,9 +245,11 @@
                     var editBtn = document.getElementById('ctx_edit');
                     var delBtn = document.getElementById('ctx_delete');
                     var colorRow = document.getElementById('ctx_colors');
+                    var flowBtn = document.getElementById('ctx_flow');
                     if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
                     if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
                     if (colorRow) colorRow.style.display = 'flex';
+                    if (flowBtn) flowBtn.style.display = 'block';
                     menu.style.display = 'block';
                     var menuWidth = 140;
                     var x = e.clientX;

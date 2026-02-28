@@ -2114,14 +2114,392 @@ body.collapsed .footer {
 }
 
 /* ===========================================
-   FLOW v2 Styles
+   FLOW v2.1 Styles
    =========================================== */
 
-/* Flow step running animation */
+/* --- Flow List Header --- */
+.flow-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #333;
+    margin-bottom: 8px;
+}
+
+.flow-header-btn {
+    padding: 4px 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 11px;
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+    transition: all 0.15s;
+}
+
+.flow-header-btn:hover {
+    background: #444;
+    color: #fff;
+}
+
+.flow-header-btn-primary {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: #fff;
+}
+
+.flow-header-btn-primary:hover {
+    background: #7c3aed;
+}
+
+/* --- Flow Item (list card) --- */
+.flow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.flow-item:hover {
+    border-color: #8b5cf6;
+    background: #302a3a;
+}
+
+.flow-item-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.flow-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.flow-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flow-item-meta {
+    font-size: 10px;
+    color: #888;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flow-item-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.flow-item-play {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: #10b981;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.flow-item-play:hover {
+    background: #059669;
+    transform: scale(1.1);
+}
+
+.flow-item-action-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+
+.flow-item-action-btn:hover {
+    color: #aaa;
+}
+
+.flow-item-delete {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+
+.flow-item-delete:hover {
+    color: #ef4444;
+}
+
+/* --- Flow Detail Header --- */
+.flow-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid #333;
+    margin-bottom: 8px;
+}
+
+.flow-detail-back {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.flow-detail-back:hover {
+    background: #444;
+    color: #fff;
+}
+
+.flow-detail-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flow-detail-stop {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ef4444;
+    font-size: 12px;
+    cursor: pointer;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.flow-detail-stop:hover {
+    background: #442222;
+}
+
+.flow-detail-play {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+    transition: all 0.15s;
+}
+
+.flow-detail-play:hover {
+    filter: brightness(1.1);
+    transform: scale(1.05);
+}
+
+/* --- Flow Step Element --- */
+.flow-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-left: 3px solid #3b82f6;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.flow-step:hover {
+    background: #323242;
+}
+
+.flow-step.disabled {
+    opacity: 0.4;
+}
+
+.flow-step-handle {
+    color: #555;
+    cursor: grab;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.flow-step-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.flow-step-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.flow-step-name {
+    font-size: 11px;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flow-step-subtitle {
+    font-size: 9px;
+    color: #666;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- Step Controls --- */
+.flow-step-controls {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.flow-step:hover .flow-step-controls {
+    opacity: 1;
+}
+
+.flow-step-ctrl-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+
+.flow-step-ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff !important;
+}
+
+/* --- Add Step Toolbar --- */
+.flow-add-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 0;
+    border-top: 1px solid #333;
+    flex-shrink: 0;
+}
+
+.flow-add-btn {
+    flex: 1;
+    min-width: 55px;
+    padding: 6px 4px;
+    border: 1px solid;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0;
+    transition: all 0.15s;
+}
+
+/* --- Progress Indicator --- */
+.flow-progress {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+    color: #f59e0b;
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* --- Flow Step State Animations --- */
 .flow-step.running {
     border-color: #f59e0b !important;
     background: rgba(245, 158, 11, 0.1) !important;
-    animation: pulse 1s infinite;
+    animation: flowPulse 1s infinite;
 }
 
 .flow-step.completed {
@@ -2134,7 +2512,17 @@ body.collapsed .footer {
     background: rgba(239, 68, 68, 0.1) !important;
 }
 
-/* Flow hotkey slot */
+@keyframes flowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3); }
+    50% { box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.15); }
+}
+
+/* --- Context Menu: Add to Flow --- */
+.ctx-flow {
+    color: #a78bfa;
+}
+
+/* --- Flow Hotkey Slot --- */
 .hotkey-slot.flow-slot {
     background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
     border-color: #8b5cf6 !important;
