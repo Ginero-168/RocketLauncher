@@ -27,9 +27,8 @@
         setupDraggableButtons();
     }
 
-    function saveHotkeys(skipSync) {
+    function saveHotkeys() {
         localStorage.setItem('tata_hotkeys', JSON.stringify(hotkeys));
-        if (!skipSync && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
     }
 
     function renderHotkeys() {

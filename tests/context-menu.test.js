@@ -1,5 +1,5 @@
 describe('context menu updates', function () {
-    test('persists related color changes and schedules one cloud sync', function () {
+    test('persists related color changes', function () {
         const layout = { tab_button: [{ id: 'script_1', color: '#000000' }] };
         const scripts = { script_1: { color: '#000000' } };
         const hotkeys = [{ id: 'script_1', color: '#000000' }];
@@ -14,8 +14,7 @@ describe('context menu updates', function () {
             saveHotkeys: jest.fn(),
             renderHotkeys: jest.fn(),
             renderGrid: jest.fn(),
-            showToast: jest.fn(),
-            Sync: { autoPush: jest.fn() }
+            showToast: jest.fn()
         };
         global.TATA = window.TATA;
         window.loadPanelScript('js/context-menu.js');
@@ -25,9 +24,8 @@ describe('context menu updates', function () {
         expect(layout.tab_button[0].color).toBe('#ffffff');
         expect(scripts.script_1.color).toBe('#ffffff');
         expect(hotkeys[0].color).toBe('#ffffff');
-        expect(TATA.saveV2Layout).toHaveBeenCalledWith(true);
-        expect(TATA.saveHotkeys).toHaveBeenCalledWith(true);
-        expect(TATA.Sync.autoPush).toHaveBeenCalledTimes(1);
+        expect(TATA.saveV2Layout).toHaveBeenCalledTimes(1);
+        expect(TATA.saveHotkeys).toHaveBeenCalledTimes(1);
         expect(TATA.renderGrid).toHaveBeenCalledTimes(1);
     });
 });

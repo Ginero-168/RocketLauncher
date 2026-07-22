@@ -226,10 +226,6 @@
             TATA.saveHotkeys && TATA.saveHotkeys(true);
             TATA.renderHotkeys && TATA.renderHotkeys();
         }
-        if ((found || userScripts[targetId] || hotkeyUpdated) && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) {
-            window.TATA.Sync.autoPush();
-        }
-
         // Render & toast
         if (found) {
             var renderFn = TATA.renderGridDebounced || TATA.renderGrid;

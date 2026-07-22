@@ -910,44 +910,6 @@
 
 			<hr class="modal-divider">
 
-			<!-- Cloud Sync Section -->
-			<div class="control-group">
-				<label>☁️ Cloud Auto-Sync</label>
-				<p style="font-size: 11px; color: #888; margin-top: 2px; margin-bottom: 8px;">
-					Automatically backup and restore your scripts and layout across devices when authenticated.
-				</p>
-
-				<!-- Login State -->
-				<div id="sync_auth_section" style="margin-bottom: 10px;">
-					<div id="sync_user_info"
-						style="display: none; align-items: center; gap: 8px; background: #2a2a4a; padding: 6px 10px; border-radius: 4px; border: 1px solid #3a3a5c;">
-						<div id="sync_user_avatar"
-							style="width: 24px; height: 24px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
-						</div>
-						<div style="flex: 1; display: flex; flex-direction: column;">
-							<span id="sync_user_email"
-								style="font-size: 11px; color: #e2e8f0; line-height: 1.2;"></span>
-							<span id="sync_last_sync" style="font-size: 9px; color: #888;"></span>
-						</div>
-
-						<!-- Action Buttons -->
-						<div style="display: flex; gap: 4px;">
-							<button id="btn_sync_folder" title="Open Sync Folder"
-								style="background: none; border: none; color: #a5b4fc; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
-								📁
-							</button>
-							<button id="btn_sync_refresh" title="Manual Sync (Pull)"
-								style="background: none; border: none; color: #10b981; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
-								🔄
-							</button>
-							<button id="btn_sync_logout" title="Sign Out"
-								style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
-								✖
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
 			<!-- Reset Section -->
 			<div class="control-group">
 				<label>Factory Reset</label>
@@ -1089,8 +1051,7 @@
 	<!-- Scripting (embedded in main panel) -->
 	<script src="js/scripting.js"></script>
 	<script src="js/ai-agent.js"></script>
-	<script src="js/sync.js"></script>
-	<script src="js/color-tools.js"></script>
+<script src="js/color-tools.js"></script>
 	<!-- Main Logic -->
 	<script src="js/main.js"></script>
 

@@ -16,16 +16,14 @@
 - Modular IIFE modules in `js/`:
   - `core.js`, `state.js`, `modals.js`, `tabs.js`, `host.js` — shared infrastructure
   - `grid.js`, `scripts.js`, `context-menu.js`, `hotkeys.js` — main panel
-  - `scripting.js`, `ai-agent.js`, `sync.js` — editor/AI/sync
+  - `scripting.js`, `ai-agent.js` — editor/AI
   - `color-tools.js`, `script-transfer.js` — extracted feature modules
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
-- `js/config.js` loads public defaults and merges `js/config.local.json` (gitignored) for Supabase credentials.
+- `js/config.js` loads public defaults and merges `js/config.local.json` (gitignored) for optional server features.
 
 ## Security Notes
-- Never commit `js/config.local.json` or the `Sevret` file.
-- Supabase keys are loaded at runtime from `js/config.local.json`.
-- Google OAuth client secret lives in `Sevret` (gitignored but present on disk); rotate and remove when possible.
+- Never commit `js/config.local.json`.
 - User-provided JSX/ExtendScript in grid/scripting is intentionally executed directly; sandboxing would require a separate architectural change.
 
 ## CEP / Node

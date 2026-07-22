@@ -77,8 +77,6 @@
             }
         }
 
-        if (window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
-
         if (!skipRender) {
             var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
             if (renderFn) renderFn();
@@ -128,10 +126,6 @@
             } else {
                 localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
             }
-        }
-
-        if ((scriptsDirty || v2Dirty) && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) {
-            window.TATA.Sync.autoPush();
         }
 
         var renderFn = TATA.renderGridDebounced || TATA.renderGrid;

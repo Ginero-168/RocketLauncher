@@ -200,11 +200,15 @@
         });
     }
 
-    // ==================== SUPABASE CONFIG ====================
-    var SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || 'https://ocglwbaobmsmuwdpcvqw.supabase.co';
-    var SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4';
+    // ==================== SUPABASE CONFIG (optional: only for upload to server) ====================
+    var SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || '';
+    var SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || '';
 
     function handleUploadToServer() {
+        if (!SUPABASE_URL || !SUPABASE_KEY) {
+            showToast('Server upload not configured.');
+            return;
+        }
         var nameInput = document.getElementById('script_name_input');
         var iconInput = document.getElementById('icon_value');
         var colorTrigger = document.getElementById('color_trigger');

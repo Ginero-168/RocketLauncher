@@ -355,10 +355,9 @@
         return v2Layout[tab][idx];
     }
 
-    function saveV2Layout(skipSync) {
+    function saveV2Layout() {
         if (TATA.backupBeforeSave) TATA.backupBeforeSave('tata_v2_layout');
         localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
-        if (!skipSync && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
     }
 
     function getV2Layout() {

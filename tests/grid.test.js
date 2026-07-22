@@ -6,8 +6,7 @@ describe('grid storage and rendering', function () {
             safeParse: function (value, fallback) {
                 try { return JSON.parse(value); } catch (e) { return fallback; }
             },
-            backupBeforeSave: jest.fn(),
-            Sync: { autoPush: jest.fn() }
+            backupBeforeSave: jest.fn()
         };
         global.TATA = window.TATA;
         window.loadPanelScript('js/grid.js');
@@ -27,7 +26,7 @@ describe('grid storage and rendering', function () {
         expect(document.querySelectorAll('.grid-btn')).toHaveLength(9);
     });
 
-    test('explicit save persists and schedules one cloud sync', function () {
+    test('explicit save persists layout to localStorage', function () {
         loadGrid();
         TATA.setV2Layout({ tab_button: [] });
         const setItem = jest.spyOn(Storage.prototype, 'setItem');
@@ -35,7 +34,6 @@ describe('grid storage and rendering', function () {
         TATA.saveV2Layout();
 
         expect(setItem).toHaveBeenCalledWith('tata_v2_layout', JSON.stringify({ tab_button: [] }));
-        expect(TATA.Sync.autoPush).toHaveBeenCalledTimes(1);
     });
 
     test('reloads in-memory layout after cloud storage is restored', function () {

@@ -581,28 +581,11 @@
 			btnFactoryReset._bound = true;
 			btnFactoryReset.addEventListener('click', function () {
 				if (confirm("Are you sure you want to restore Factory Defaults?\n\nThis will DELETE ALL custom scripts/buttons and clear your settings.")) {
-					// Prepare items to preserve
-					var authData = localStorage.getItem('tata_supabase_auth');
-
 					// 1. Clear All LocalStorage
 					localStorage.clear();
 
-					// 2. Restore preserved items
-					if (authData) localStorage.setItem('tata_supabase_auth', authData);
-
-					// 3. Trigger sync to wipe cloud data
-					if (window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) {
-						var originalText = btnFactoryReset.innerHTML;
-						btnFactoryReset.innerHTML = 'Resetting...';
-						window.TATA.Sync.autoPush();
-						// Wait for push to complete before reloading
-						setTimeout(function () {
-							location.reload();
-						}, 1500);
-					} else {
-						// 4. Reload Panel
-						location.reload();
-					}
+					// 2. Reload Panel
+					location.reload();
 				}
 			});
 		}

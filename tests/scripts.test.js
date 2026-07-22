@@ -9,8 +9,7 @@ describe('user script persistence', function () {
             saveV2Layout: jest.fn(function () {
                 localStorage.setItem('tata_v2_layout', JSON.stringify(TATA.state.layout));
             }),
-            renderGrid: jest.fn(),
-            Sync: { autoPush: jest.fn() }
+            renderGrid: jest.fn()
         };
         global.TATA = window.TATA;
         window.loadPanelScript('js/scripts.js');
@@ -24,11 +23,10 @@ describe('user script persistence', function () {
         expect(Object.keys(TATA.getUserScripts())).toHaveLength(1);
         expect(TATA.getV2Layout().tab_button).toHaveLength(1);
         expect(TATA.saveV2Layout).toHaveBeenCalledTimes(1);
-        expect(TATA.Sync.autoPush).toHaveBeenCalledTimes(1);
         expect(TATA.renderGrid).toHaveBeenCalledTimes(1);
     });
 
-    test('deleting a script persists related state and schedules one sync request', function () {
+    test('deleting a script persists related state', function () {
         loadScripts();
         TATA.state.userScripts.script_1 = { name: 'Example', code: 'alert("ok");' };
         TATA.state.layout.tab_button.push({ id: 'script_1', label: 'Example', code: 'alert("ok");' });
@@ -38,7 +36,6 @@ describe('user script persistence', function () {
         expect(TATA.getUserScripts().script_1).toBeUndefined();
         expect(TATA.getV2Layout().tab_button).toHaveLength(0);
         expect(TATA.saveV2Layout).toHaveBeenCalledTimes(1);
-        expect(TATA.Sync.autoPush).toHaveBeenCalledTimes(1);
         expect(TATA.renderGrid).toHaveBeenCalledTimes(1);
     });
 });
