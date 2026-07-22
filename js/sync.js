@@ -1,7 +1,7 @@
 /**
- * TATA Panel - Cloud Sync Module
- * Handles Google OAuth via local Node.js server to circumvent CEP restrictions.
+ * Rocket Launcher - Cloud Sync Module
  * Synchronizes selected localStorage keys with Supabase.
+ * Authentication must be provided externally (e.g. manually set token or future auth flow).
  */
 
 (function () {
@@ -24,21 +24,6 @@
     }
 
     let currentUser = null;
-    let authServer = null;
-
-    // Node.js required modules
-    let http, cp, openCmd;
-    if (typeof require !== 'undefined') {
-        try {
-            http = require('http');
-            cp = require('child_process');
-            // Detect OS to open URL
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            openCmd = isMac ? 'open' : 'start';
-        } catch (e) {
-            console.error('[TATA Sync] Node.js modules not fully available.', e);
-        }
-    }
 
     // ==========================================
     // UI Updates
@@ -122,111 +107,6 @@
             console.error('[TATA Sync] Auth check failed:', e);
         }
         updateAuthUI();
-    }
-
-    // ==========================================
-    // Google Login via Local Node Server
-    // ==========================================
-    function startGoogleLogin() {
-        if (!http || !cp) {
-            if (TATA.showToast) TATA.showToast('Node.js not available. Cannot login.', 'error');
-            return;
-        }
-        if (!hasSyncConfig()) {
-            warnMissingConfig();
-            return;
-        }
-
-        if (TATA.showToast) TATA.showToast('Opening browser for login...', 'info');
-
-        // Stop existing if any
-        if (authServer) {
-            authServer.close();
-            authServer = null;
-        }
-
-        const port = 34567;
-        const redirectUri = `http://localhost:${port}/callback`;
-
-        authServer = http.createServer((req, res) => {
-            if (req.method === 'GET' && req.url.startsWith('/callback')) {
-                // The implicit grant flow returns tokens in the URL Hash fragment (#access_token=...)
-                // Servers cannot read hash fragments natively, so we serve an HTML script to extract it.
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(`
-                    <html>
-                    <head><title>TATA Login</title></head>
-                    <body style="background:#0d0d1a; color:white; font-family:sans-serif; text-align:center; padding-top: 50px;">
-                        <h2>Completing Login...</h2>
-                        <p>You can close this window now.</p>
-                        <script>
-                            const hash = window.location.hash.substring(1);
-                            if (hash) {
-                                fetch('/token', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: hash
-                                }).then(() => {
-                                    window.close();
-                                });
-                            } else {
-                                document.body.innerHTML += '<p style="color:red">No token found!</p>';
-                            }
-                        </script>
-                    </body>
-                    </html>
-                `);
-            } else if (req.method === 'POST' && req.url === '/token') {
-                let body = '';
-                req.on('data', chunk => { body += chunk.toString(); });
-                req.on('end', () => {
-                    res.writeHead(200);
-                    res.end('OK');
-
-                    // Parse application/x-www-form-urlencoded manually safely
-                    let params = {};
-                    body.split('&').forEach(pair => {
-                        const parts = pair.split('=');
-                        if (parts.length === 2) params[parts[0]] = decodeURIComponent(parts[1]);
-                    });
-
-                    if (params.access_token) {
-                        setStoredAuth({ access_token: params.access_token, refresh_token: params.refresh_token });
-
-                        // Close server and verify
-                        if (authServer) authServer.close();
-
-                        // Verify token in panel context
-                        setTimeout(() => {
-                            checkAuthStatus().then(() => {
-                                if (currentUser && TATA.showToast) {
-                                    TATA.showToast('✅ Login Successful!', 'success');
-                                }
-                            });
-                        }, 500);
-                    }
-                });
-            } else {
-                res.writeHead(404);
-                res.end();
-            }
-        });
-
-        authServer.listen(port, () => {
-            const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUri)}`;
-            // Open browser
-            cp.exec(`${openCmd} "${authUrl}"`, (err) => {
-                if (err) console.error('[TATA Sync] Failed to open browser', err);
-            });
-
-            // Auto close server if no login within 2 minutes
-            setTimeout(() => {
-                if (authServer) {
-                    authServer.close();
-                    authServer = null;
-                }
-            }, 120000);
-        });
     }
 
     function doLogout() {
@@ -324,6 +204,7 @@
                 // Re-init panel to apply changes
                 if (TATA.initUserScripts) setTimeout(TATA.initUserScripts, 200);
                 if (typeof TATA.initHotkeys === 'function') setTimeout(TATA.initHotkeys, 300);
+                if (typeof TATA.loadFlows === 'function') setTimeout(TATA.loadFlows, 400);
                 if (typeof TATA.reloadV2Layout === 'function') setTimeout(TATA.reloadV2Layout, 500);
             }
 
@@ -339,12 +220,10 @@
     function initSync() {
         checkAuthStatus();
 
-        const btnLogin = document.getElementById('btn_sync_login');
         const btnLogout = document.getElementById('btn_sync_logout');
         const btnFolder = document.getElementById('btn_sync_folder');
         const btnRefresh = document.getElementById('btn_sync_refresh');
 
-        if (btnLogin) btnLogin.addEventListener('click', startGoogleLogin);
         if (btnLogout) btnLogout.addEventListener('click', doLogout);
 
         if (btnRefresh) {
