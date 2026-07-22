@@ -1,7 +1,6 @@
 /**
- * TATA Panel - Shared State Module
+ * Rocket Launcher - Shared State Module
  * Contains: Global state object, getters/setters for controlled access
- * @version 4.2
  */
 (function () {
     'use strict';
@@ -53,60 +52,32 @@
     // ==========================================
     // Layout Getters/Setters
     // ==========================================
-    TATA.getLayout = function () {
-        return TATA.state.v2Layout;
-    };
+    TATA.getLayout = () => TATA.state.v2Layout;
+    TATA.setLayout = (layout) => { TATA.state.v2Layout = layout; };
 
-    TATA.setLayout = function (layout) {
-        TATA.state.v2Layout = layout;
-    };
-
-    TATA.getDefaults = function () {
-        return TATA.state.v2Defaults;
-    };
-
-    TATA.setDefaults = function (defaults) {
-        TATA.state.v2Defaults = defaults;
-    };
+    TATA.getDefaults = () => TATA.state.v2Defaults;
+    TATA.setDefaults = (defaults) => { TATA.state.v2Defaults = defaults; };
 
     // ==========================================
     // Hotkey Getters/Setters
     // ==========================================
-    TATA.getHotkeys = function () {
-        return TATA.state.hotkeys;
-    };
+    TATA.getHotkeys = () => TATA.state.hotkeys;
+    TATA.setHotkeys = (hotkeys) => { TATA.state.hotkeys = hotkeys; };
 
-    TATA.setHotkeys = function (hotkeys) {
-        TATA.state.hotkeys = hotkeys;
-    };
-
-    TATA.getHotkeyCount = function () {
-        return TATA.state.hotkeyCount;
-    };
-
-    TATA.setHotkeyCount = function (count) {
-        TATA.state.hotkeyCount = count;
-    };
+    TATA.getHotkeyCount = () => TATA.state.hotkeyCount;
+    TATA.setHotkeyCount = (count) => { TATA.state.hotkeyCount = count; };
 
     // ==========================================
     // User Scripts Getters/Setters
     // ==========================================
-    TATA.getUserScripts = function () {
-        return TATA.state.userScripts;
-    };
-
-    TATA.setUserScripts = function (scripts) {
-        TATA.state.userScripts = scripts;
-    };
+    TATA.getUserScripts = () => TATA.state.userScripts;
+    TATA.setUserScripts = (scripts) => { TATA.state.userScripts = scripts; };
 
     // ==========================================
     // Context Menu State
     // ==========================================
-    TATA.getCurrentContextId = function () {
-        return TATA.state.currentContextScriptId;
-    };
-
-    TATA.setCurrentContextId = function (id) {
+    TATA.getCurrentContextId = () => TATA.state.currentContextScriptId;
+    TATA.setCurrentContextId = (id) => {
         TATA.state.currentContextScriptId = id;
         // Also set on window for backward compatibility
         window.currentContextScriptId = id;
@@ -115,23 +86,13 @@
     // ==========================================
     // CSInterface Accessor
     // ==========================================
-    TATA.getCSInterface = function () {
-        return TATA.state.csInterface;
-    };
-
-    TATA.setCSInterface = function (csInterface) {
-        TATA.state.csInterface = csInterface;
-    };
+    TATA.getCSInterface = () => TATA.state.csInterface;
+    TATA.setCSInterface = (csInterface) => { TATA.state.csInterface = csInterface; };
 
     // ==========================================
     // Extension Path
     // ==========================================
-    TATA.getExtensionPath = function () {
-        return TATA.state.extensionPath;
-    };
-
-    TATA.setExtensionPath = function (path) {
-        TATA.state.extensionPath = path;
-    };
+    TATA.getExtensionPath = () => TATA.state.extensionPath;
+    TATA.setExtensionPath = (path) => { TATA.state.extensionPath = path; };
 
 })();
