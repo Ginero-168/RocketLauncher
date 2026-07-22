@@ -22,7 +22,6 @@
         contextMenuEl = document.getElementById('context_menu');
         var btnEdit = document.getElementById('ctx_edit');
         var btnDelete = document.getElementById('ctx_delete');
-        var btnFlow = document.getElementById('ctx_flow');
         var ctxColors = document.getElementById('ctx_colors');
 
         // Quick Colors Init
@@ -172,30 +171,6 @@
                 }
             };
         }
-
-        // Add to Flow Action
-        if (btnFlow) {
-            btnFlow.onclick = function (e) {
-                e.stopPropagation();
-                var targetId = currentContextScriptId || window.currentContextScriptId;
-                if (contextMenuEl) contextMenuEl.style.display = 'none';
-                if (!targetId) return;
-
-                // Find item data from layout
-                var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
-                var items = v2Layout['tab_button'] || [];
-                var item = null;
-                for (var i = 0; i < items.length; i++) {
-                    if (items[i].id === targetId) { item = items[i]; break; }
-                }
-
-                if (item && typeof TATA.showAddToFlowPicker === 'function') {
-                    TATA.showAddToFlowPicker(item);
-                } else {
-                    TATA.showToast && TATA.showToast("Script not found.", "error");
-                }
-            };
-        }
     }
 
     // ==========================================
@@ -241,14 +216,18 @@
         // Batch all localStorage writes together (was 3 separate writes)
         if (found) {
             TATA.setV2Layout && TATA.setV2Layout(v2Layout);
-            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            if (TATA.saveV2Layout) TATA.saveV2Layout(true);
+            else localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
         }
         if (userScripts[targetId]) {
             localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
         }
         if (hotkeyUpdated) {
-            TATA.saveHotkeys && TATA.saveHotkeys();
+            TATA.saveHotkeys && TATA.saveHotkeys(true);
             TATA.renderHotkeys && TATA.renderHotkeys();
+        }
+        if ((found || userScripts[targetId] || hotkeyUpdated) && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) {
+            window.TATA.Sync.autoPush();
         }
 
         // Render & toast

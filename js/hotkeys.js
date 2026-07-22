@@ -27,8 +27,9 @@
         setupDraggableButtons();
     }
 
-    function saveHotkeys() {
+    function saveHotkeys(skipSync) {
         localStorage.setItem('tata_hotkeys', JSON.stringify(hotkeys));
+        if (!skipSync && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
     }
 
     function renderHotkeys() {
@@ -58,27 +59,35 @@
                     slot.style.boxShadow = '';
                 }
 
-                // Flow type: show 🎬 emoji
-                if (data.type === 'flow') {
-                    slot.innerText = '🎬';
-                    slot.style.fontSize = '14px';
-                } else if (data.icon) {
-                    var iconSpan = document.createElement('span');
-                    iconSpan.innerHTML = data.icon;
-                    var svg = iconSpan.querySelector('svg');
+                // Icon element
+                var iconEl = document.createElement('span');
+                iconEl.className = 'hotkey-icon';
+
+                if (data.icon) {
+                    iconEl.innerHTML = data.icon;
+                    var svg = iconEl.querySelector('svg');
                     if (svg) {
-                        svg.setAttribute('width', '16');
-                        svg.setAttribute('height', '16');
-                        svg.style.width = '16px';
-                        svg.style.height = '16px';
-                        svg.style.minWidth = '16px';
+                        svg.setAttribute('width', '14');
+                        svg.setAttribute('height', '14');
+                        svg.style.width = '14px';
+                        svg.style.height = '14px';
+                        svg.style.minWidth = '14px';
                         svg.style.display = 'block';
                     }
-                    slot.appendChild(iconSpan);
                 } else {
-                    slot.innerText = data.label.substring(0, 3);
+                    iconEl.textContent = data.label.substring(0, 2);
+                    iconEl.style.fontSize = '11px';
+                    iconEl.style.fontWeight = '700';
+                    iconEl.style.lineHeight = '1';
                 }
+                slot.appendChild(iconEl);
                 slot.title = data.label;
+
+                // Name label (small text below icon)
+                var nameLabel = document.createElement('span');
+                nameLabel.className = 'hotkey-label';
+                nameLabel.textContent = data.label;
+                slot.appendChild(nameLabel);
 
                 var removeBtn = document.createElement('span');
                 removeBtn.className = 'hotkey-remove';
@@ -96,14 +105,6 @@
 
                 slot.onclick = (function (slotData) {
                     return function () {
-                        // Flow type: run flow directly
-                        if (slotData.type === 'flow' && typeof TATA.playFlow === 'function') {
-                            TATA.playFlow(slotData.id);
-                            this.style.opacity = '0.5';
-                            var self = this;
-                            setTimeout(function () { self.style.opacity = '1'; }, 100);
-                            return;
-                        }
                         // Default: trigger button click
                         var btn = document.getElementById(slotData.id);
                         if (btn) {

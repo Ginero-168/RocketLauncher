@@ -470,6 +470,7 @@
     }
 
     async function handleSendPrompt() {
+
         var txtPrompt = document.getElementById('prompt_input');
         var userText = txtPrompt.value.trim();
         if (!userText) return;
@@ -520,6 +521,26 @@
             // V3: Get AI model from Settings (localStorage) or default
             var selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
 
+            // Workspace Context: scan active Illustrator document
+            try {
+                var wsContext = await new Promise(function (resolve) {
+                    if (TATA.host && TATA.host.run) {
+                        TATA.host.run('getWorkspaceContext', undefined, function (result) {
+                            resolve(result);
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                });
+                if (wsContext && wsContext !== "EvalScript error." && wsContext.indexOf('{') === 0) {
+                    prompt = "===== CURRENT WORKSPACE =====\n" + wsContext + "\n\n" +
+                        "Use this workspace data to understand the document.\n" +
+                        "Reference actual layers, objects, selection, and text from the data above.\n" +
+                        "If the user mentions objects, check the selection and layer data.\n\n" +
+                        "User Request: " + prompt;
+                }
+            } catch (wsErr) { /* workspace context is optional */ }
+
             var result = await callAI(apiKey, prompt, selectedModel);
 
             var loadingBubble = document.getElementById(loadingId);
@@ -569,7 +590,7 @@
     }
 
     function runCodeWithAutoFix(code, attempt) {
-        getCS().evalScript(code, async function (res) {
+        TATA.host.evalCode(code, async function (res) {
             if (res && res !== 'undefined') {
                 if (/Error|Exception|ReferenceError|SyntaxError/.test(res) || res.indexOf('Line:') !== -1) {
                     // Error detected
@@ -1015,3 +1036,77 @@
     window.cmEditor = null; // Will be set by initCodeMirror
 
 })();
+
+
+// ==========================================
+// Export AI Call logic for ai-agent.js
+// ==========================================
+window.TATA = window.TATA || {};
+window.TATA.callGemini = async function (messages) {
+    var apiKey = localStorage.getItem('tata_gemini_api_key');
+    if (!apiKey) {
+        var inlineInput = document.getElementById('api_key_inline_input');
+        if (inlineInput && inlineInput.value.trim()) {
+            apiKey = inlineInput.value.trim();
+        }
+    }
+    if (!apiKey) throw new Error('API Key missing. Please provide Gemini API Key.');
+
+    var geminiContents = [];
+    var systemInstruction = null;
+
+    for (var i = 0; i < messages.length; i++) {
+        var msg = messages[i];
+
+        var textContent = msg.content || (msg.parts && msg.parts[0] ? msg.parts[0].text : '');
+        if (typeof textContent !== 'string') textContent = String(textContent);
+        textContent = textContent.trim();
+        if (!textContent) continue;
+
+        if (msg.role === 'system') {
+            systemInstruction = { parts: [{ text: textContent }] };
+        } else {
+            geminiContents.push({
+                role: msg.role === 'assistant' || msg.role === 'model' ? 'model' : 'user',
+                parts: [{ text: textContent }]
+            });
+        }
+    }
+
+    var payload = {
+        contents: geminiContents,
+        generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192
+        }
+    };
+    if (systemInstruction) {
+        payload.systemInstruction = systemInstruction;
+    }
+
+    var model = 'gemini-2.0-flash';
+    var userModel = localStorage.getItem('tata_ai_model');
+    if (userModel) model = userModel;
+
+    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+
+    var response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        var errText = await response.text();
+        throw new Error('API Error: ' + response.status + ' ' + errText);
+    }
+
+    var data = await response.json();
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        return {
+            text: data.candidates[0].content.parts[0].text,
+            model: model
+        };
+    }
+    throw new Error('Invalid response from AI');
+};

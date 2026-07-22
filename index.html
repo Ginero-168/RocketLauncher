@@ -4,7 +4,6 @@
 <head>
 	<meta charset="utf-8">
 	<link rel="stylesheet" href="css/styles.css" />
-	<link rel="stylesheet" href="css/scripting_tabs.css" />
 	<!-- CodeMirror for Editor tab -->
 	<link rel="stylesheet" href="js/libs/codemirror/codemirror.min.css">
 	<link rel="stylesheet" href="js/libs/codemirror/material-darker.min.css">
@@ -20,9 +19,8 @@
 			display: none;
 		}
 
-		/* Flow, Editor, AI, and Button tabs use flex */
+		/* Editor, AI, and Button tabs use flex */
 		#tab_button.active,
-		#tab_flow.active,
 		#tab_editor.active,
 		#tab_ai.active {
 			display: flex !important;
@@ -33,7 +31,6 @@
 
 		/* Collapsed State: Override ID-based !important rules */
 		body.collapsed #tab_button.active,
-		body.collapsed #tab_flow.active,
 		body.collapsed #tab_editor.active,
 		body.collapsed #tab_ai.active {
 			display: none !important;
@@ -645,7 +642,6 @@
 	<!-- TABS NAVIGATION -->
 	<div class="tabs">
 		<button class="tab-btn active" data-tab="tab_button">Button</button>
-		<button class="tab-btn" data-tab="tab_flow">Flow</button>
 		<button class="tab-btn" data-tab="tab_editor">Editor</button>
 		<button class="tab-btn" data-tab="tab_ai">AI Helper</button>
 	</div>
@@ -662,12 +658,7 @@
 		<!-- User scripts injected via JS -->
 	</div>
 
-	<!-- TAB 2: Flow (Action Playlist) -->
-	<div id="tab_flow" class="tab-content">
-		<!-- Flow UI injected by flow.js -->
-	</div>
-
-	<!-- TAB 3: Editor -->
+	<!-- TAB 2: Editor -->
 	<div id="tab_editor" class="tab-content">
 		<!-- Editor Header -->
 		<div class="editor-header">
@@ -737,17 +728,19 @@
 		</div>
 	</div>
 
-	<!-- TAB 4: AI Helper -->
+	<!-- TAB 3: AI Helper -->
 	<div id="tab_ai" class="tab-content">
 		<div id="chat_header"
-			style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; margin-bottom: 4px; border-bottom: 1px solid #333;">
-			<div style="font-size: 11px; color: #888; font-weight: 600;">AI CONTEXT <span id="ai_model_name"
-					style="color: var(--accent-color); margin-left: 8px; font-weight: normal; opacity: 0.8;"></span>
+			style="display: flex; gap: 8px; padding: 4px 0 8px 0; margin-bottom: 8px; border-bottom: 1px solid #333; align-items: center;">
+			<div class="agent-pill-container" style="display: flex; gap: 6px; flex: 1;">
+				<div id="agent_mode_code" class="agent-mode-pill active" data-mode="freeform"
+					style="flex: 1; padding: 4px 0; font-size: 11px; text-align: center; border-radius: 4px; border: 1px solid #444; cursor: pointer; background: rgba(99, 102, 241, 0.2); color: #fff; border-color: #6366f1;">
+					Code</div>
 			</div>
-			<div style="display: flex; gap: 6px;">
-				<button id="btn_clear_chat" title="Clear Chat & Context"
-					style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; font-size: 14px; margin: 0;">🗑️</button>
-			</div>
+			<span id="ai_model_name"
+				style="font-size: 10px; color: var(--accent-color); font-weight: normal; opacity: 0.8; white-space: nowrap;"></span>
+			<button id="btn_clear_chat" title="Clear Chat & Context"
+				style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; font-size: 14px; margin: 0; flex: 0 0 24px;">🗑️</button>
 		</div>
 
 		<!-- Inline API Key -->
@@ -879,9 +872,10 @@
 				<label>AI Model</label>
 				<select id="setting_ai_model"
 					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+					<option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast)</option>
+					<option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
 					<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-					<option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-					<option value="claude-3-haiku">Claude 3 Haiku</option>
+					<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
 				</select>
 				<button id="btn_check_models"
 					style="width: 100%; margin-top: 5px; background: #444; color: #ddd; border: 1px solid #555; padding: 4px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -911,6 +905,56 @@
 					<button class="btn-minus">-</button>
 					<span class="val" id="hotkey_count_display">5</span>
 					<button class="btn-plus">+</button>
+				</div>
+			</div>
+
+			<hr class="modal-divider">
+
+			<!-- Cloud Sync Section -->
+			<div class="control-group">
+				<label>☁️ Cloud Auto-Sync</label>
+				<p style="font-size: 11px; color: #888; margin-top: 2px; margin-bottom: 8px;">
+					Logs in with Google to automatically backup and restore your scripts and layout across
+					devices.
+				</p>
+
+				<!-- Login State -->
+				<div id="sync_auth_section" style="margin-bottom: 10px;">
+					<button id="btn_sync_login" class="secondary"
+						style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-color: #6366f1; color: #a5b4fc;">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+							<path
+								d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
+						</svg>
+						Sign in with Google
+					</button>
+					<div id="sync_user_info"
+						style="display: none; align-items: center; gap: 8px; background: #2a2a4a; padding: 6px 10px; border-radius: 4px; border: 1px solid #3a3a5c;">
+						<div id="sync_user_avatar"
+							style="width: 24px; height: 24px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">
+						</div>
+						<div style="flex: 1; display: flex; flex-direction: column;">
+							<span id="sync_user_email"
+								style="font-size: 11px; color: #e2e8f0; line-height: 1.2;"></span>
+							<span id="sync_last_sync" style="font-size: 9px; color: #888;"></span>
+						</div>
+
+						<!-- Action Buttons -->
+						<div style="display: flex; gap: 4px;">
+							<button id="btn_sync_folder" title="Open Sync Folder"
+								style="background: none; border: none; color: #a5b4fc; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
+								📁
+							</button>
+							<button id="btn_sync_refresh" title="Manual Sync (Pull)"
+								style="background: none; border: none; color: #10b981; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
+								🔄
+							</button>
+							<button id="btn_sync_logout" title="Sign Out"
+								style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; font-size: 16px; line-height: 1; opacity: 0.8; transition: opacity 0.2s;">
+								✖
+							</button>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -1031,11 +1075,10 @@
 		<div id="ctx_colors" class="ctx-colors"></div>
 		<div id="ctx_edit" class="ctx-item ctx-edit">✏️ Edit</div>
 		<div id="ctx_copy" class="ctx-item ctx-copy">📄 Create a Copy</div>
-		<div id="ctx_flow" class="ctx-item ctx-flow">🎬 Add to Flow</div>
 		<div id="ctx_delete" class="ctx-item ctx-delete">🗑️ Delete</div>
 	</div>
 
-	<!-- Toast for scripting/flow -->
+	<!-- Toast for scripting -->
 	<div id="toast" class="toast-notification">Code updated!</div>
 
 	<script src="js/libs/CSInterface.js"></script>
@@ -1044,17 +1087,22 @@
 	<script src="js/state.js"></script>
 	<script src="js/modals.js"></script>
 	<script src="js/tabs.js"></script>
+	<!-- Host Execution Gateway (shared by modules) -->
+	<script src="js/host.js"></script>
 	<script src="js/grid.js"></script>
 	<script src="js/context-menu.js"></script>
 	<script src="js/scripts.js"></script>
 	<script src="js/hotkeys.js"></script>
 	<script src="js/icons.js"></script>
-	<script src="js/plugins.js"></script>
 	<!-- Config (centralized API keys) -->
 	<script src="js/config.js"></script>
-	<!-- Scripting + Flow (embedded in main panel) -->
+	<!-- Script Import/Export -->
+	<script src="js/script-transfer.js"></script>
+	<!-- Scripting (embedded in main panel) -->
 	<script src="js/scripting.js"></script>
-	<script src="js/flow.js"></script>
+	<script src="js/ai-agent.js"></script>
+	<script src="js/sync.js"></script>
+	<script src="js/color-tools.js"></script>
 	<!-- Main Logic -->
 	<script src="js/main.js"></script>
 

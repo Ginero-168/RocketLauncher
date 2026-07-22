@@ -14,8 +14,8 @@
     // ==========================================
     TATA.state = {
         // CSInterface (set in main.js init)
-        csInterface: null,
-        extensionPath: '',
+        csInterface: TATA.csInterface || null,
+        extensionPath: TATA.extensionPath || '',
 
         // Layout Data
         v2Layout: {},
@@ -26,7 +26,7 @@
         hotkeyCount: 5,
 
         // User Scripts
-        userScripts: {},
+        userScripts: TATA.userScripts || {},
 
         // Context Menu
         currentContextScriptId: null,

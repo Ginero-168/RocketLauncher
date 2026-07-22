@@ -1,19 +1,19 @@
-# TATA Panel v1.0.0
+# Rocket Launcher v2.1.0
 
 Productivity tools for Adobe Illustrator.
 
 ## Installation
-1. Use ZXP Installer to install `TATA_Panel_v1.0.0.zxp`
+1. Use ZXP Installer to install `Rocket_Launcher_v2.1.0.zxp`
 2. Restart Illustrator
-3. Go to `Window > Extensions > TATA`
+3. Go to `Window > Extensions > Rocket Launcher`
 
 ## Features
 - Swift actions (Fit, Resize, Arrange)
-- TATA Colors panel
-- TATA Keep (SVG asset manager)
+- Rocket Launcher Colors panel
+- Rocket Launcher Keep (SVG asset manager)
 - Custom scripting support
 
 ## Requirements
 - Adobe Illustrator 2020+ (v24.0)
 
-© 2026 TATA Panel
+© 2026 Rocket Launcher Team

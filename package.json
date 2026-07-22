@@ -1,6 +1,6 @@
 {
     "name": "rocket-launcher-extension",
-    "version": "1.2.0",
+    "version": "2.1.0",
     "description": "Rocket Launcher - Adobe Illustrator Extension",
     "main": "index.html",
     "scripts": {
@@ -9,8 +9,9 @@
         "e2e": "playwright test"
     },
     "devDependencies": {
+        "@playwright/test": "^1.40.0",
         "jest": "^29.7.0",
-        "@playwright/test": "^1.40.0"
+        "jest-environment-jsdom": "^29.7.0"
     },
     "jest": {
         "testEnvironment": "jsdom",

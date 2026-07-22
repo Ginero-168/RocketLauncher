@@ -70,9 +70,14 @@
 
             v2Layout['tab_button'].push(newButtonSettings);
             if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
-            // Save directly to localStorage (avoids split-brain with main.js's saveV2Layout)
-            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            if (TATA.saveV2Layout) {
+                TATA.saveV2Layout(true);
+            } else {
+                localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            }
         }
+
+        if (window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
 
         if (!skipRender) {
             var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
@@ -88,11 +93,14 @@
         var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
         var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
 
+        var scriptsDirty = false;
+
         // Remove from userScripts
         if (userScripts[id]) {
             delete userScripts[id];
             if (TATA.setUserScripts) TATA.setUserScripts(userScripts);
             localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
+            scriptsDirty = true;
         }
 
         // Remove from V2 Layout
@@ -115,8 +123,15 @@
 
         if (v2Dirty) {
             if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
-            // Save directly to localStorage (avoids split-brain with main.js's saveV2Layout)
-            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            if (TATA.saveV2Layout) {
+                TATA.saveV2Layout(true);
+            } else {
+                localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            }
+        }
+
+        if ((scriptsDirty || v2Dirty) && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) {
+            window.TATA.Sync.autoPush();
         }
 
         var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
@@ -128,30 +143,17 @@
     // Run Script (JSX file)
     // ==========================================
     function runScript(scriptName, params) {
-        var cs = TATA.getCSInterface ? TATA.getCSInterface() : null;
         var extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
-
-        if (!cs) {
-            console.error('[TATA] CSInterface not available');
-            return;
-        }
-
         var scriptPath = extensionPath + '/jsx/' + scriptName;
-        var code = 'try { ';
 
-        if (params) {
-            code += 'var params = ' + JSON.stringify(params) + '; ';
-        }
-
-        code += '$.evalFile("' + scriptPath.replace(/\\/g, '/') + '");';
-        code += ' } catch(e) { "Error: " + e.message; }';
-
-        cs.evalScript(code, function (result) {
+        function handleResult(result) {
             if (result && result.indexOf('Error:') === 0) {
                 console.error('[TATA] Script Error:', result);
                 if (TATA.showToast) TATA.showToast(result, 'error');
             }
-        });
+        }
+
+        TATA.host.evalFile(scriptPath, params, handleResult);
     }
 
     // ==========================================

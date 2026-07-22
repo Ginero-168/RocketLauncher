@@ -3,7 +3,6 @@
 
 // Load utility modules
 #include "utils.jsx"
-#include "errorHandling.jsx"
 
 // NOTE: JSON polyfill is defined in utils.jsx (loaded via #include above)
 
@@ -1226,6 +1225,177 @@ var TATA = {
             } catch (e) { }
         }
         return "Set blend mode for " + count + " objects";
+    },
+
+    // ================================================================================
+    // ===================================== WORKSPACE CONTEXT ========================
+    // ================================================================================
+
+    getWorkspaceContext: function () {
+        if (app.documents.length === 0) return JSON.stringify({ error: "No document open" });
+        var doc = app.activeDocument;
+
+        var MAX_ITEMS_PER_LAYER = 50;
+        var MAX_DEPTH = 2;
+
+        // Helper: Extract color as hex
+        function colorToHex(color) {
+            try {
+                if (color.typename === "RGBColor") {
+                    return "#" + pad(Math.round(color.red)) + pad(Math.round(color.green)) + pad(Math.round(color.blue));
+                } else if (color.typename === "CMYKColor") {
+                    var r = 255 * (1 - color.cyan / 100) * (1 - color.black / 100);
+                    var g = 255 * (1 - color.magenta / 100) * (1 - color.black / 100);
+                    var b = 255 * (1 - color.yellow / 100) * (1 - color.black / 100);
+                    return "#" + pad(Math.round(r)) + pad(Math.round(g)) + pad(Math.round(b));
+                } else if (color.typename === "GrayColor") {
+                    var v = Math.round(255 * (1 - color.gray / 100));
+                    return "#" + pad(v) + pad(v) + pad(v);
+                } else if (color.typename === "SpotColor") {
+                    return colorToHex(color.spot.color);
+                }
+            } catch (e) { }
+            return null;
+        }
+
+        function pad(n) {
+            var s = n.toString(16);
+            return s.length < 2 ? "0" + s : s;
+        }
+
+        // Helper: Describe a single page item
+        function describeItem(item, depth) {
+            var info = {
+                type: item.typename || "Unknown",
+                name: item.name || ""
+            };
+
+            try {
+                info.width = Math.round(item.width * 100) / 100;
+                info.height = Math.round(item.height * 100) / 100;
+            } catch (e) { }
+
+            // Fill color
+            try {
+                if (item.filled && item.fillColor) {
+                    info.fillColor = colorToHex(item.fillColor);
+                }
+            } catch (e) { }
+
+            // Stroke color
+            try {
+                if (item.stroked && item.strokeColor) {
+                    info.strokeColor = colorToHex(item.strokeColor);
+                }
+            } catch (e) { }
+
+            // Text content
+            if (item.typename === "TextFrame") {
+                try {
+                    var txt = item.contents;
+                    info.text = txt.length > 200 ? txt.substring(0, 200) + "..." : txt;
+                    info.fontSize = item.textRange.characterAttributes.size;
+                } catch (e) { }
+            }
+
+            // Raster/placed info
+            if (item.typename === "PlacedItem" || item.typename === "RasterItem") {
+                try {
+                    if (item.file) info.filePath = item.file.fsName;
+                } catch (e) { }
+            }
+
+            // Group children (recurse)
+            if (item.typename === "GroupItem" && depth < MAX_DEPTH) {
+                info.childCount = item.pageItems.length;
+                info.children = [];
+                var childLimit = Math.min(item.pageItems.length, 20);
+                for (var c = 0; c < childLimit; c++) {
+                    info.children.push(describeItem(item.pageItems[c], depth + 1));
+                }
+                if (item.pageItems.length > childLimit) {
+                    info.childrenTruncated = true;
+                }
+            } else if (item.typename === "GroupItem") {
+                info.childCount = item.pageItems.length;
+            }
+
+            // Locked/hidden state
+            try {
+                if (item.locked) info.locked = true;
+                if (item.hidden) info.hidden = true;
+            } catch (e) { }
+
+            return info;
+        }
+
+        // Build context
+        var context = {
+            docName: doc.name,
+            colorSpace: doc.documentColorSpace == DocumentColorSpace.RGB ? "RGB" : "CMYK"
+        };
+
+        // Artboards
+        context.artboards = [];
+        for (var a = 0; a < doc.artboards.length; a++) {
+            var ab = doc.artboards[a];
+            var r = ab.artboardRect;
+            context.artboards.push({
+                name: ab.name,
+                width: Math.round(Math.abs(r[2] - r[0])),
+                height: Math.round(Math.abs(r[1] - r[3]))
+            });
+        }
+
+        // Layers
+        context.layers = [];
+        for (var l = 0; l < doc.layers.length; l++) {
+            var layer = doc.layers[l];
+            var layerInfo = {
+                name: layer.name,
+                locked: layer.locked,
+                visible: layer.visible,
+                itemCount: layer.pageItems.length,
+                items: []
+            };
+
+            var itemLimit = Math.min(layer.pageItems.length, MAX_ITEMS_PER_LAYER);
+            for (var i = 0; i < itemLimit; i++) {
+                layerInfo.items.push(describeItem(layer.pageItems[i], 0));
+            }
+            if (layer.pageItems.length > itemLimit) {
+                layerInfo.itemsTruncated = true;
+            }
+
+            context.layers.push(layerInfo);
+        }
+
+        // Selection
+        context.selection = [];
+        if (doc.selection && doc.selection.length > 0) {
+            var selLimit = Math.min(doc.selection.length, 30);
+            for (var s = 0; s < selLimit; s++) {
+                context.selection.push(describeItem(doc.selection[s], 0));
+            }
+            if (doc.selection.length > selLimit) {
+                context.selectionTruncated = true;
+            }
+        }
+
+        // Statistics
+        context.stats = {
+            totalObjects: doc.pageItems.length,
+            pathItems: doc.pathItems.length,
+            textFrames: doc.textFrames.length,
+            groupItems: doc.groupItems.length,
+            rasterItems: doc.rasterItems.length,
+            placedItems: doc.placedItems.length,
+            symbolItems: doc.symbolItems.length,
+            layerCount: doc.layers.length,
+            artboardCount: doc.artboards.length
+        };
+
+        return JSON.stringify(context);
     }
 
 };

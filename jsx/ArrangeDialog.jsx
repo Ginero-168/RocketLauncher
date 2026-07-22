@@ -9,26 +9,6 @@
 
     var doc = app.activeDocument;
 
-    // ===== Flow Params Guard =====
-    if (typeof params !== 'undefined' && params) {
-        var cols = parseInt(params.cols) || 5;
-        var gap = parseFloat(params.gap) || 20;
-
-        var selection = doc.selection;
-        var x = 0, y = 0, maxHeight = 0, col = 0;
-        for (var i = 0; i < selection.length; i++) {
-            var item = selection[i];
-            item.left = x;
-            item.top = y;
-            if (item.height > maxHeight) maxHeight = item.height;
-            col++;
-            if (col >= cols) { col = 0; x = 0; y -= (maxHeight + gap); maxHeight = 0; }
-            else { x += item.width + gap; }
-        }
-        return "Arranged " + selection.length + " objects";
-    }
-    // ===== End Flow Params Guard =====
-
     // Create dialog
     var dialog = new Window('dialog', 'Arrange Objects');
     dialog.alignChildren = 'fill';

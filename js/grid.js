@@ -46,6 +46,58 @@
 
     // In-memory layout state
     var v2Layout = {};
+    var layoutLoaded = false;
+
+    function cloneDefaults() {
+        return JSON.parse(JSON.stringify(v2Defaults));
+    }
+
+    function normalizeLayout(layout) {
+        var isLayoutObject = layout && typeof layout === 'object' && !Array.isArray(layout);
+        var normalized = isLayoutObject ? layout : {};
+        var changed = !isLayoutObject;
+        var allLayoutIds = {};
+
+        ['tab_button'].forEach(function (tabName) {
+            if (!Array.isArray(normalized[tabName])) {
+                normalized[tabName] = [];
+                changed = true;
+            }
+            normalized[tabName].forEach(function (item) {
+                if (item && item.id) allLayoutIds[item.id] = true;
+            });
+        });
+
+        Object.keys(v2Defaults).forEach(function (tabName) {
+            if (!Array.isArray(normalized[tabName])) {
+                normalized[tabName] = [];
+                changed = true;
+            }
+            v2Defaults[tabName].forEach(function (def) {
+                if (!allLayoutIds[def.id]) {
+                    normalized[tabName].push(JSON.parse(JSON.stringify(def)));
+                    allLayoutIds[def.id] = true;
+                    changed = true;
+                }
+            });
+        });
+
+        return { layout: normalized, changed: changed };
+    }
+
+    function loadV2Layout(forceReload) {
+        if (layoutLoaded && !forceReload) return false;
+
+        var safeParse = TATA.safeParse || JSON.parse;
+        var saved = localStorage.getItem('tata_v2_layout');
+        var parsed = saved ? safeParse(saved, null) : cloneDefaults();
+        var result = normalizeLayout(parsed);
+        v2Layout = result.layout;
+        layoutLoaded = true;
+
+        if (!saved || result.changed) saveV2Layout();
+        return true;
+    }
 
     // Drag state (shared across delegation handlers)
     var _draggedItem = null;
@@ -60,38 +112,7 @@
     // Render Grid
     // ==========================================
     function renderGrid() {
-        var safeParse = TATA.safeParse || JSON.parse;
-        var saved = localStorage.getItem('tata_v2_layout');
-        if (saved) {
-            v2Layout = safeParse(saved, JSON.parse(JSON.stringify(v2Defaults)));
-        } else {
-            v2Layout = JSON.parse(JSON.stringify(v2Defaults));
-        }
-
-        // Smart Default Merge (Only add defaults that don't exist ANYWHERE)
-        var allLayoutIds = {};
-        ['tab_button'].forEach(function (tabName) {
-            if (v2Layout[tabName]) {
-                v2Layout[tabName].forEach(function (item) {
-                    if (item && item.id) allLayoutIds[item.id] = true;
-                });
-            }
-        });
-
-        Object.keys(v2Defaults).forEach(function (tabName) {
-            if (!v2Layout[tabName]) v2Layout[tabName] = [];
-            v2Defaults[tabName].forEach(function (def) {
-                if (!allLayoutIds[def.id]) {
-                    v2Layout[tabName].push(JSON.parse(JSON.stringify(def)));
-                }
-            });
-        });
-
-        ['tab_button'].forEach(function (t) {
-            if (!v2Layout[t]) v2Layout[t] = [];
-        });
-
-        saveV2Layout();
+        loadV2Layout();
 
         ['tab_button'].forEach(function (tabName) {
             var container = document.getElementById(tabName);
@@ -214,13 +235,12 @@
                 var item = v2Layout[tab] && v2Layout[tab][idx];
                 if (!item) return;
 
-                var cs = TATA.getCSInterface ? TATA.getCSInterface() : (window.csInterface || null);
                 if (item.type === 'subpanel') {
                     CSInterface.prototype.requestOpenExtension(item.target, '');
                 } else if (item.script) {
                     if (typeof TATA.runScript === 'function') TATA.runScript(item.script);
-                } else if (item.code && cs) {
-                    cs.evalScript(item.code);
+                } else if (item.code) {
+                    TATA.host.evalCode(item.code);
                 }
             });
 
@@ -245,11 +265,9 @@
                     var editBtn = document.getElementById('ctx_edit');
                     var delBtn = document.getElementById('ctx_delete');
                     var colorRow = document.getElementById('ctx_colors');
-                    var flowBtn = document.getElementById('ctx_flow');
                     if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
                     if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
                     if (colorRow) colorRow.style.display = 'flex';
-                    if (flowBtn) flowBtn.style.display = 'block';
                     menu.style.display = 'block';
                     var menuWidth = 140;
                     var x = e.clientX;
@@ -337,17 +355,25 @@
         return v2Layout[tab][idx];
     }
 
-    function saveV2Layout() {
+    function saveV2Layout(skipSync) {
         if (TATA.backupBeforeSave) TATA.backupBeforeSave('tata_v2_layout');
         localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+        if (!skipSync && window.TATA && window.TATA.Sync && window.TATA.Sync.autoPush) window.TATA.Sync.autoPush();
     }
 
     function getV2Layout() {
+        loadV2Layout();
         return v2Layout;
     }
 
     function setV2Layout(layout) {
-        v2Layout = layout;
+        v2Layout = layout && typeof layout === 'object' ? layout : cloneDefaults();
+        layoutLoaded = true;
+    }
+
+    function reloadV2Layout() {
+        loadV2Layout(true);
+        renderGrid();
     }
 
     // Direct binding for v2Layout
@@ -366,8 +392,10 @@
     TATA.createGridButton = createGridButton;
     TATA.saveV2Layout = saveV2Layout;
     TATA.saveV2LayoutBatched = saveV2LayoutBatched;
+    TATA.saveLayout = saveV2Layout; // legacy alias for tabs.js
     TATA.getV2Layout = getV2Layout;
     TATA.setV2Layout = setV2Layout;
+    TATA.reloadV2Layout = reloadV2Layout;
     TATA.getItemDataFromElement = getItemDataFromElement;
 
 })();

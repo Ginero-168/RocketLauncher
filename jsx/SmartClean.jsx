@@ -9,49 +9,6 @@
 
     var doc = app.activeDocument;
 
-    // ===== Flow Params Guard =====
-    if (typeof params !== 'undefined' && params) {
-        var results = [];
-
-        // Clean stray points
-        if (params.stray === true || params.stray === 'true') {
-            var strayCount = 0;
-            for (var si = doc.pathItems.length - 1; si >= 0; si--) {
-                try { if (doc.pathItems[si].pathPoints.length === 1) { doc.pathItems[si].remove(); strayCount++; } } catch (e) { }
-            }
-            if (strayCount > 0) results.push("Removed " + strayCount + " stray points");
-        }
-
-        // Clean empty text
-        if (params.empty === true || params.empty === 'true') {
-            var emptyCount = 0;
-            for (var ei = doc.textFrames.length - 1; ei >= 0; ei--) {
-                try { if (doc.textFrames[ei].contents === "" || doc.textFrames[ei].contents.replace(/\s/g, "") === "") { doc.textFrames[ei].remove(); emptyCount++; } } catch (e) { }
-            }
-            if (emptyCount > 0) results.push("Removed " + emptyCount + " empty text frames");
-        }
-
-        // Outline text
-        if (params.outline === true || params.outline === 'true') {
-            var outlineCount = 0;
-            for (var oi = doc.textFrames.length - 1; oi >= 0; oi--) {
-                try { doc.textFrames[oi].createOutline(); outlineCount++; } catch (e) { }
-            }
-            if (outlineCount > 0) results.push("Outlined " + outlineCount + " text frames");
-        }
-
-        // Unlock all
-        if (params.unlock === true || params.unlock === 'true') {
-            var unlockCount = 0;
-            for (var li = 0; li < doc.layers.length; li++) { if (doc.layers[li].locked) { doc.layers[li].locked = false; unlockCount++; } }
-            for (var ui = 0; ui < doc.pageItems.length; ui++) { try { if (doc.pageItems[ui].locked) { doc.pageItems[ui].locked = false; unlockCount++; } } catch (e) { } }
-            if (unlockCount > 0) results.push("Unlocked " + unlockCount + " items");
-        }
-
-        return results.length > 0 ? results.join("; ") : "Nothing to clean";
-    }
-    // ===== End Flow Params Guard =====
-
     // Create dialog
     var dialog = new Window('dialog', 'Smart Clean');
     dialog.alignChildren = 'fill';

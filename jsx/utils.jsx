@@ -2,9 +2,8 @@
 // Shared utility functions extracted from hostscript.jsx
 // Version: 2.1 - Enhanced with comprehensive utilities
 
-// JSON Polyfill
+// JSON Polyfill (Illustrator 2020+ includes native JSON; stringify fallback kept for safety)
 if (typeof JSON !== 'object') { JSON = {}; }
-if (!JSON.parse) { JSON.parse = function (s) { return eval('(' + s + ')'); }; }
 if (!JSON.stringify) {
     JSON.stringify = function (o) {
         if (o === null) return 'null';

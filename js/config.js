@@ -1,24 +1,53 @@
 /**
- * TATA Extension - Supabase Configuration
- * Centralized API configuration for all panels
+ * Rocket Launcher Extension - Configuration Loader
+ *
+ * Loads public defaults here and merges private credentials from
+ * js/config.local.json (not tracked in git). To configure cloud sync,
+ * create js/config.local.json with:
+ *
+ *   {
+ *       "SUPABASE_URL": "https://your-project.supabase.co",
+ *       "SUPABASE_KEY": "your-anon-key"
+ *   }
  */
 
 (function (window) {
     'use strict';
 
-    window.TATA_CONFIG = {
-        SUPABASE_URL: 'https://ocglwbaobmsmuwdpcvqw.supabase.co',
-        SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ2x3YmFvYm1zbXV3ZHBjdnF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3NDQ4MDEsImV4cCI6MjA4NDMyMDgwMX0.ZZDik1x-S3CxO7trJV68oc0Ncdr50LuTwMR6J4fZ5v4',
-
-        // Debug mode - set to false for production
+    var config = {
         DEBUG: false,
 
-        // Helper to log only in debug mode
         log: function () {
             if (this.DEBUG) {
-                console.log.apply(console, ['[TATA]'].concat(Array.prototype.slice.call(arguments)));
+                console.log.apply(console, ['[Rocket Launcher]'].concat(Array.prototype.slice.call(arguments)));
             }
         }
     };
+
+    function loadLocalConfig() {
+        if (typeof window.require === 'undefined') return;
+
+        try {
+            var fs = window.require('fs');
+            var href = window.location.href || '';
+            var root = href.substring(0, href.lastIndexOf('/') + 1);
+            // Strip file:// protocol and decode, then point to js/config.local.json
+            var localPath = decodeURIComponent(root.replace(/^file:\/\//, '').replace(/^file:/, '')) + 'js/config.local.json';
+
+            if (fs.existsSync(localPath)) {
+                var raw = fs.readFileSync(localPath, 'utf8');
+                var local = JSON.parse(raw);
+                if (local.SUPABASE_URL) config.SUPABASE_URL = local.SUPABASE_URL;
+                if (local.SUPABASE_KEY) config.SUPABASE_KEY = local.SUPABASE_KEY;
+                if (local.DEBUG !== undefined) config.DEBUG = !!local.DEBUG;
+            }
+        } catch (e) {
+            console.warn('[Config] Could not load local config:', e.message);
+        }
+    }
+
+    loadLocalConfig();
+
+    window.TATA_CONFIG = config;
 
 })(window);

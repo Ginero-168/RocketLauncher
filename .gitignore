@@ -28,3 +28,12 @@ logs/
 # Build outputs
 dist/
 build/
+
+# Secrets / local config
+Sevret
+js/config.local.json
+*.local.json
+
+# Generated / runtime artifacts
+package-lock.json
+jsx/cloud_sync/
