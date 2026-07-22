@@ -1,4 +1,4 @@
-# Rocket Launcher v2.1.0
+# Rocket Launcher v2.1.1
 
 Productivity tools for Adobe Illustrator.
 
@@ -14,6 +14,7 @@ Productivity tools for Adobe Illustrator.
 - Custom scripting support
 
 ## Requirements
-- Adobe Illustrator 2020+ (v24.0)
+- Adobe Illustrator 2022+ (v25.3)
+- CEP 11.0 runtime
 
 © 2026 Rocket Launcher Team

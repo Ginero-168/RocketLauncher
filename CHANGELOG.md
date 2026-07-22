@@ -2,12 +2,18 @@
 
 All notable changes to the Rocket Launcher extension will be documented in this file.
 
+## [2.1.1] - 2026-07-22
+
+### Changed
+- **CEP 11 Upgrade**: `CSXS/manifest.xml` now targets CEP 11.0 and Illustrator 2022+ (v25.3)
+- **Requirements**: README updated to Illustrator 2022+ / CEP 11.0
+
 ## [2.1.0] - 2026-07-22
 
 ### Added
 - **Modular Architecture**: Refactored codebase into separate modules
   - `js/grid.js`, `js/scripts.js`, `js/color-tools.js`, `js/script-transfer.js`, `js/host.js`
-  - `js/context-menu.js`, `js/hotkeys.js`, `js/state.js`, `js/sync.js`
+  - `js/context-menu.js`, `js/hotkeys.js`, `js/state.js`
 - **Host Execution Gateway**: Centralized `TATA.host` for all ExtendScript calls
 - **Regression Tests**: Jest test suites for grid, scripts, context-menu, state, script-transfer, host, and color-tools
 - **Version Consistency**: Aligned `CSXS/manifest.xml`, `package.json`, and `README.md` to v2.1.0
