@@ -3,7 +3,7 @@
  * Contains: Script management (save, delete, create button)
  * @version 4.2
  */
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
@@ -12,10 +12,10 @@
     // Initialize User Scripts from Storage
     // ==========================================
     function initUserScripts() {
-        var saved = localStorage.getItem('tata_user_scripts');
+        const saved = localStorage.getItem('tata_user_scripts');
         if (saved) {
             try {
-                var scripts = JSON.parse(saved);
+                const scripts = JSON.parse(saved);
                 if (TATA.setUserScripts) TATA.setUserScripts(scripts);
                 return scripts;
             } catch (e) {
@@ -29,20 +29,20 @@
     // Save User Script
     // ==========================================
     function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender) {
-        var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
+        const userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
 
         // Use targetId if provided, otherwise generate a new script_ ID
-        var id = targetId ? targetId : 'script_' + Date.now();
+        const id = targetId ? targetId : `script_${Date.now()}`;
 
-        var isScriptFile = (typeof code === 'string' && code.endsWith('.jsx'));
-        var filePath = isScriptFile ? code.trim() : null;
+        const isScriptFile = (typeof code === 'string' && code.endsWith('.jsx'));
+        const filePath = isScriptFile ? code.trim() : null;
 
         userScripts[id] = {
-            name: name,
-            icon: icon,
+            name,
+            icon,
             code: isScriptFile ? '' : code,
             script: filePath, // Store the .jsx path if applicable
-            color: color,
+            color,
             date: Date.now()
         };
 
@@ -51,15 +51,15 @@
 
         // Add to V2 Layout if new
         if (!isUpdate) {
-            var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
+            const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
             if (!v2Layout['tab_button']) v2Layout['tab_button'] = [];
 
-            var newButtonSettings = {
-                id: id,
+            const newButtonSettings = {
+                id,
                 label: name,
-                icon: icon,
+                icon,
                 type: isScriptFile ? 'script' : 'code',
-                color: color
+                color
             };
 
             if (isScriptFile) {
@@ -78,7 +78,7 @@
         }
 
         if (!skipRender) {
-            var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+            const renderFn = TATA.renderGridDebounced || TATA.renderGrid;
             if (renderFn) renderFn();
         }
         return id;
@@ -88,10 +88,10 @@
     // Delete User Script
     // ==========================================
     function deleteUserScript(id) {
-        var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
-        var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
+        const userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
+        const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
 
-        var scriptsDirty = false;
+        let scriptsDirty = false;
 
         // Remove from userScripts
         if (userScripts[id]) {
@@ -102,12 +102,12 @@
         }
 
         // Remove from V2 Layout
-        var v2Dirty = false;
-        ['tab_button'].forEach(function (t) {
-            var list = v2Layout[t];
+        let v2Dirty = false;
+        ['tab_button'].forEach(t => {
+            const list = v2Layout[t];
             if (!list) return;
-            var idx = -1;
-            for (var i = 0; i < list.length; i++) {
+            let idx = -1;
+            for (let i = 0; i < list.length; i++) {
                 if (list[i].id === id) {
                     idx = i;
                     break;
@@ -128,7 +128,7 @@
             }
         }
 
-        var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+        const renderFn = TATA.renderGridDebounced || TATA.renderGrid;
         if (renderFn) renderFn();
         if (TATA.showToast) TATA.showToast("Script deleted!", "success");
     }
@@ -137,8 +137,8 @@
     // Run Script (JSX file)
     // ==========================================
     function runScript(scriptName, params) {
-        var extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
-        var scriptPath = extensionPath + '/jsx/' + scriptName;
+        const extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
+        const scriptPath = `${extensionPath}/jsx/${scriptName}`;
 
         function handleResult(result) {
             if (result && result.indexOf('Error:') === 0) {

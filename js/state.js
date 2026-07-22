@@ -2,7 +2,7 @@
  * Rocket Launcher - Shared State Module
  * Contains: Global state object, getters/setters for controlled access
  */
-(function () {
+(() => {
     'use strict';
 
     // Ensure namespace exists

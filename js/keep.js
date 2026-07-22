@@ -3,21 +3,21 @@
  * SVG Asset Manager for Adobe Illustrator
  * @version 5.0
  */
-(function () {
+(() => {
     'use strict';
 
     // ==========================================
     // CSInterface & Node.js Modules
     // ==========================================
-    var fs = require('fs');
-    var path = require('path');
-    var os = require('os');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
 
     // Storage directory: ~/.tata_keeper
-    var STORAGE_DIR = path.join(os.homedir(), '.tata_keeper');
+    const STORAGE_DIR = path.join(os.homedir(), '.tata_keeper');
 
     // In-memory items array
-    var keeperItems = [];
+    let keeperItems = [];
 
     // ==========================================
     // Initialize
@@ -43,7 +43,7 @@
     // ==========================================
     function loadItems() {
         try {
-            var saved = localStorage.getItem('tata_keeper');
+            const saved = localStorage.getItem('tata_keeper');
             if (saved) {
                 keeperItems = JSON.parse(saved);
             }
@@ -74,10 +74,10 @@
         document.getElementById('btn_clear').addEventListener('click', clearAll);
 
         // Info modal
-        document.getElementById('btn_info').addEventListener('click', function () {
+        document.getElementById('btn_info').addEventListener('click', () => {
             document.getElementById('info_modal').classList.add('show');
         });
-        document.getElementById('btn_close_info').addEventListener('click', function () {
+        document.getElementById('btn_close_info').addEventListener('click', () => {
             document.getElementById('info_modal').classList.remove('show');
         });
         document.getElementById('info_modal').addEventListener('click', function (e) {
@@ -89,16 +89,16 @@
     // Render Grid
     // ==========================================
     function renderGrid() {
-        var grid = document.getElementById('keeper_grid');
-        var emptyState = document.getElementById('empty_state');
-        var itemCount = document.getElementById('item_count');
+        const grid = document.getElementById('keeper_grid');
+        const emptyState = document.getElementById('empty_state');
+        const itemCount = document.getElementById('item_count');
 
         // Clear existing content (except empty state)
-        var cards = grid.querySelectorAll('.keeper-card');
-        cards.forEach(function (c) { c.remove(); });
+        const cards = grid.querySelectorAll('.keeper-card');
+        cards.forEach(c => { c.remove(); });
 
         // Update count
-        itemCount.textContent = keeperItems.length + ' item' + (keeperItems.length !== 1 ? 's' : '');
+        itemCount.textContent = `${keeperItems.length} item${keeperItems.length !== 1 ? 's' : ''}`;
 
         // Show/hide empty state
         if (keeperItems.length === 0) {
@@ -108,8 +108,8 @@
         emptyState.style.display = 'none';
 
         // Render cards
-        keeperItems.forEach(function (item) {
-            var card = createCard(item);
+        keeperItems.forEach(item => {
+            const card = createCard(item);
             if (card) grid.appendChild(card);
         });
     }
@@ -120,12 +120,12 @@
     function createCard(item) {
         if (item.type !== 'file_svg') return null;
 
-        var card = document.createElement('div');
+        const card = document.createElement('div');
         card.className = 'keeper-card';
         card.dataset.id = item.id;
 
         // Load SVG content from file
-        var svgContent = '';
+        let svgContent = '';
         try {
             if (item.file_path && fs.existsSync(item.file_path)) {
                 svgContent = fs.readFileSync(item.file_path, 'utf-8');
@@ -140,9 +140,9 @@
 
         // Parse and scope SVG
         try {
-            var parser = new DOMParser();
-            var doc = parser.parseFromString(svgContent, 'image/svg+xml');
-            var svgEl = doc.documentElement;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+            let svgEl = doc.documentElement;
 
             if (svgEl.tagName.toLowerCase() !== 'svg') {
                 svgEl = doc.querySelector('svg');
@@ -150,31 +150,31 @@
             if (!svgEl) throw 'No SVG element found';
 
             // Scope IDs to avoid conflicts
-            var suffix = '_' + item.id;
-            var idMap = {};
-            var elements = doc.querySelectorAll('[id]');
-            elements.forEach(function (el) {
-                var oldId = el.id;
-                var newId = oldId + suffix;
+            const suffix = `_${item.id}`;
+            const idMap = {};
+            const elements = doc.querySelectorAll('[id]');
+            elements.forEach(el => {
+                const oldId = el.id;
+                const newId = oldId + suffix;
                 idMap[oldId] = newId;
                 el.id = newId;
             });
 
             // Update URL references
-            var allEls = doc.querySelectorAll('*');
-            allEls.forEach(function (el) {
-                Array.from(el.attributes).forEach(function (attr) {
-                    var val = attr.value;
-                    if (val.indexOf('url(#') !== -1) {
-                        for (var oldId in idMap) {
-                            val = val.replace(new RegExp('url\\(#' + oldId + '\\)', 'g'), 'url(#' + idMap[oldId] + ')');
+            const allEls = doc.querySelectorAll('*');
+            allEls.forEach(el => {
+                Array.from(el.attributes).forEach(attr => {
+                    let val = attr.value;
+                    if (val.includes('url(#')) {
+                        for (const oldId in idMap) {
+                            val = val.replace(new RegExp(`url\\(#${oldId}\\)`, 'g'), `url(#${idMap[oldId]})`);
                         }
                         attr.value = val;
                     }
                     if (attr.name === 'href' || attr.name === 'xlink:href') {
                         if (val.startsWith('#')) {
-                            var rawId = val.substring(1);
-                            if (idMap[rawId]) attr.value = '#' + idMap[rawId];
+                            const rawId = val.substring(1);
+                            if (idMap[rawId]) attr.value = `#${idMap[rawId]}`;
                         }
                     }
                 });
@@ -182,9 +182,9 @@
 
             // Ensure viewBox
             if (!svgEl.hasAttribute('viewBox') && svgEl.hasAttribute('width') && svgEl.hasAttribute('height')) {
-                var w = parseFloat(svgEl.getAttribute('width'));
-                var h = parseFloat(svgEl.getAttribute('height'));
-                if (!isNaN(w) && !isNaN(h)) svgEl.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+                const w = parseFloat(svgEl.getAttribute('width'));
+                const h = parseFloat(svgEl.getAttribute('height'));
+                if (!isNaN(w) && !isNaN(h)) svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
             }
 
             // Set preserveAspectRatio
@@ -206,21 +206,21 @@
         }
 
         // Action buttons
-        var actions = document.createElement('div');
+        const actions = document.createElement('div');
         actions.className = 'card-actions';
 
-        var btnPlace = document.createElement('button');
+        const btnPlace = document.createElement('button');
         btnPlace.className = 'card-btn';
         btnPlace.textContent = 'Place';
-        btnPlace.onclick = function (e) {
+        btnPlace.onclick = e => {
             e.stopPropagation();
             placeItem(item);
         };
 
-        var btnDelete = document.createElement('button');
+        const btnDelete = document.createElement('button');
         btnDelete.className = 'card-btn delete';
         btnDelete.textContent = '×';
-        btnDelete.onclick = function (e) {
+        btnDelete.onclick = e => {
             e.stopPropagation();
             deleteItem(item.id);
         };
@@ -231,10 +231,10 @@
 
         // Drag support
         card.draggable = true;
-        card.ondragstart = function (e) {
+        card.ondragstart = e => {
             e.dataTransfer.effectAllowed = 'copy';
             if (item.file_path) {
-                var fileUrl = 'file://' + (os.platform() === 'win32' ? '/' : '') + item.file_path;
+                const fileUrl = `file://${os.platform() === 'win32' ? '/' : ''}${item.file_path}`;
                 e.dataTransfer.setData('text/uri-list', encodeURI(fileUrl));
                 e.dataTransfer.setData('URL', encodeURI(fileUrl));
             }
@@ -248,24 +248,24 @@
     // ==========================================
     function importFiles() {
         try {
-            var result = window.cep.fs.showOpenDialog(true, false, 'Select SVG Files', null, ['svg']);
+            const result = window.cep.fs.showOpenDialog(true, false, 'Select SVG Files', null, ['svg']);
             if (result.err) throw 'Dialog Error';
             if (!result.data || result.data.length === 0) return;
 
-            var addedCount = 0;
-            result.data.forEach(function (srcUri) {
+            let addedCount = 0;
+            result.data.forEach(srcUri => {
                 try {
                     // Sanitize path
-                    var srcPath = srcUri;
+                    let srcPath = srcUri;
                     if (srcPath.indexOf('file://') === 0) {
                         srcPath = decodeURIComponent(srcPath.replace(/^file:\/\//, ''));
                     } else if (srcPath.indexOf('file:') === 0) {
                         srcPath = decodeURIComponent(srcPath.replace(/^file:/, ''));
                     }
 
-                    var filename = path.basename(srcPath);
-                    var newName = Date.now() + '_' + filename;
-                    var destPath = path.join(STORAGE_DIR, newName);
+                    const filename = path.basename(srcPath);
+                    const newName = `${Date.now()}_${filename}`;
+                    const destPath = path.join(STORAGE_DIR, newName);
 
                     fs.copyFileSync(srcPath, destPath);
 
@@ -284,7 +284,7 @@
             if (addedCount > 0) {
                 saveItems();
                 renderGrid();
-                showToast('Imported ' + addedCount + ' file(s)', 'success');
+                showToast(`Imported ${addedCount} file(s)`, 'success');
             }
 
         } catch (e) {
@@ -298,13 +298,13 @@
     // ==========================================
     function addSelectionToKeeper() {
         try {
-            var timestamp = Date.now();
-            var fileName = 'keep_' + timestamp + '.svg';
-            var filePath = path.join(STORAGE_DIR, fileName);
+            const timestamp = Date.now();
+            const fileName = `keep_${timestamp}.svg`;
+            const filePath = path.join(STORAGE_DIR, fileName);
 
-            var params = { path: filePath };
+            const params = { path: filePath };
 
-            TATA.host.run('saveSelectionAsRichSvg', params, function (res) {
+            TATA.host.run('saveSelectionAsRichSvg', params, res => {
                 if (res === 'Success' || res === '"Success"') {
                     keeperItems.unshift({
                         id: timestamp,
@@ -318,7 +318,7 @@
                 } else if (res === 'No Selection' || res === '"No Selection"') {
                     showToast('Please select objects first', 'error');
                 } else {
-                    showToast('Save failed: ' + res, 'error');
+                    showToast(`Save failed: ${res}`, 'error');
                 }
             });
 
@@ -338,7 +338,7 @@
         }
 
         try {
-            var params = { path: item.file_path };
+            const params = { path: item.file_path };
             TATA.host.run('placeSvg', params);
             showToast('Placed!', 'success');
         } catch (e) {
@@ -357,22 +357,22 @@
         }
 
         try {
-            var result = window.cep.fs.showOpenDialog(false, true, 'Select Destination Folder', null, null);
+            const result = window.cep.fs.showOpenDialog(false, true, 'Select Destination Folder', null, null);
             if (!result.data || result.data.length === 0) return;
 
-            var destFolder = result.data[0];
+            let destFolder = result.data[0];
             if (destFolder.indexOf('file://') === 0) {
                 destFolder = decodeURIComponent(destFolder.replace(/^file:\/\//, ''));
             } else if (destFolder.indexOf('file:') === 0) {
                 destFolder = decodeURIComponent(destFolder.replace(/^file:/, ''));
             }
 
-            var successCount = 0;
-            keeperItems.forEach(function (item, index) {
+            let successCount = 0;
+            keeperItems.forEach((item, index) => {
                 try {
                     if (item.file_path && fs.existsSync(item.file_path)) {
-                        var destName = path.basename(item.file_path);
-                        var destPath = path.join(destFolder, destName);
+                        const destName = path.basename(item.file_path);
+                        const destPath = path.join(destFolder, destName);
                         fs.copyFileSync(item.file_path, destPath);
                         successCount++;
                     }
@@ -381,7 +381,7 @@
                 }
             });
 
-            showToast('Exported ' + successCount + ' files', 'success');
+            showToast(`Exported ${successCount} files`, 'success');
 
         } catch (e) {
             console.error('[KEEP] Export failed:', e);
@@ -393,7 +393,7 @@
     // Delete Item
     // ==========================================
     function deleteItem(id) {
-        var item = keeperItems.find(function (i) { return i.id === id; });
+        const item = keeperItems.find(i => { return i.id === id; });
 
         if (item && item.file_path) {
             try {
@@ -405,7 +405,7 @@
             }
         }
 
-        keeperItems = keeperItems.filter(function (i) { return i.id !== id; });
+        keeperItems = keeperItems.filter(i => { return i.id !== id; });
         saveItems();
         renderGrid();
         showToast('Deleted', 'success');
@@ -417,12 +417,12 @@
     function clearAll() {
         if (keeperItems.length === 0) return;
 
-        if (!confirm('Delete ALL ' + keeperItems.length + ' items?\nThis will permanently delete the files.')) {
+        if (!confirm(`Delete ALL ${keeperItems.length} items?\nThis will permanently delete the files.`)) {
             return;
         }
 
         // Delete all files
-        keeperItems.forEach(function (item) {
+        keeperItems.forEach(item => {
             if (item.file_path) {
                 try {
                     if (fs.existsSync(item.file_path)) {
@@ -442,18 +442,18 @@
     // Toast Notification
     // ==========================================
     function showToast(msg, type) {
-        var existing = document.querySelector('.toast');
+        const existing = document.querySelector('.toast');
         if (existing) existing.remove();
 
-        var toast = document.createElement('div');
-        toast.className = 'toast ' + (type || 'info');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type || 'info'}`;
         toast.textContent = msg;
         document.body.appendChild(toast);
 
-        setTimeout(function () { toast.classList.add('show'); }, 10);
-        setTimeout(function () {
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(function () { toast.remove(); }, 300);
+            setTimeout(() => { toast.remove(); }, 300);
         }, 2000);
     }
 

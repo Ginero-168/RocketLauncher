@@ -2,18 +2,18 @@
  * TATA V3 - Hotkeys Module
  * Contains: initHotkeys, saveHotkeys, renderHotkeys, setupSlotDrag, setupDraggableButtons
  */
-(function (global) {
+(global => {
     'use strict';
 
-    var hotkeys = [];
-    var hotkeyCount = 5;
+    let hotkeys = [];
+    let hotkeyCount = 5;
 
     function initHotkeys() {
-        var savedCount = localStorage.getItem('tata_hotkey_count');
+        const savedCount = localStorage.getItem('tata_hotkey_count');
         if (savedCount) hotkeyCount = parseInt(savedCount);
         if (isNaN(hotkeyCount) || hotkeyCount < 1) hotkeyCount = 5;
 
-        var saved = localStorage.getItem('tata_hotkeys');
+        const saved = localStorage.getItem('tata_hotkeys');
         if (saved) {
             try { hotkeys = JSON.parse(saved); } catch (e) { }
         }
@@ -32,19 +32,19 @@
     }
 
     function renderHotkeys() {
-        var bar = document.getElementById('hotkey-bar');
+        const bar = document.getElementById('hotkey-bar');
         if (!bar) return;
         bar.innerHTML = '';
 
-        var cols = hotkeyCount > 5 ? 5 : hotkeyCount;
+        const cols = hotkeyCount > 5 ? 5 : hotkeyCount;
         bar.style.setProperty('--col-count', cols);
 
-        for (var i = 0; i < hotkeyCount; i++) {
-            var slot = document.createElement('div');
+        for (let i = 0; i < hotkeyCount; i++) {
+            const slot = document.createElement('div');
             slot.className = 'hotkey-slot';
             slot.dataset.slot = (i + 1);
 
-            var data = hotkeys[i];
+            const data = hotkeys[i];
             if (data) {
                 slot.classList.add('filled');
                 if (data.color) {
@@ -59,12 +59,12 @@
                 }
 
                 // Icon element
-                var iconEl = document.createElement('span');
+                const iconEl = document.createElement('span');
                 iconEl.className = 'hotkey-icon';
 
                 if (data.icon) {
                     iconEl.innerHTML = data.icon;
-                    var svg = iconEl.querySelector('svg');
+                    const svg = iconEl.querySelector('svg');
                     if (svg) {
                         svg.setAttribute('width', '14');
                         svg.setAttribute('height', '14');
@@ -83,17 +83,17 @@
                 slot.title = data.label;
 
                 // Name label (small text below icon)
-                var nameLabel = document.createElement('span');
+                const nameLabel = document.createElement('span');
                 nameLabel.className = 'hotkey-label';
                 nameLabel.textContent = data.label;
                 slot.appendChild(nameLabel);
 
-                var removeBtn = document.createElement('span');
+                const removeBtn = document.createElement('span');
                 removeBtn.className = 'hotkey-remove';
                 removeBtn.innerHTML = '&times;';
                 removeBtn.title = 'Remove';
-                removeBtn.onclick = (function (idx) {
-                    return function (e) {
+                removeBtn.onclick = (idx => {
+                    return e => {
                         e.stopPropagation();
                         hotkeys[idx] = null;
                         saveHotkeys();
@@ -102,15 +102,15 @@
                 })(i);
                 slot.appendChild(removeBtn);
 
-                slot.onclick = (function (slotData) {
+                slot.onclick = (slotData => {
                     return function () {
                         // Default: trigger button click
-                        var btn = document.getElementById(slotData.id);
+                        const btn = document.getElementById(slotData.id);
                         if (btn) {
                             btn.click();
                             this.style.opacity = '0.5';
-                            var self = this;
-                            setTimeout(function () { self.style.opacity = '1'; }, 100);
+                            const self = this;
+                            setTimeout(() => { self.style.opacity = '1'; }, 100);
                         }
                     };
                 })(data);
@@ -125,32 +125,32 @@
     // Event delegation for hotkey slots (set up once)
     function setupSlotDelegation() {
         if (TATA._hotkeyDelegated) return;
-        var bar = document.getElementById('hotkey-bar');
+        const bar = document.getElementById('hotkey-bar');
         if (!bar) return;
         TATA._hotkeyDelegated = true;
 
-        bar.addEventListener('dragover', function (e) {
-            var slot = e.target.closest('.hotkey-slot');
+        bar.addEventListener('dragover', e => {
+            const slot = e.target.closest('.hotkey-slot');
             if (!slot) return;
             e.preventDefault();
             slot.classList.add('drag-over');
         });
 
-        bar.addEventListener('dragleave', function (e) {
-            var slot = e.target.closest('.hotkey-slot');
+        bar.addEventListener('dragleave', e => {
+            const slot = e.target.closest('.hotkey-slot');
             if (slot) slot.classList.remove('drag-over');
         });
 
-        bar.addEventListener('drop', function (e) {
-            var slot = e.target.closest('.hotkey-slot');
+        bar.addEventListener('drop', e => {
+            const slot = e.target.closest('.hotkey-slot');
             if (!slot) return;
             e.preventDefault();
             slot.classList.remove('drag-over');
-            var index = parseInt(slot.dataset.slot) - 1;
-            var raw = e.dataTransfer.getData('text/plain');
+            const index = parseInt(slot.dataset.slot) - 1;
+            const raw = e.dataTransfer.getData('text/plain');
             if (raw) {
                 try {
-                    var data = JSON.parse(raw);
+                    const data = JSON.parse(raw);
                     hotkeys[index] = data;
                     saveHotkeys();
                     renderHotkeys();
@@ -160,20 +160,20 @@
     }
 
     function setupDraggableButtons() {
-        var buttons = document.querySelectorAll('.tab-content button');
-        buttons.forEach(function (btn) {
+        const buttons = document.querySelectorAll('.tab-content button');
+        buttons.forEach(btn => {
             btn.setAttribute('draggable', 'true');
-            btn.addEventListener('dragstart', function (e) {
-                var tabId = btn.closest('.tab-content') ? btn.closest('.tab-content').id : 'unknown';
-                var label = btn.innerText.trim();
-                var icon = null;
-                var svg = btn.querySelector('svg');
+            btn.addEventListener('dragstart', e => {
+                const tabId = btn.closest('.tab-content') ? btn.closest('.tab-content').id : 'unknown';
+                const label = btn.innerText.trim();
+                let icon = null;
+                const svg = btn.querySelector('svg');
                 if (svg) {
                     icon = svg.outerHTML;
                 }
 
-                var color = null;
-                btn.classList.forEach(function (cls) {
+                let color = null;
+                btn.classList.forEach(cls => {
                     if (cls.startsWith('btn-')) {
                         color = cls.replace('btn-', '');
                     }
@@ -181,16 +181,16 @@
 
                 e.dataTransfer.setData('text/plain', JSON.stringify({
                     id: btn.id,
-                    label: label,
-                    icon: icon,
+                    label,
+                    icon,
                     type: tabId,
-                    color: color
+                    color
                 }));
 
                 document.body.classList.add('dragging-mode');
             });
 
-            btn.addEventListener('dragend', function () {
+            btn.addEventListener('dragend', () => {
                 document.body.classList.remove('dragging-mode');
             });
         });
@@ -201,7 +201,7 @@
     global.TATA.initHotkeys = initHotkeys;
     global.TATA.saveHotkeys = saveHotkeys;
     global.TATA.renderHotkeys = renderHotkeys;
-    global.TATA.getHotkeys = function () { return hotkeys; };
-    global.TATA.setHotkeys = function (newHotkeys) { hotkeys = newHotkeys; };
+    global.TATA.getHotkeys = () => { return hotkeys; };
+    global.TATA.setHotkeys = newHotkeys => { hotkeys = newHotkeys; };
 
 })(window);

@@ -2,7 +2,7 @@
  * Rocket Launcher - Core Module
  * Contains: CSInterface, globals, utilities, storage versioning
  */
-(function () {
+(() => {
     'use strict';
 
     // ==========================================

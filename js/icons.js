@@ -2,10 +2,10 @@
  * TATA V3 - Icons Module
  * Material Design Icons Library (50+ icons)
  */
-(function (global) {
+(global => {
     'use strict';
 
-    var ICONS = {
+    const ICONS = {
         // Actions
         add: '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>',
         remove: '<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>',

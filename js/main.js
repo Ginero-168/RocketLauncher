@@ -1,36 +1,36 @@
-(function () {
+(() => {
 	'use strict';
 
 	// ==========================================
 	// Local aliases to TATA.* modules
 	// (defined in core.js, state.js, modals.js, tabs.js)
 	// ==========================================
-	var debounce = TATA.debounce;
-	var safeParse = TATA.safeParse;
-	var safeCall = TATA.safeCall;
-	var cacheDOM = TATA.cacheDOM;
-	var DOM = TATA.DOM;
-	var checkStorageVersion = TATA.checkStorageVersion;
-	var backupBeforeSave = TATA.backupBeforeSave;
-	var restoreFromBackup = TATA.restoreFromBackup;
-	var verifyPanelHealth = TATA.verifyPanelHealth;
-	var showToast = TATA.showToast;
-	var showInputModal = TATA.showInputModal;
-	var showConfirmModal = TATA.showConfirmModal;
-	var switchTab = TATA.switchTab;
-	var moveButtonToTab = TATA.moveButtonToTab;
+	const debounce = TATA.debounce;
+	const safeParse = TATA.safeParse;
+	const safeCall = TATA.safeCall;
+	const cacheDOM = TATA.cacheDOM;
+	const DOM = TATA.DOM;
+	const checkStorageVersion = TATA.checkStorageVersion;
+	const backupBeforeSave = TATA.backupBeforeSave;
+	const restoreFromBackup = TATA.restoreFromBackup;
+	const verifyPanelHealth = TATA.verifyPanelHealth;
+	const showToast = TATA.showToast;
+	const showInputModal = TATA.showInputModal;
+	const showConfirmModal = TATA.showConfirmModal;
+	const switchTab = TATA.switchTab;
+	const moveButtonToTab = TATA.moveButtonToTab;
 
-	var csInterface = TATA.getCSInterface ? TATA.getCSInterface() : TATA.csInterface;
+	let csInterface = TATA.getCSInterface ? TATA.getCSInterface() : TATA.csInterface;
 	if (!csInterface) csInterface = new CSInterface();
-	var extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : (TATA.extensionPath || "");
+	let extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : (TATA.extensionPath || "");
 
 	// Export Core System Variables to TATA for modules to use
 	window.TATA = window.TATA || {};
 	if (TATA.setCSInterface) TATA.setCSInterface(csInterface);
 
 	// Context Menu Globals
-	var contextMenuEl = null;
-	var currentContextScriptId = null;
+	const contextMenuEl = null;
+	const currentContextScriptId = null;
 
 
 	function init() {
@@ -41,7 +41,7 @@
 		checkStorageVersion();
 
 		// V3: Apply saved theme
-		var savedTheme = localStorage.getItem('tata_theme');
+		const savedTheme = localStorage.getItem('tata_theme');
 		if (savedTheme === 'light') {
 			document.body.classList.add('light-theme');
 		}
@@ -52,12 +52,12 @@
 
 		// Fallback: If SystemPath failed, derive from URL
 		if (!extensionPath) {
-			var path = window.location.href;
+			let path = window.location.href;
 			if (path.indexOf('file://') === 0) {
 				path = path.substring(7);
 			}
 			// Remove filename (index.html)
-			var lastSlash = path.lastIndexOf('/');
+			const lastSlash = path.lastIndexOf('/');
 			if (lastSlash !== -1) {
 				path = path.substring(0, lastSlash);
 			}
@@ -69,11 +69,11 @@
 
 
 		// Determine Context (Main Panel vs Sub-Panel)
-		var isColorPanel = window.location.href.indexOf('colors.html') !== -1;
+		const isColorPanel = window.location.href.includes('colors.html');
 
 		if (isColorPanel) {
 			// ==================== COLORS PANEL INIT ====================
-			try { TATA.colorTools.init(); } catch (e) { alert("ColorTools Init Error: " + e); }
+			try { TATA.colorTools.init(); } catch (e) { alert(`ColorTools Init Error: ${e}`); }
 
 			// Init Color-Specific Context Menu or Features if needed
 			// For now, Creative setup is sufficient + Custom Picker
@@ -114,34 +114,34 @@
 			setTimeout(verifyPanelHealth, 200);
 
 			// Show active AI model badge
-			var initModelBadge = document.getElementById('ai_model_name');
-			var initModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
-			if (initModelBadge) initModelBadge.textContent = '(' + initModel + ')';
+			const initModelBadge = document.getElementById('ai_model_name');
+			const initModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+			if (initModelBadge) initModelBadge.textContent = `(${initModel})`;
 		}
 
 		// COMMON INIT
 		// load Host Script via gateway
 		if (TATA.host && TATA.host.evalFile) {
-			TATA.host.evalFile(extensionPath + '/jsx/hostscript.jsx');
+			TATA.host.evalFile(`${extensionPath}/jsx/hostscript.jsx`);
 		}
 	}
-	var setupPanelToggleDone = false;
+	let setupPanelToggleDone = false;
 
 	function setupPanelToggle() {
 		// Prevent duplicate setup
 		if (setupPanelToggleDone) return;
 		setupPanelToggleDone = true;
 
-		var btn = document.getElementById('btn_toggle_height');
+		const btn = document.getElementById('btn_toggle_height');
 		if (!btn) return;
 
 		// 1. STATE PERSISTENCE
-		var savedState = localStorage.getItem('tata_panel_collapsed');
-		var isCollapsed = (savedState === 'true');
+		const savedState = localStorage.getItem('tata_panel_collapsed');
+		let isCollapsed = (savedState === 'true');
 
 		// Helpers for Height
 		function getCollapsedHeight() {
-			var hotkeyBar = document.getElementById('hotkey-bar');
+			const hotkeyBar = document.getElementById('hotkey-bar');
 			// Only add 14px for the collapsed_strip, no extra padding
 			return Math.ceil((hotkeyBar ? hotkeyBar.offsetHeight : 0) + 14);
 		}
@@ -152,11 +152,11 @@
 			document.body.classList.add('collapsed');
 			btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>'; // Down Arrow
 			btn.title = "Expand Panel";
-			var tabsContent = document.querySelector('.tabs');
+			const tabsContent = document.querySelector('.tabs');
 			if (tabsContent) tabsContent.style.display = 'none';
 
 			// Force Resize (with slight delay)
-			setTimeout(function () {
+			setTimeout(() => {
 				csInterface.resizeContent(Math.floor(window.innerWidth), getCollapsedHeight());
 			}, 100);
 
@@ -168,18 +168,18 @@
 
 			// Safety: Force Expand if window is suspiciously small but state is Open
 			if (window.innerHeight < 200) {
-				var restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+				const restoreH = parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
 				csInterface.resizeContent(Math.floor(window.innerWidth), restoreH);
 			}
 		}
 
 		// 3. EVENT LISTENER
-		btn.addEventListener('click', function () {
+		btn.addEventListener('click', () => {
 			try {
 				if (!isCollapsed) {
 					// --- ACTION: COLLAPSE ---
 					if (window.innerHeight > 200) {
-						var h = window.innerHeight;
+						const h = window.innerHeight;
 						btn.dataset.lastHeight = h;
 						localStorage.setItem('tata_panel_last_height', h);
 					}
@@ -201,7 +201,7 @@
 					if (tabsContent) tabsContent.style.display = '';
 
 					var width = Math.floor(window.innerWidth);
-					var restoreH = parseInt(btn.dataset.lastHeight) || parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+					const restoreH = parseInt(btn.dataset.lastHeight) || parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
 
 					csInterface.resizeContent(width, restoreH);
 
@@ -220,16 +220,16 @@
 		});
 
 		// V3: Collapsed Strip Click Handler (for expanding from minimal state)
-		var strip = document.getElementById('collapsed_strip');
+		const strip = document.getElementById('collapsed_strip');
 		if (strip) {
-			strip.addEventListener('click', function () {
+			strip.addEventListener('click', () => {
 				if (isCollapsed) {
 					// --- ACTION: EXPAND ---
-					var tabsContent = document.querySelector('.tabs');
+					const tabsContent = document.querySelector('.tabs');
 					if (tabsContent) tabsContent.style.display = '';
 
-					var width = Math.floor(window.innerWidth);
-					var restoreH = parseInt(btn.dataset.lastHeight) || parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
+					const width = Math.floor(window.innerWidth);
+					const restoreH = parseInt(btn.dataset.lastHeight) || parseInt(localStorage.getItem('tata_panel_last_height')) || 550;
 
 					csInterface.resizeContent(width, restoreH);
 
@@ -250,41 +250,41 @@
 	// Hotkey Feature (Delegated to module)
 	// ==========================================
 	var initHotkeys = TATA.initHotkeys;
-	var saveHotkeys = TATA.saveHotkeys;
-	var renderHotkeys = TATA.renderHotkeys;
+	const saveHotkeys = TATA.saveHotkeys;
+	const renderHotkeys = TATA.renderHotkeys;
 	// TATA handles drag/drop logic natively inside its hotkeys.js rendering now.
 
 	// NOTE: saveHotkeys() is defined earlier at line 808
 	// Tab setup handled by setupTabsV2()
 
 	// Init when Window Loaded (Safest)
-	window.addEventListener('load', function () {
+	window.addEventListener('load', () => {
 		try {
 			init();
 			// Features only for Main Panel
-			if (window.location.href.indexOf('colors.html') === -1) {
+			if (!window.location.href.includes('colors.html')) {
 				initHotkeys();
 			}
 
 			// Listen for Scripts from Scripting Panel
-			csInterface.addEventListener("com.tata.pro.importScript", function (event) {
+			csInterface.addEventListener("com.tata.pro.importScript", event => {
 				try {
-					var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+					const data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
 
 					// 1. Auto-switch Focus: Moved to scripting.js SIDE
 					// But we can try here too just in case
 					// CSInterface.prototype.requestOpenExtension("com.tata.pro.panel", "");
 
 					// 2. Add to Active Tab or Swift
-					var activeTabEl = document.querySelector('.tab-btn.active');
-					var targetTab = 'tab_button';
+					const activeTabEl = document.querySelector('.tab-btn.active');
+					const targetTab = 'tab_button';
 
 					v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
 
 					// Ensure target array exists
 					if (!v2Layout[targetTab]) v2Layout[targetTab] = [];
 
-					var newItem = {
+					const newItem = {
 						id: data.id,
 						label: data.name,
 						icon: data.icon,
@@ -294,7 +294,7 @@
 					};
 
 					// Check if already exists (update instead of duplicate)
-					var existingIndex = v2Layout[targetTab].findIndex(function (item) {
+					const existingIndex = v2Layout[targetTab].findIndex(item => {
 						return item.id === data.id;
 					});
 
@@ -309,7 +309,7 @@
 					renderGrid();
 
 					// Optional: Save to userScripts global store
-					setTimeout(function () {
+					setTimeout(() => {
 						saveUserScript(data.name, data.icon, data.code, data.color || 'gray', true, data.id, true);
 					}, 100);
 
@@ -319,10 +319,10 @@
 			});
 
 			// ==================== CONTEXT MENU: EDIT ====================
-			var btnEdit = document.getElementById('ctx_edit');
+			const btnEdit = document.getElementById('ctx_edit');
 			if (btnEdit) {
-				btnEdit.onclick = function () {
-					var id = window.currentContextScriptId;
+				btnEdit.onclick = () => {
+					const id = window.currentContextScriptId;
 					if (!id) return;
 
 					// BLOCK DEFAULTS
@@ -333,16 +333,16 @@
 					}
 
 					// Find Data (Prioritize V2 Layout)
-					var foundItem = null;
-					['tab_button'].forEach(function (t) {
+					let foundItem = null;
+					['tab_button'].forEach(t => {
 						if (v2Layout[t]) {
-							var match = v2Layout[t].find(function (x) { return x.id === id; });
+							const match = v2Layout[t].find(x => { return x.id === id; });
 							if (match) foundItem = match;
 						}
 					});
 
 					// Fallback to User Scripts
-					var storedScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
+					const storedScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
 					if (!foundItem && storedScripts[id]) {
 						foundItem = storedScripts[id];
 						foundItem.code = foundItem.code;
@@ -357,9 +357,9 @@
 						// Logic to load file content if it's a default script
 						if (!foundItem.code && foundItem.script) {
 							try {
-								var fs = require('fs');
-								var path = require('path');
-								var scriptPath = path.join(extensionPath, 'jsx', foundItem.script);
+								const fs = require('fs');
+								const path = require('path');
+								const scriptPath = path.join(extensionPath, 'jsx', foundItem.script);
 								if (fs.existsSync(scriptPath)) {
 									foundItem.code = fs.readFileSync(scriptPath, 'utf-8');
 								} else {
@@ -374,8 +374,8 @@
 						}
 
 						// Send Data Delayed (to allow panel load)
-						setTimeout(function () {
-							var evt = new CSEvent("com.tata.pro.editScript", "APPLICATION");
+						setTimeout(() => {
+							const evt = new CSEvent("com.tata.pro.editScript", "APPLICATION");
 							evt.data = JSON.stringify(foundItem);
 							csInterface.dispatchEvent(evt);
 						}, 800);
@@ -388,17 +388,17 @@
 			// ============================================================
 
 			// Listen for Settings Request from Scripting Panel
-			csInterface.addEventListener("com.tata.pro.requestSettings", function (event) {
-				var apiKey = localStorage.getItem('tata_gemini_api_key') || "";
-				var picker = localStorage.getItem('tata_picker_mode') || "os";
+			csInterface.addEventListener("com.tata.pro.requestSettings", event => {
+				const apiKey = localStorage.getItem('tata_gemini_api_key') || "";
+				const picker = localStorage.getItem('tata_picker_mode') || "os";
 
-				var response = new CSEvent("com.tata.pro.settingsData", "APPLICATION");
-				response.data = JSON.stringify({ apiKey: apiKey, pickerMode: picker });
+				const response = new CSEvent("com.tata.pro.settingsData", "APPLICATION");
+				response.data = JSON.stringify({ apiKey, pickerMode: picker });
 				csInterface.dispatchEvent(response);
 			});
 
 		} catch (e) {
-			alert("CRITICAL INIT ERROR: " + e);
+			alert(`CRITICAL INIT ERROR: ${e}`);
 		}
 	});
 
@@ -409,60 +409,60 @@
 	var initUserScripts = TATA.initUserScripts;
 
 	var startContextMenu = TATA.startContextMenu;
-	var updateItemColor = TATA.updateItemColor;
+	const updateItemColor = TATA.updateItemColor;
 
 	function setupAddScriptUI() {
 		// --- Modals ---
-		var scriptModal = document.getElementById('script_modal');
-		var settingsModal = document.getElementById('settings_modal');
-		var aiModal = document.getElementById('ai_prompt_modal');
+		const scriptModal = document.getElementById('script_modal');
+		const settingsModal = document.getElementById('settings_modal');
+		const aiModal = document.getElementById('ai_prompt_modal');
 
 		// --- Buttons ---
-		var btnAdd = document.getElementById('btn_add_script');
-		var btnSettings = document.getElementById('btn_settings');
-		var btnOpenAI = document.getElementById('btn_open_ai');
+		const btnAdd = document.getElementById('btn_add_script');
+		const btnSettings = document.getElementById('btn_settings');
+		const btnOpenAI = document.getElementById('btn_open_ai');
 
 		// Script Modal Actions
-		var btnSaveScript = document.getElementById('btn_save_script');
-		var btnCancelScript = document.getElementById('btn_cancel_script');
+		const btnSaveScript = document.getElementById('btn_save_script');
+		const btnCancelScript = document.getElementById('btn_cancel_script');
 
 		// Settings Modal Actions
 		var btnSaveSettings = document.getElementById('btn_save_settings');
 		var btnCancelSettings = document.getElementById('btn_cancel_settings');
 
 		// AI Modal Actions
-		var btnSubmitAI = document.getElementById('btn_submit_ai');
-		var btnCancelAI = document.getElementById('btn_cancel_ai');
+		const btnSubmitAI = document.getElementById('btn_submit_ai');
+		const btnCancelAI = document.getElementById('btn_cancel_ai');
 
 		// --- Inputs ---
-		var inpApiKey = document.getElementById('setting_api_key');
-		var inpPrompt = document.getElementById('ai_prompt_text');
-		var loadingIndicator = document.getElementById('ai_loading');
+		const inpApiKey = document.getElementById('setting_api_key');
+		const inpPrompt = document.getElementById('ai_prompt_text');
+		const loadingIndicator = document.getElementById('ai_loading');
 
 		// ==================
 		// 1. Settings Logic
 		// ==================
 		if (btnSettings) {
-			btnSettings.addEventListener('click', function () {
-				var savedKey = localStorage.getItem('tata_gemini_api_key');
+			btnSettings.addEventListener('click', () => {
+				const savedKey = localStorage.getItem('tata_gemini_api_key');
 				if (savedKey) inpApiKey.value = savedKey;
 
 				// Load Picker Mode
-				var elPicker = document.getElementById('setting_picker_mode');
+				const elPicker = document.getElementById('setting_picker_mode');
 				if (elPicker) elPicker.value = localStorage.getItem('tata_picker_mode') || 'os';
 
 				// V3: Load Theme
-				var elTheme = document.getElementById('setting_theme');
-				var savedTheme = localStorage.getItem('tata_theme') || 'dark';
+				const elTheme = document.getElementById('setting_theme');
+				const savedTheme = localStorage.getItem('tata_theme') || 'dark';
 				if (elTheme) elTheme.value = savedTheme;
 
 				// V3: Load AI Model
-				var elModel = document.getElementById('setting_ai_model');
-				var savedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+				const elModel = document.getElementById('setting_ai_model');
+				const savedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
 				if (elModel) elModel.value = savedModel;
 
 				// Load Count UI
-				var savedCount = localStorage.getItem('tata_hotkey_count') || "5";
+				const savedCount = localStorage.getItem('tata_hotkey_count') || "5";
 				document.getElementById('hotkey_count_display').textContent = savedCount;
 
 				settingsModal.classList.add('active');
@@ -470,19 +470,19 @@
 		}
 
 		// Check Models Logic
-		var btnCheckModels = document.getElementById('btn_check_models');
+		const btnCheckModels = document.getElementById('btn_check_models');
 		if (btnCheckModels) {
 			btnCheckModels.addEventListener('click', async function () {
-				var key = inpApiKey.value.trim();
+				const key = inpApiKey.value.trim();
 				if (!key) {
 					alert("Please enter API Key first.");
 					return;
 				}
 
-				var btn = this;
-				var loader = document.getElementById('model_check_loader');
-				var msg = document.getElementById('model_check_msg');
-				var select = document.getElementById('setting_ai_model');
+				const btn = this;
+				const loader = document.getElementById('model_check_loader');
+				const msg = document.getElementById('model_check_msg');
+				const select = document.getElementById('setting_ai_model');
 
 				btn.disabled = true;
 				loader.style.display = 'block';
@@ -490,20 +490,20 @@
 				msg.style.color = "#888";
 
 				try {
-					var listUrl = "https://generativelanguage.googleapis.com/v1beta/models?key=" + key;
-					var res = await TATA.fetchWithTimeout(listUrl, {}, 15000);
+					const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+					const res = await TATA.fetchWithTimeout(listUrl, {}, 15000);
 
 					if (!res.ok) {
-						throw new Error("HTTP " + res.status);
+						throw new Error(`HTTP ${res.status}`);
 					}
 
-					var data = await res.json();
+					const data = await res.json();
 					if (data.models) {
 						// Filter for generateContent
-						var validModels = data.models.filter(function (m) {
+						const validModels = data.models.filter(m => {
 							return m.supportedGenerationMethods &&
-								m.supportedGenerationMethods.indexOf("generateContent") !== -1 &&
-								m.name.indexOf("gemini") !== -1;
+								m.supportedGenerationMethods.includes("generateContent") &&
+								m.name.includes("gemini");
 						});
 
 						if (validModels.length > 0) {
@@ -511,30 +511,30 @@
 							select.innerHTML = "";
 
 							// Sort: Pro models first, then Flash, then others
-							validModels.sort(function (a, b) {
-								var nameA = a.name.toLowerCase();
-								var nameB = b.name.toLowerCase();
+							validModels.sort((a, b) => {
+								const nameA = a.name.toLowerCase();
+								const nameB = b.name.toLowerCase();
 								// Pro > Flash > Others
 								// Newer > Older (roughly based on numbers)
 								return nameB.localeCompare(nameA);
 							});
 
-							validModels.forEach(function (m) {
-								var opt = document.createElement('option');
-								var shortName = m.name.replace("models/", "");
+							validModels.forEach(m => {
+								const opt = document.createElement('option');
+								const shortName = m.name.replace("models/", "");
 								opt.value = shortName;
-								opt.text = m.displayName + " (" + shortName + ")";
+								opt.text = `${m.displayName} (${shortName})`;
 								select.appendChild(opt);
 							});
 
-							msg.textContent = "✅ Found " + validModels.length + " models available for your key.";
+							msg.textContent = `✅ Found ${validModels.length} models available for your key.`;
 							msg.style.color = "#10b981"; // Success Green
 
 							// Auto-select first or previously selected if exists
-							var savedModel = localStorage.getItem('tata_ai_model');
+							const savedModel = localStorage.getItem('tata_ai_model');
 							if (savedModel) {
 								// Check if saved exists in new list
-								var exists = Array.from(select.options).some(function (o) { return o.value === savedModel; });
+								const exists = Array.from(select.options).some(o => { return o.value === savedModel; });
 								if (exists) select.value = savedModel;
 							}
 
@@ -545,7 +545,7 @@
 					}
 
 				} catch (e) {
-					msg.textContent = "❌ Error: " + e.message + " (Check API Key)";
+					msg.textContent = `❌ Error: ${e.message} (Check API Key)`;
 					msg.style.color = "#ef4444";
 				} finally {
 					btn.disabled = false;
@@ -555,31 +555,31 @@
 		}
 
 		// Stepper Logic
-		var btnMinus = document.querySelector('#stepper_hotkey_count .btn-minus');
-		var btnPlus = document.querySelector('#stepper_hotkey_count .btn-plus');
-		var display = document.getElementById('hotkey_count_display');
+		const btnMinus = document.querySelector('#stepper_hotkey_count .btn-minus');
+		const btnPlus = document.querySelector('#stepper_hotkey_count .btn-plus');
+		const display = document.getElementById('hotkey_count_display');
 
 		if (btnMinus && btnPlus && display) {
-			btnMinus.onclick = function () {
-				var v = parseInt(display.textContent);
+			btnMinus.onclick = () => {
+				const v = parseInt(display.textContent);
 				if (v > 1) display.textContent = v - 1;
 			};
 
-			btnPlus.onclick = function () {
-				var v = parseInt(display.textContent);
+			btnPlus.onclick = () => {
+				const v = parseInt(display.textContent);
 				if (v < 30) display.textContent = v + 1; // Limit 30
 			};
 		}
 
 		// Factory Reset Logic
-		var btnFactoryReset = document.getElementById('btn_factory_reset');
+		const btnFactoryReset = document.getElementById('btn_factory_reset');
 		var btnSaveSettings = document.getElementById('btn_save_settings');
 		var btnCancelSettings = document.getElementById('btn_cancel_settings');
 
 		// Guard: only attach listeners once per button
 		if (btnFactoryReset && !btnFactoryReset._bound) {
 			btnFactoryReset._bound = true;
-			btnFactoryReset.addEventListener('click', function () {
+			btnFactoryReset.addEventListener('click', () => {
 				if (confirm("Are you sure you want to restore Factory Defaults?\n\nThis will DELETE ALL custom scripts/buttons and clear your settings.")) {
 					// 1. Clear All LocalStorage
 					localStorage.clear();
@@ -592,8 +592,8 @@
 
 		if (btnSaveSettings && !btnSaveSettings._bound) {
 			btnSaveSettings._bound = true;
-			btnSaveSettings.addEventListener('click', function () {
-				var key = inpApiKey.value.trim();
+			btnSaveSettings.addEventListener('click', () => {
+				const key = inpApiKey.value.trim();
 				if (key) {
 					localStorage.setItem('tata_gemini_api_key', key);
 				} else {
@@ -601,21 +601,21 @@
 				}
 
 				// Hide inline API key prompt in AI Helper if key is set
-				var keySection = document.getElementById('api_key_section');
+				const keySection = document.getElementById('api_key_section');
 				if (keySection) {
 					keySection.style.display = key ? 'none' : 'flex';
 				}
 
 				// Save Picker Mode
-				var elPicker = document.getElementById('setting_picker_mode');
+				const elPicker = document.getElementById('setting_picker_mode');
 				if (elPicker) {
 					localStorage.setItem('tata_picker_mode', elPicker.value);
 				}
 
 				// V3: Save Theme
-				var elTheme = document.getElementById('setting_theme');
+				const elTheme = document.getElementById('setting_theme');
 				if (elTheme) {
-					var theme = elTheme.value;
+					const theme = elTheme.value;
 					localStorage.setItem('tata_theme', theme);
 					if (theme === 'light') {
 						document.body.classList.add('light-theme');
@@ -625,16 +625,16 @@
 				}
 
 				// V3: Save AI Model
-				var elModel = document.getElementById('setting_ai_model');
+				const elModel = document.getElementById('setting_ai_model');
 				if (elModel) {
 					localStorage.setItem('tata_ai_model', elModel.value);
 					// Update model badge in AI Helper
-					var modelBadge = document.getElementById('ai_model_name');
-					if (modelBadge) modelBadge.textContent = '(' + elModel.value + ')';
+					const modelBadge = document.getElementById('ai_model_name');
+					if (modelBadge) modelBadge.textContent = `(${elModel.value})`;
 				}
 
 				// Save Count
-				var count = document.getElementById('hotkey_count_display').textContent;
+				const count = document.getElementById('hotkey_count_display').textContent;
 				localStorage.setItem('tata_hotkey_count', count);
 
 				// Reload Hotkeys
@@ -646,7 +646,7 @@
 
 		if (btnCancelSettings && !btnCancelSettings._bound) {
 			btnCancelSettings._bound = true;
-			btnCancelSettings.addEventListener('click', function () {
+			btnCancelSettings.addEventListener('click', () => {
 				settingsModal.classList.remove('active');
 			});
 		}
@@ -654,47 +654,47 @@
 		// ==========================================
 		// VERSION CHECK SYSTEM
 		// ==========================================
-		var CURRENT_VERSION = '6.0.0';
-		var SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
-		var SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
+		const CURRENT_VERSION = '6.0.0';
+		const SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
+		const SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
 
 		function checkForUpdates() {
-			var btnCheck = document.getElementById('btn_check_update');
+			const btnCheck = document.getElementById('btn_check_update');
 			if (btnCheck) {
 				btnCheck.textContent = 'Checking...';
 				btnCheck.disabled = true;
 			}
 
-			fetch(SUPABASE_URL + '/rest/v1/app_version?id=eq.1', {
+			fetch(`${SUPABASE_URL}/rest/v1/app_version?id=eq.1`, {
 				headers: {
 					'apikey': SUPABASE_KEY,
-					'Authorization': 'Bearer ' + SUPABASE_KEY
+					'Authorization': `Bearer ${SUPABASE_KEY}`
 				}
 			})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
+				.then(res => { return res.json(); })
+				.then(data => {
 					if (data && data[0]) {
-						var latestVersion = data[0].version;
-						var downloadUrl = data[0].download_url;
+						const latestVersion = data[0].version;
+						const downloadUrl = data[0].download_url;
 
 						// Compare versions
 						if (compareVersions(latestVersion, CURRENT_VERSION) > 0) {
 							// New version available
-							document.getElementById('new_version').textContent = 'v' + latestVersion;
+							document.getElementById('new_version').textContent = `v${latestVersion}`;
 							document.getElementById('download_link').href = downloadUrl;
 							document.getElementById('update_available').style.display = 'block';
-							showToast('🆕 Update available: v' + latestVersion);
+							showToast(`🆕 Update available: v${latestVersion}`);
 						} else {
 							showToast('✅ You have the latest version!');
 							document.getElementById('update_available').style.display = 'none';
 						}
 					}
 				})
-				.catch(function (err) {
+				.catch(err => {
 					showToast('❌ Failed to check updates');
 					console.error(err);
 				})
-				.finally(function () {
+				.finally(() => {
 					if (btnCheck) {
 						btnCheck.textContent = 'Check Update';
 						btnCheck.disabled = false;
@@ -703,9 +703,9 @@
 		}
 
 		function compareVersions(v1, v2) {
-			var parts1 = v1.split('.').map(Number);
-			var parts2 = v2.split('.').map(Number);
-			for (var i = 0; i < 3; i++) {
+			const parts1 = v1.split('.').map(Number);
+			const parts2 = v2.split('.').map(Number);
+			for (let i = 0; i < 3; i++) {
 				if ((parts1[i] || 0) > (parts2[i] || 0)) return 1;
 				if ((parts1[i] || 0) < (parts2[i] || 0)) return -1;
 			}
@@ -713,36 +713,36 @@
 		}
 
 		// Init version display
-		var versionEl = document.getElementById('current_version');
-		if (versionEl) versionEl.textContent = 'v' + CURRENT_VERSION;
+		const versionEl = document.getElementById('current_version');
+		if (versionEl) versionEl.textContent = `v${CURRENT_VERSION}`;
 
 		// Check update button
-		var btnCheckUpdate = document.getElementById('btn_check_update');
+		const btnCheckUpdate = document.getElementById('btn_check_update');
 		if (btnCheckUpdate) {
 			btnCheckUpdate.addEventListener('click', checkForUpdates);
 		}
 
 		// Auto-check on startup (after 3 seconds)
-		setTimeout(function () {
-			fetch(SUPABASE_URL + '/rest/v1/app_version?id=eq.1', {
-				headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+		setTimeout(() => {
+			fetch(`${SUPABASE_URL}/rest/v1/app_version?id=eq.1`, {
+				headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
 			})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
+				.then(res => { return res.json(); })
+				.then(data => {
 					if (data && data[0] && compareVersions(data[0].version, CURRENT_VERSION) > 0) {
 						showToast('🆕 Update available! Check Settings.');
 					}
 				})
-				.catch(function () { });
+				.catch(() => { });
 		}, 3000);
 
 		// ==================
 		// 2. Add Script Logic
 		// ==================
 		if (btnAdd) {
-			btnAdd.addEventListener('click', function () {
+			btnAdd.addEventListener('click', () => {
 				// Switch to AI Helper tab
-				var aiTab = document.querySelector('.tab-btn[data-tab="tab_ai"]');
+				const aiTab = document.querySelector('.tab-btn[data-tab="tab_ai"]');
 				if (aiTab) aiTab.click();
 			});
 		}
@@ -750,29 +750,29 @@
 
 
 		if (btnCancelScript) {
-			btnCancelScript.addEventListener('click', function () {
+			btnCancelScript.addEventListener('click', () => {
 				scriptModal.classList.remove('active');
 			});
 		}
 
 		if (btnSaveScript) {
 			btnSaveScript.onclick = function () {
-				var name = document.getElementById('script_name').value.trim();
-				var code = document.getElementById('script_code').value.trim();
+				const name = document.getElementById('script_name').value.trim();
+				const code = document.getElementById('script_code').value.trim();
 
 
-				var icon = document.getElementById('script_icon_val').value;
+				let icon = document.getElementById('script_icon_val').value;
 				if (!icon) icon = "★"; // Fallback
 
-				var color = document.getElementById('script_color').value || "red";
+				const color = document.getElementById('script_color').value || "red";
 
 				if (!name || !code) {
 					alert("Name and Code are required.");
 					return;
 				}
 
-				var isUpdate = (this.dataset.mode === "edit");
-				var targetId = this.dataset.targetId;
+				const isUpdate = (this.dataset.mode === "edit");
+				const targetId = this.dataset.targetId;
 
 				saveUserScript(name, icon, code, color, isUpdate, targetId);
 				scriptModal.classList.remove('active');
@@ -785,8 +785,8 @@
 		// 3. AI Prompt Logic
 		// ==================
 		if (btnOpenAI) {
-			btnOpenAI.addEventListener('click', function () {
-				var apiKey = localStorage.getItem('tata_gemini_api_key');
+			btnOpenAI.addEventListener('click', () => {
+				const apiKey = localStorage.getItem('tata_gemini_api_key');
 				if (!apiKey) {
 					alert("Please set your Gemini API Key in Settings (⚙️) first.");
 					return;
@@ -799,26 +799,24 @@
 		}
 
 		if (btnCancelAI) {
-			btnCancelAI.addEventListener('click', function () {
+			btnCancelAI.addEventListener('click', () => {
 				aiModal.classList.remove('active');
 			});
 		}
 
 		if (btnSubmitAI) {
-			btnSubmitAI.addEventListener('click', async function () {
-				var apiKey = localStorage.getItem('tata_gemini_api_key');
-				var userPrompt = inpPrompt.value.trim();
+			btnSubmitAI.addEventListener('click', async () => {
+				const apiKey = localStorage.getItem('tata_gemini_api_key');
+				const userPrompt = inpPrompt.value.trim();
 
 				if (!userPrompt) return;
 
 				// Context Awareness: Inject existing code if available
-				var currentCode = document.getElementById('script_code').value.trim();
-				var finalPrompt = userPrompt;
+				const currentCode = document.getElementById('script_code').value.trim();
+				let finalPrompt = userPrompt;
 
 				if (currentCode.length > 0) {
-					finalPrompt = "My Current Code:\n```javascript\n" + currentCode + "\n```\n\n" +
-						"Request: " + userPrompt + "\n\n" +
-						"Please modify the code above to fulfill the request. Maintain the JSON return format.";
+					finalPrompt = `My Current Code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nRequest: ${userPrompt}\n\nPlease modify the code above to fulfill the request. Maintain the JSON return format.`;
 				}
 
 				// Start Loading
@@ -826,7 +824,7 @@
 				loadingIndicator.style.display = 'inline-block';
 
 				try {
-					var scriptData = await generateScriptWithGemini(apiKey, finalPrompt);
+					const scriptData = await generateScriptWithGemini(apiKey, finalPrompt);
 
 					// Success! Fill parent modal
 					document.getElementById('script_code').value = scriptData.code;
@@ -835,14 +833,14 @@
 					if (scriptData.name) {
 						document.getElementById('script_name').value = scriptData.name;
 					} else if (!document.getElementById('script_name').value) {
-						document.getElementById('script_name').value = "AI Script " + Math.floor(Math.random() * 1000);
+						document.getElementById('script_name').value = `AI Script ${Math.floor(Math.random() * 1000)}`;
 					}
 
 					// Close AI modal
 					aiModal.classList.remove('active');
 
 				} catch (e) {
-					alert("AI Error: " + e.message);
+					alert(`AI Error: ${e.message}`);
 				} finally {
 					btnSubmitAI.disabled = false;
 					loadingIndicator.style.display = 'none';
@@ -853,15 +851,15 @@
 		// ==================
 		// 4. Color Swatch Logic
 		// ==================
-		var swatches = document.querySelectorAll('.color-swatch');
-		swatches.forEach(function (swatch) {
+		const swatches = document.querySelectorAll('.color-swatch');
+		swatches.forEach(swatch => {
 			swatch.addEventListener('click', function () {
 				// Update UI
-				swatches.forEach(function (el) { el.classList.remove('selected'); });
+				swatches.forEach(el => { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Update Hidden Input
-				var color = this.dataset.color;
+				const color = this.dataset.color;
 				document.getElementById('script_color').value = color;
 			});
 		});
@@ -870,11 +868,11 @@
 		// ==================
 		// 5. Icon Grid Logic
 		// ==================
-		var icons = document.querySelectorAll('.icon-option');
-		icons.forEach(function (opt) {
+		const icons = document.querySelectorAll('.icon-option');
+		icons.forEach(opt => {
 			opt.addEventListener('click', function () {
 				// UI
-				icons.forEach(function (el) { el.classList.remove('selected'); });
+				icons.forEach(el => { el.classList.remove('selected'); });
 				this.classList.add('selected');
 
 				// Value
@@ -884,8 +882,8 @@
 	}
 
 	async function generateScriptWithGemini(apiKey, prompt) {
-		// ENHANCED SYSTEM PROMPT with Context and Examples
-		var systemPrompt = "You are an expert Adobe Illustrator JSX/ExtendScript developer for the Rocket Launcher extension.\n\n" +
+        // ENHANCED SYSTEM PROMPT with Context and Examples
+        let systemPrompt = "You are an expert Adobe Illustrator JSX/ExtendScript developer for the Rocket Launcher extension.\n\n" +
 			"===== EXTENSION ARCHITECTURE =====\n" +
 			"The extension has a centralized router system:\n" +
 			"- Main router: TATA.run(commandName, paramsObject)\n" +
@@ -945,11 +943,11 @@
 			"- Include ALL necessary checks and error handling\n" +
 			"- Use single quotes for strings (ExtendScript convention)\n";
 
-		// Workspace Context: scan the active Illustrator document
-		try {
-			var wsContext = await new Promise(function (resolve) {
+        // Workspace Context: scan the active Illustrator document
+        try {
+			const wsContext = await new Promise(resolve => {
 				if (TATA.host && TATA.host.run) {
-					TATA.host.run('getWorkspaceContext', undefined, function (result) {
+					TATA.host.run('getWorkspaceContext', undefined, result => {
 						resolve(result);
 					});
 				} else {
@@ -957,57 +955,54 @@
 				}
 			});
 			if (wsContext && wsContext !== "EvalScript error." && wsContext.indexOf('{') === 0) {
-				systemPrompt += "\n===== CURRENT WORKSPACE =====\n" + wsContext + "\n\n" +
-					"Use this workspace data to understand the current document structure.\n" +
-					"Reference actual object names, layers, and text content when generating code.\n\n";
+				systemPrompt += `\n===== CURRENT WORKSPACE =====\n${wsContext}\n\nUse this workspace data to understand the current document structure.\nReference actual object names, layers, and text content when generating code.\n\n`;
 			}
 		} catch (e) { /* workspace context is optional */ }
 
-		var payload = {
+        const payload = {
 			"contents": [{
 				"parts": [{
-					"text": systemPrompt + "\n\nUser Request: " + prompt
+					"text": `${systemPrompt}\n\nUser Request: ${prompt}`
 				}]
 			}]
 		};
 
-		// New Retry Logic - Dynamic & Robust
-		var modelsToTry = [];
+        // New Retry Logic - Dynamic & Robust
+        let modelsToTry = [];
 
-		// 1. User Preference (if set)
-		var userModel = localStorage.getItem('tata_ai_model');
-		if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
+        // 1. User Preference (if set)
+        const userModel = localStorage.getItem('tata_ai_model');
+        if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
 			// Add user model first if it's not one of the old defaults (unless they really want it)
 			// Actually just add it first regardless.
 			modelsToTry.push(userModel);
 		}
 
-		// 2. High-Tier Fallbacks (Pro)
-		modelsToTry.push('gemini-3.0-pro-latest');
-		modelsToTry.push('gemini-3-pro-preview'); // Preview
+        // 2. High-Tier Fallbacks (Pro)
+        modelsToTry.push('gemini-3.0-pro-latest');
+        modelsToTry.push('gemini-3-pro-preview'); // Preview
 
-		// 3. Efficiency Fallbacks (Flash)
-		modelsToTry.push('gemini-3.0-flash-latest');
-		modelsToTry.push('gemini-2.0-flash'); // Reliable fallback
-		modelsToTry.push('gemini-2.5-flash');
+        // 3. Efficiency Fallbacks (Flash)
+        modelsToTry.push('gemini-3.0-flash-latest');
+        modelsToTry.push('gemini-2.0-flash'); // Reliable fallback
+        modelsToTry.push('gemini-2.5-flash');
 
-		// Deduplicate
-		modelsToTry = modelsToTry.filter(function (item, pos) {
+        // Deduplicate
+        modelsToTry = modelsToTry.filter((item, pos) => {
 			return modelsToTry.indexOf(item) == pos;
 		});
 
-		var lastError = null;
-		var responseData = null;
-		var usedModel = "";
+        let lastError = null;
+        let responseData = null;
+        let usedModel = "";
 
-		for (var i = 0; i < modelsToTry.length; i++) {
-			var modelName = modelsToTry[i];
-			var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+        for (const modelName of modelsToTry) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-			console.log("[TATA] Trying Gemini Model: " + modelName);
+            console.log(`[TATA] Trying Gemini Model: ${modelName}`);
 
-			try {
-				var response = await TATA.fetchWithTimeout(url, {
+            try {
+				const response = await TATA.fetchWithTimeout(url, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(payload)
@@ -1016,44 +1011,44 @@
 				if (response.ok) {
 					responseData = await response.json();
 					usedModel = modelName;
-					console.log("[TATA] Success with model: " + modelName);
+					console.log(`[TATA] Success with model: ${modelName}`);
 
 					// Update UI with used model name
-					var modelBadge = document.getElementById('ai_model_name');
+					const modelBadge = document.getElementById('ai_model_name');
 					if (modelBadge) {
-						modelBadge.textContent = "(" + modelName + ")";
+						modelBadge.textContent = `(${modelName})`;
 					}
 
 					break; // Success!
 				} else {
-					var errText = await response.text();
-					lastError = "HTTP " + response.status + " (" + modelName + ")";
+					const errText = await response.text();
+					lastError = `HTTP ${response.status} (${modelName})`;
 				}
 			} catch (e) {
 				lastError = e.message;
 			}
+        }
+
+        if (!responseData) {
+			throw new Error(`All Gemini models failed. Last error: ${lastError}`);
 		}
 
-		if (!responseData) {
-			throw new Error("All Gemini models failed. Last error: " + lastError);
-		}
-
-		// Use data directly
-		var data = responseData;
-		if (!data.candidates || !data.candidates[0] || !data.candidates[0].content ||
+        // Use data directly
+        const data = responseData;
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content ||
 			!data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-			throw new Error("Invalid response structure from " + usedModel);
+			throw new Error(`Invalid response structure from ${usedModel}`);
 		}
 
-		var text = data.candidates[0].content.parts[0].text;
+        const text = data.candidates[0].content.parts[0].text;
 
-		// Parse Tag-Based Format
-		var nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
-		var codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
+        // Parse Tag-Based Format
+        const nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
+        const codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
 
-		if (codeMatch) {
-			var nameStr = nameMatch ? nameMatch[1].trim() : ("AI Script " + Math.floor(Math.random() * 100));
-			var codeStr = codeMatch[1].trim();
+        if (codeMatch) {
+			const nameStr = nameMatch ? nameMatch[1].trim() : (`AI Script ${Math.floor(Math.random() * 100)}`);
+			let codeStr = codeMatch[1].trim();
 
 			// Clean up markdown blocks if any persist inside the [CODE] block
 			codeStr = codeStr.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
@@ -1062,12 +1057,10 @@
 		} else {
 			// Fallback: If no tags found, assume whole text is code (risky but better than crashing)
 			// Or try to strip markdown
-			var raw = text.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
-			return { name: "AI Script " + Math.floor(Math.random() * 100), code: raw };
+			const raw = text.replace(/^```javascript\n/, '').replace(/^```\n/, '').replace(/```$/, '');
+			return { name: `AI Script ${Math.floor(Math.random() * 100)}`, code: raw };
 		}
-
-
-	}
+    }
 
 	/**
 	 * Test a generated script in a safe environment (dry run)
@@ -1075,12 +1068,12 @@
 
 
 	function openEditScriptModal(id) {
-		var scripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
-		var script = scripts[id];
+		const scripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
+		const script = scripts[id];
 		if (!script) return;
 
-		var modal = document.getElementById('script_modal');
-		var btnSave = document.getElementById('btn_save_script');
+		const modal = document.getElementById('script_modal');
+		const btnSave = document.getElementById('btn_save_script');
 
 		// Fill Data
 		document.getElementById('script_name').value = script.name;
@@ -1089,10 +1082,10 @@
 		document.getElementById('script_color').value = script.color;
 
 		// UI Updates (Icon Selection)
-		document.querySelectorAll('.icon-option').forEach(function (el) { el.classList.remove('selected'); });
+		document.querySelectorAll('.icon-option').forEach(el => { el.classList.remove('selected'); });
 		// Try to find matching icon
-		var found = false;
-		document.querySelectorAll('.icon-option').forEach(function (el) {
+		let found = false;
+		document.querySelectorAll('.icon-option').forEach(el => {
 			if (el.innerHTML === script.icon) {
 				el.classList.add('selected');
 				found = true;
@@ -1100,8 +1093,8 @@
 		});
 
 		// UI Updates (Color Selection)
-		document.querySelectorAll('.color-swatch').forEach(function (el) { el.classList.remove('selected'); });
-		var colorEl = document.querySelector('.color-swatch[data-color="' + script.color + '"]');
+		document.querySelectorAll('.color-swatch').forEach(el => { el.classList.remove('selected'); });
+		const colorEl = document.querySelector(`.color-swatch[data-color="${script.color}"]`);
 		if (colorEl) colorEl.classList.add('selected');
 
 		// Set Mode
@@ -1123,16 +1116,16 @@
 	// ===========================================
 	// ===========================================
 
-	var deleteUserScript = TATA.deleteUserScript;
+	const deleteUserScript = TATA.deleteUserScript;
 
 
 
 	// ===========================================
 	// GLOBAL COLLAPSIBLE SECTION LOGIC
 	// ===========================================
-	document.addEventListener('click', function (e) {
+	document.addEventListener('click', e => {
 		// Identify Header
-		var header = e.target.closest('.section-header');
+		const header = e.target.closest('.section-header');
 		if (!header) return;
 
 		// Ignore if clicking buttons/inputs inside header (like the random button)
@@ -1140,7 +1133,7 @@
 		if (e.target.tagName === 'INPUT') return;
 
 		// Toggle Class
-		var card = header.closest('.section-card');
+		const card = header.closest('.section-card');
 		if (card) {
 			card.classList.toggle('collapsed');
 		}
@@ -1156,39 +1149,39 @@
 
 	// Bind to grid.js module directly
 	Object.defineProperty(window, 'v2Layout', {
-		get: function () { return TATA.v2Layout; },
-		set: function (val) { TATA.v2Layout = val; }
+		get() { return TATA.v2Layout; },
+		set(val) { TATA.v2Layout = val; }
 	});
 
-	var ICONS = TATA.ICONS || {};
-	var v2Defaults = TATA.v2Defaults || {};
+	const ICONS = TATA.ICONS || {};
+	const v2Defaults = TATA.v2Defaults || {};
 	var renderGrid = TATA.renderGrid;
-	var createGridButton = TATA.createGridButton;
-	var setupGridDrag = TATA.setupGridDrag;
-	var getItemDataFromElement = TATA.getItemDataFromElement;
+	const createGridButton = TATA.createGridButton;
+	const setupGridDrag = TATA.setupGridDrag;
+	const getItemDataFromElement = TATA.getItemDataFromElement;
 	var saveV2Layout = TATA.saveV2Layout;
 
 	function setupTabsV2() {
-		var tabs = document.querySelectorAll('.tab-btn');
-		tabs.forEach(function (tab) {
+		const tabs = document.querySelectorAll('.tab-btn');
+		tabs.forEach(tab => {
 			tab.addEventListener('click', function () {
-				document.querySelectorAll('.tab-btn').forEach(function (t) { t.classList.remove('active'); });
-				document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+				document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('active'); });
+				document.querySelectorAll('.tab-content').forEach(c => { c.classList.remove('active'); });
 
 				this.classList.add('active');
-				var targetId = this.dataset.tab;
-				var target = document.getElementById(targetId);
+				const targetId = this.dataset.tab;
+				const target = document.getElementById(targetId);
 				if (target) target.classList.add('active');
 
 				// Show tab-actions only on Button tab
-				var tabActions = document.querySelector('.tab-actions');
+				const tabActions = document.querySelector('.tab-actions');
 				if (tabActions) {
 					tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
 				}
 
 				// Refresh CodeMirror when switching to Editor tab
 				if (targetId === 'tab_editor' && window.cmEditor) {
-					setTimeout(function () { window.cmEditor.refresh(); }, 50);
+					setTimeout(() => { window.cmEditor.refresh(); }, 50);
 				}
 			});
 
@@ -1197,8 +1190,8 @@
 				e.preventDefault();
 				this.click();
 			});
-			tab.addEventListener('dragover', function (e) { e.preventDefault(); });
-			tab.addEventListener('drop', function (e) { e.preventDefault(); });
+			tab.addEventListener('dragover', e => { e.preventDefault(); });
+			tab.addEventListener('drop', e => { e.preventDefault(); });
 		});
 	}
 

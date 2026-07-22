@@ -1,11 +1,11 @@
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
 
-    var csInterface = null; // Lazy init
-    var extensionPath = '';
-    var currentScriptId = 'default_script';
+    let csInterface = null; // Lazy init
+    let extensionPath = '';
+    let currentScriptId = 'default_script';
 
     function getCS() {
         if (!csInterface) {
@@ -17,7 +17,7 @@
 
     // ==================== ICONS ====================
     // Expanded icon library (60+ icons)
-    var ICONS = {
+    const ICONS = {
         // Emoji Icons
         star: '★', play: '▶', bolt: '⚡', gear: '⚙️', check: '✅', heart: '❤️', fire: '🔥', gem: '💎',
 
@@ -89,7 +89,7 @@
         console.log("Rocket Launcher Scripting: Init started");
 
         // Load default script if empty
-        var editor = document.getElementById('code_editor');
+        const editor = document.getElementById('code_editor');
         if (editor && editor.value.trim() === "// Your code will appear here...") {
             editor.value = "// Example: \n// var doc = app.activeDocument;\nalert('Hello world');";
         }
@@ -107,16 +107,16 @@
         updateEditorStatus('new');
 
         // Request Settings from Main Panel (only when standalone)
-        var cs = getCS();
+        const cs = getCS();
         try {
-            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            const req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
             cs.dispatchEvent(req);
         } catch (e) { }
 
         // Load API Key Check
-        var apiKey = localStorage.getItem('tata_gemini_api_key');
+        const apiKey = localStorage.getItem('tata_gemini_api_key');
         if (!apiKey) {
-            var keySection = document.getElementById('api_key_section');
+            const keySection = document.getElementById('api_key_section');
             if (keySection) keySection.style.display = 'flex';
             addChatBubble("ai", "⚠️ กรุณากรอก <b>Gemini API Key</b> ในช่องด้านบนก่อนใช้งาน");
         }
@@ -126,28 +126,28 @@
 
     function initListeners() {
         // Send Prompt
-        var btnSend = document.getElementById('btn_send_prompt');
+        const btnSend = document.getElementById('btn_send_prompt');
         if (btnSend) btnSend.addEventListener('click', handleSendPrompt);
 
         // Test Run
-        var btnTest = document.getElementById('btn_test');
+        const btnTest = document.getElementById('btn_test');
         if (btnTest) btnTest.addEventListener('click', handleTestRun);
 
         // Import
-        var btnImport = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
+        const btnImport = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
         if (btnImport) btnImport.addEventListener('click', handleImport);
 
         // Clear Chat
-        var btnClear = document.getElementById('btn_clear_chat');
+        const btnClear = document.getElementById('btn_clear_chat');
         if (btnClear) btnClear.addEventListener('click', handleClearChat);
 
         // V3: Copy Last Code Button (Global) - OPTIONAL/REMOVED in V4.1
-        var btnCopy = document.getElementById('btn_copy_code');
+        const btnCopy = document.getElementById('btn_copy_code');
         if (btnCopy) {
-            btnCopy.addEventListener('click', function () {
-                var code = getEditorCode();
+            btnCopy.addEventListener('click', () => {
+                const code = getEditorCode();
                 if (code && code.trim()) {
-                    navigator.clipboard.writeText(code).then(function () {
+                    navigator.clipboard.writeText(code).then(() => {
                         showToast("Code copied!");
                     });
                 }
@@ -155,30 +155,30 @@
         }
 
         // Edit Mode Listener
-        var cs = getCS();
+        const cs = getCS();
         cs.addEventListener("com.tata.pro.editScript", handleEditScriptEvent);
 
         // Settings Listener
-        cs.addEventListener("com.tata.pro.settingsData", function (event) {
-            var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+        cs.addEventListener("com.tata.pro.settingsData", event => {
+            const data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
             if (data.apiKey) {
                 localStorage.setItem('tata_gemini_api_key', data.apiKey);
                 // ซ่อน inline input เมื่อได้รับ key แล้ว
-                var keySection = document.getElementById('api_key_section');
+                const keySection = document.getElementById('api_key_section');
                 if (keySection) keySection.style.display = 'none';
             }
         });
 
         // Upload to Server
-        var btnUpload = document.getElementById('btn_upload_server');
+        const btnUpload = document.getElementById('btn_upload_server');
         if (btnUpload) btnUpload.addEventListener('click', handleUploadToServer);
 
         // Save API Key button (embedded in main panel)
-        var btnSaveKey = document.getElementById('btn_save_api_key');
+        const btnSaveKey = document.getElementById('btn_save_api_key');
         if (btnSaveKey) btnSaveKey.addEventListener('click', window.saveInlineApiKey);
 
         // Keyboard Shortcuts
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', e => {
             // Ctrl+Enter or Cmd+Enter = Run Script
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
@@ -188,34 +188,34 @@
             // Ctrl+S or Cmd+S = Save to Library
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                var btnSave = document.getElementById('btn_save');
+                const btnSave = document.getElementById('btn_save');
                 if (btnSave) btnSave.click();
                 showToast('💾 Saving... (Ctrl+S)');
             }
             // Escape = Close modals
             if (e.key === 'Escape') {
-                var modals = document.querySelectorAll('.modal.active, .modal-overlay.active');
-                modals.forEach(function (m) { m.classList.remove('active'); });
+                const modals = document.querySelectorAll('.modal.active, .modal-overlay.active');
+                modals.forEach(m => { m.classList.remove('active'); });
             }
         });
     }
 
     // ==================== SUPABASE CONFIG (optional: only for upload to server) ====================
-    var SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || '';
-    var SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || '';
+    const SUPABASE_URL = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_URL) || '';
+    const SUPABASE_KEY = (window.TATA_CONFIG && window.TATA_CONFIG.SUPABASE_KEY) || '';
 
     function handleUploadToServer() {
         if (!SUPABASE_URL || !SUPABASE_KEY) {
             showToast('Server upload not configured.');
             return;
         }
-        var nameInput = document.getElementById('script_name_input');
-        var iconInput = document.getElementById('icon_value');
-        var colorTrigger = document.getElementById('color_trigger');
+        const nameInput = document.getElementById('script_name_input');
+        const iconInput = document.getElementById('icon_value');
+        const colorTrigger = document.getElementById('color_trigger');
 
-        var name = nameInput ? nameInput.value.trim() : '';
-        var code = getEditorCode();
-        var icon = iconInput ? iconInput.value : '★';
+        const name = nameInput ? nameInput.value.trim() : '';
+        const code = getEditorCode();
+        const icon = iconInput ? iconInput.value : '★';
 
         // Validation
         if (!name) {
@@ -228,59 +228,59 @@
         }
 
         // Determine category based on color
-        var color = colorTrigger ? colorTrigger.style.background : '#3b82f6';
-        var category = 'tools';
+        const color = colorTrigger ? colorTrigger.style.background : '#3b82f6';
+        let category = 'tools';
         if (color.includes('ef4444') || color.includes('239, 68, 68')) category = 'swift';
         else if (color.includes('f59e0b') || color.includes('245, 158, 11')) category = 'creative';
         else if (color.includes('8b5cf6') || color.includes('139, 92, 246')) category = 'tools';
 
-        var data = {
-            name: name,
+        const data = {
+            name,
             description: name,
-            code: code,
-            icon: icon,
-            category: category,
+            code,
+            icon,
+            category,
             author_name: 'Anonymous',
             votes: 0,
             downloads: 0
         };
 
         // Show loading
-        var btn = document.getElementById('btn_upload_server');
+        const btn = document.getElementById('btn_upload_server');
         btn.style.opacity = '0.5';
         btn.style.pointerEvents = 'none';
 
-        fetch(SUPABASE_URL + '/rest/v1/scripts', {
+        fetch(`${SUPABASE_URL}/rest/v1/scripts`, {
             method: 'POST',
             headers: {
                 'apikey': SUPABASE_KEY,
-                'Authorization': 'Bearer ' + SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
                 'Content-Type': 'application/json',
                 'Prefer': 'return=representation'
             },
             body: JSON.stringify(data)
         })
-            .then(function (res) {
+            .then(res => {
                 if (!res.ok) throw new Error('Upload failed');
                 return res.json();
             })
-            .then(function () {
+            .then(() => {
                 showToast('🎉 Script uploaded to Explore!');
             })
-            .catch(function (err) {
-                showToast('❌ Upload failed: ' + err.message);
+            .catch(err => {
+                showToast(`❌ Upload failed: ${err.message}`);
             })
-            .finally(function () {
+            .finally(() => {
                 btn.style.opacity = '1';
                 btn.style.pointerEvents = 'auto';
             });
     }
 
     function initTabs() {
-        var tabs = document.querySelectorAll('.tab-btn');
+        const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(t => {
             t.addEventListener('click', function () {
-                var targetId = this.dataset.tab;
+                const targetId = this.dataset.tab;
                 activateTab(targetId);
             });
         });
@@ -296,33 +296,33 @@
     }
 
     function initIconPicker() {
-        var grid = document.getElementById('icon_grid_popover');
-        var trigger = document.getElementById('icon_trigger');
-        var input = document.getElementById('icon_value');
+        const grid = document.getElementById('icon_grid_popover');
+        const trigger = document.getElementById('icon_trigger');
+        const input = document.getElementById('icon_value');
 
         if (!grid || !trigger || !input) return;
 
-        trigger.onclick = function (e) {
+        trigger.onclick = e => {
             e.stopPropagation();
             grid.style.display = (grid.style.display === 'block') ? 'none' : 'grid';
         };
-        document.addEventListener('click', function () { grid.style.display = 'none'; });
-        grid.onclick = function (e) { e.stopPropagation(); };
+        document.addEventListener('click', () => { grid.style.display = 'none'; });
+        grid.onclick = e => { e.stopPropagation(); };
 
         Object.keys(ICONS).forEach(key => {
-            var btn = document.createElement('div');
+            const btn = document.createElement('div');
             btn.innerHTML = ICONS[key];
             btn.style.cssText = "width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid transparent; border-radius: 4px; color: #ccc;";
             btn.onmouseover = function () { this.style.background = '#444'; };
             btn.onmouseout = function () { this.style.background = 'transparent'; };
 
-            var svg = btn.querySelector('svg');
+            const svg = btn.querySelector('svg');
             if (svg) { svg.setAttribute('width', '20'); svg.setAttribute('height', '20'); }
 
-            btn.onclick = function () {
+            btn.onclick = () => {
                 input.value = ICONS[key];
                 trigger.innerHTML = ICONS[key];
-                var tSvg = trigger.querySelector('svg');
+                const tSvg = trigger.querySelector('svg');
                 if (tSvg) { tSvg.setAttribute('width', '18'); tSvg.setAttribute('height', '18'); }
                 grid.style.display = 'none';
             };
@@ -331,7 +331,7 @@
     }
 
     // ==================== V4 CUSTOM COLOR PICKER ====================
-    var PRESET_COLORS = [
+    const PRESET_COLORS = [
         'transparent', // No Color option
         '#3b82f6', '#8b5cf6', '#ef4444', '#f97316',
         '#eab308', '#10b981', '#14b8a6', '#06b6d4',
@@ -339,18 +339,18 @@
     ];
 
     function initColorPicker() {
-        var trigger = document.getElementById('color_trigger');
-        var modal = document.getElementById('color_picker_modal');
-        var backdrop = document.getElementById('color_backdrop');
-        var grid = document.getElementById('color_grid');
-        var input = document.getElementById('color_hex_input');
-        var preview = document.getElementById('color_preview');
+        const trigger = document.getElementById('color_trigger');
+        const modal = document.getElementById('color_picker_modal');
+        const backdrop = document.getElementById('color_backdrop');
+        const grid = document.getElementById('color_grid');
+        const input = document.getElementById('color_hex_input');
+        const preview = document.getElementById('color_preview');
 
         if (!trigger || !modal) return;
 
         // Render Grid
         PRESET_COLORS.forEach(color => {
-            var swatch = document.createElement('div');
+            const swatch = document.createElement('div');
 
             // Special styling for transparent "No Color" option
             if (color === 'transparent') {
@@ -359,12 +359,12 @@
                 swatch.innerHTML = '<div style="position:absolute; top:50%; left:-20%; width:140%; height:2px; background:rgba(255,255,255,0.6); transform:rotate(-25deg); transform-origin:center;"></div>';
                 swatch.title = "No Color";
             } else {
-                swatch.style.cssText = 'width: 100%; height: 30px; background: ' + color + '; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;';
+                swatch.style.cssText = `width: 100%; height: 30px; background: ${color}; border-radius: 4px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.1s;`;
             }
 
             swatch.onmouseover = function () { this.style.transform = 'scale(1.1)'; };
             swatch.onmouseout = function () { this.style.transform = 'scale(1)'; };
-            swatch.onclick = function () {
+            swatch.onclick = () => {
                 setColor(color);
                 closeModal();
             };
@@ -393,7 +393,7 @@
         backdrop.onclick = closeModal;
 
         input.addEventListener('input', function () {
-            var val = this.value;
+            const val = this.value;
             if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
                 preview.style.background = val;
                 trigger.style.background = val;
@@ -405,12 +405,12 @@
 
     // ==================== V4 EDITOR STATUS ====================
     function updateEditorStatus(mode, name) {
-        var el = document.getElementById('editor_status');
-        var dot = document.getElementById('editor_status_dot');
+        const el = document.getElementById('editor_status');
+        const dot = document.getElementById('editor_status_dot');
         if (!el) return;
 
         if (mode === 'edit') {
-            el.innerHTML = "Editing: <span style='color: #fff; font-weight: 600;'>" + (name || 'Unknown') + "</span>";
+            el.innerHTML = `Editing: <span style='color: #fff; font-weight: 600;'>${name || 'Unknown'}</span>`;
             el.style.color = "#f97316";
             if (dot) dot.classList.add('editing');
 
@@ -437,7 +437,7 @@
     // ==================== HANDLERS ====================
 
     function handleEditScriptEvent(event) {
-        var data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+        const data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
 
         if (data.id) currentScriptId = data.id;
 
@@ -454,13 +454,13 @@
         }
 
         if (data.icon) {
-            var input = document.getElementById('icon_value');
+            const input = document.getElementById('icon_value');
             if (input) input.value = data.icon;
 
-            var trigger = document.getElementById('icon_trigger');
+            const trigger = document.getElementById('icon_trigger');
             if (trigger) {
                 trigger.innerHTML = data.icon;
-                var svg = trigger.querySelector('svg');
+                const svg = trigger.querySelector('svg');
                 if (svg) { svg.setAttribute('width', '18'); svg.setAttribute('height', '18'); }
             }
         }
@@ -469,30 +469,30 @@
         updateEditorStatus('edit', (data.label || data.name || "Script"));
 
         activateTab('tab_editor');
-        showToast("Edit Mode: " + (data.label || data.name || "Script"));
+        showToast(`Edit Mode: ${data.label || data.name || "Script"}`);
         addChatBubble("ai", "ℹ️ <b>Edit Mode Started</b><br>Code loaded.");
     }
 
     async function handleSendPrompt() {
 
-        var txtPrompt = document.getElementById('prompt_input');
-        var userText = txtPrompt.value.trim();
+        const txtPrompt = document.getElementById('prompt_input');
+        const userText = txtPrompt.value.trim();
         if (!userText) return;
 
-        var apiKey = localStorage.getItem('tata_gemini_api_key');
+        let apiKey = localStorage.getItem('tata_gemini_api_key');
 
         // ถ้าไม่มี key ใน local → ลอง re-request จาก Main Panel
         if (!apiKey) {
-            var req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
+            const req = new CSEvent("com.tata.pro.requestSettings", "APPLICATION");
             getCS().dispatchEvent(req);
             // รอรับ event กลับ 500ms
-            await new Promise(function (resolve) { setTimeout(resolve, 500); });
+            await new Promise(resolve => { setTimeout(resolve, 500); });
             apiKey = localStorage.getItem('tata_gemini_api_key');
         }
 
         // ถ้ายังไม่มี → ลองดึงจาก inline input (ถ้ามี)
         if (!apiKey) {
-            var inlineInput = document.getElementById('api_key_inline_input');
+            const inlineInput = document.getElementById('api_key_inline_input');
             if (inlineInput && inlineInput.value.trim()) {
                 apiKey = inlineInput.value.trim();
                 localStorage.setItem('tata_gemini_api_key', apiKey);
@@ -502,7 +502,7 @@
         if (!apiKey) {
             addChatBubble("ai", "⚠️ <b>ไม่พบ API Key</b><br>กรอก Gemini API Key ในช่องด้านบน หรือตั้งค่าในหน้า Main Panel");
             // แสดง inline input
-            var keySection = document.getElementById('api_key_section');
+            const keySection = document.getElementById('api_key_section');
             if (keySection) keySection.style.display = 'flex';
             return;
         }
@@ -512,24 +512,24 @@
         // Start thinking animation
         var promptBox = document.querySelector('.prompt-box');
         if (promptBox) promptBox.classList.add('thinking');
-        var loadingId = addChatBubble("ai", "<span class='loading-dots' data-text='Thinking...'>Thinking...</span>");
+        const loadingId = addChatBubble("ai", "<span class='loading-dots' data-text='Thinking...'>Thinking...</span>");
 
         try {
             // V3: Use getEditorCode for CodeMirror
-            var currentCode = getEditorCode();
-            var prompt = userText;
-            if (currentCode.length > 50 && currentCode.indexOf('// Your code') === -1) {
-                prompt = "Current Code:\n```javascript\n" + currentCode + "\n```\n\nTask: " + userText + "\n\nModify code. Return full code.";
+            const currentCode = getEditorCode();
+            let prompt = userText;
+            if (currentCode.length > 50 && !currentCode.includes('// Your code')) {
+                prompt = `Current Code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nTask: ${userText}\n\nModify code. Return full code.`;
             }
 
             // V3: Get AI model from Settings (localStorage) or default
-            var selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+            const selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
 
             // Workspace Context: scan active Illustrator document
             try {
-                var wsContext = await new Promise(function (resolve) {
+                const wsContext = await new Promise(resolve => {
                     if (TATA.host && TATA.host.run) {
-                        TATA.host.run('getWorkspaceContext', undefined, function (result) {
+                        TATA.host.run('getWorkspaceContext', undefined, result => {
                             resolve(result);
                         });
                     } else {
@@ -537,17 +537,13 @@
                     }
                 });
                 if (wsContext && wsContext !== "EvalScript error." && wsContext.indexOf('{') === 0) {
-                    prompt = "===== CURRENT WORKSPACE =====\n" + wsContext + "\n\n" +
-                        "Use this workspace data to understand the document.\n" +
-                        "Reference actual layers, objects, selection, and text from the data above.\n" +
-                        "If the user mentions objects, check the selection and layer data.\n\n" +
-                        "User Request: " + prompt;
+                    prompt = `===== CURRENT WORKSPACE =====\n${wsContext}\n\nUse this workspace data to understand the document.\nReference actual layers, objects, selection, and text from the data above.\nIf the user mentions objects, check the selection and layer data.\n\nUser Request: ${prompt}`;
                 }
             } catch (wsErr) { /* workspace context is optional */ }
 
-            var result = await callAI(apiKey, prompt, selectedModel);
+            const result = await callAI(apiKey, prompt, selectedModel);
 
-            var loadingBubble = document.getElementById(loadingId);
+            const loadingBubble = document.getElementById(loadingId);
             if (loadingBubble) loadingBubble.remove();
 
             if (result.message) addChatBubble("ai", result.message);
@@ -559,23 +555,23 @@
                 showToast("Code Generated!");
 
                 // Save to Recent Code
-                var recentName = result.name || document.getElementById('script_name_input').value || 'AI Script';
+                const recentName = result.name || document.getElementById('script_name_input').value || 'AI Script';
                 saveRecentCode(recentName, result.code);
 
                 if (!currentScriptId) {
-                    currentScriptId = 'ai_script_' + Date.now();
+                    currentScriptId = `ai_script_${Date.now()}`;
                 }
             }
             if (result.name) {
                 document.getElementById('script_name_input').value = result.name;
                 // Also update currentScriptId based on name if needed
                 if (result.name && !currentScriptId.includes(result.name.replace(/\s+/g, '_').toLowerCase())) {
-                    currentScriptId = result.name.replace(/\s+/g, '_').toLowerCase() + '_' + Date.now();
+                    currentScriptId = `${result.name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
                 }
             }
         } catch (e) {
-            var lb = document.getElementById(loadingId);
-            if (lb) lb.innerText = "Error: " + e.message;
+            const lb = document.getElementById(loadingId);
+            if (lb) lb.innerText = `Error: ${e.message}`;
         } finally {
             // Stop thinking animation
             var promptBox = document.querySelector('.prompt-box');
@@ -584,40 +580,40 @@
     }
 
     // V3: Track auto-fix attempts
-    var autoFixAttempts = 0;
-    var MAX_AUTO_FIX = 2;
+    let autoFixAttempts = 0;
+    const MAX_AUTO_FIX = 2;
 
     function handleTestRun() {
-        var code = getEditorCode();
+        const code = getEditorCode();
         // V3: Removed auto-save on TestRun - now only saves when AI creates/modifies code
         runCodeWithAutoFix(code, 0);
     }
 
     function runCodeWithAutoFix(code, attempt) {
-        TATA.host.evalCode(code, async function (res) {
+        TATA.host.evalCode(code, async res => {
             if (res && res !== 'undefined') {
-                if (/Error|Exception|ReferenceError|SyntaxError/.test(res) || res.indexOf('Line:') !== -1) {
+                if (/Error|Exception|ReferenceError|SyntaxError/.test(res) || res.includes('Line:')) {
                     // Error detected
                     if (attempt < MAX_AUTO_FIX) {
                         // Try to auto-fix
-                        showToast("🔧 Auto-fixing... (Attempt " + (attempt + 1) + "/" + MAX_AUTO_FIX + ")");
-                        addChatBubble("ai", "🔧 <b>Auto-fixing error...</b> (Attempt " + (attempt + 1) + ")");
+                        showToast(`🔧 Auto-fixing... (Attempt ${attempt + 1}/${MAX_AUTO_FIX})`);
+                        addChatBubble("ai", `🔧 <b>Auto-fixing error...</b> (Attempt ${attempt + 1})`);
 
                         try {
-                            var apiKey = localStorage.getItem('tata_gemini_api_key');
+                            const apiKey = localStorage.getItem('tata_gemini_api_key');
                             if (!apiKey) {
                                 throw new Error("No API key");
                             }
 
-                            var fixPrompt = "Fix this Adobe Illustrator JSX code error:\n\nError: " + res + "\n\nCode:\n```javascript\n" + code + "\n```\n\nFix the error and return the corrected code.";
-                            var selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
-                            var result = await callAI(apiKey, fixPrompt, selectedModel);
+                            const fixPrompt = `Fix this Adobe Illustrator JSX code error:\n\nError: ${res}\n\nCode:\n\`\`\`javascript\n${code}\n\`\`\`\n\nFix the error and return the corrected code.`;
+                            const selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+                            const result = await callAI(apiKey, fixPrompt, selectedModel);
 
                             if (result.code) {
                                 setEditorCode(result.code);
                                 addChatBubble("ai", "✅ Code fixed! Retrying...");
                                 // Retry with fixed code
-                                setTimeout(function () {
+                                setTimeout(() => {
                                     runCodeWithAutoFix(result.code, attempt + 1);
                                 }, 500);
                             } else {
@@ -632,7 +628,7 @@
                         showErrorToUser(res);
                     }
                 } else {
-                    addChatBubble("ai", "Result: " + res);
+                    addChatBubble("ai", `Result: ${res}`);
                     showToast("✅ Script ran successfully!");
                     autoFixAttempts = 0; // Reset counter on success
                 }
@@ -644,21 +640,21 @@
     }
 
     function showErrorToUser(errorMsg) {
-        addChatBubble("ai", "⚠️ <b>Error (after " + MAX_AUTO_FIX + " auto-fix attempts):</b><br><span style='color:#ff6b6b'>" + errorMsg + "</span>");
+        addChatBubble("ai", `⚠️ <b>Error (after ${MAX_AUTO_FIX} auto-fix attempts):</b><br><span style='color:#ff6b6b'>${errorMsg}</span>`);
         showToast("❌ Script Error! Auto-fix failed.");
         activateTab('tab_ai');
     }
 
     function handleImport() {
-        var scriptCode = getEditorCode();
+        const scriptCode = getEditorCode();
         if (!scriptCode || !scriptCode.trim()) {
             showToast("No code to import!", "error");
             return;
         }
 
-        var scriptName = document.getElementById('script_name_input').value || "New Script";
-        var scriptIcon = document.getElementById('icon_value').value || "★";
-        var scriptColor = document.getElementById('color_hex_input').value || "#3b82f6";
+        const scriptName = document.getElementById('script_name_input').value || "New Script";
+        const scriptIcon = document.getElementById('icon_value').value || "★";
+        const scriptColor = document.getElementById('color_hex_input').value || "#3b82f6";
 
         // Import directly into Button tab (since we're in main panel now)
         if (typeof TATA.saveUserScript === 'function') {
@@ -666,32 +662,32 @@
             showToast("Imported to Button tab!", "success");
         } else {
             // Fallback: dispatch event for external scripting panel
-            var data = {
-                id: currentScriptId || ('ai_script_' + Date.now()),
+            const data = {
+                id: currentScriptId || (`ai_script_${Date.now()}`),
                 name: scriptName,
                 icon: scriptIcon,
                 code: scriptCode,
                 color: scriptColor
             };
-            var event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
+            const event = new CSEvent("com.tata.pro.importScript", "APPLICATION");
             event.data = JSON.stringify(data);
             getCS().dispatchEvent(event);
         }
 
         // Switch to Button tab so user can see the new button
-        setTimeout(function () {
+        setTimeout(() => {
             activateTab('tab_button');
         }, 150);
 
         // UI Feedback on Import button
-        var btn = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
+        const btn = document.getElementById('btn_editor_import') || document.getElementById('btn_import');
         if (btn) {
-            var spanEl = btn.querySelector('span');
-            var original = spanEl ? spanEl.textContent : btn.innerText;
+            const spanEl = btn.querySelector('span');
+            const original = spanEl ? spanEl.textContent : btn.innerText;
             if (spanEl) spanEl.textContent = "Imported!";
             else btn.innerText = "Imported!";
             btn.style.opacity = '0.6';
-            setTimeout(function () {
+            setTimeout(() => {
                 if (spanEl) spanEl.textContent = original;
                 else btn.innerText = original;
                 btn.style.opacity = '1';
@@ -700,7 +696,7 @@
     }
 
     function handleClearChat() {
-        var container = document.getElementById('chat_history');
+        const container = document.getElementById('chat_history');
         if (!container) return;
         container.innerHTML = ''; // Fully Clear
         // Reset Logic
@@ -712,16 +708,16 @@
 
     // V3: Multi-Model AI Call
     async function callAI(apiKey, prompt, model) {
-        var systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"name\": \"Short Script Name (2-4 words)\", \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
+        const systemPrompt = "You are an Adobe Illustrator JSX expert. Return JSON: { \"name\": \"Short Script Name (2-4 words)\", \"message\": \"...\", \"code\": \"...\" }. Use ES3 JS only.";
 
         if (model.startsWith('gemini')) {
             // Gemini API - auto discover working model (updated Jan 2026)
             // Note: Gemini 1.5 was retired April 2025, use 2.0/2.5/3.0 models
             // Gemini API - FORCE GEMINI 3.0 ONLY (User Request)
-            var modelsToTry = [];
+            let modelsToTry = [];
 
             // 1. User Preference (if set in Settings)
-            var userModel = localStorage.getItem('tata_ai_model');
+            const userModel = localStorage.getItem('tata_ai_model');
             if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
                 modelsToTry.push(userModel);
             }
@@ -735,50 +731,49 @@
             modelsToTry.push('gemini-2.0-flash');
 
             // Deduplicate
-            modelsToTry = modelsToTry.filter(function (item, pos) {
+            modelsToTry = modelsToTry.filter((item, pos) => {
                 return modelsToTry.indexOf(item) == pos;
             });
-            var lastError = null;
+            let lastError = null;
 
-            for (var i = 0; i < modelsToTry.length; i++) {
-                var modelName = modelsToTry[i];
-                var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
-                var payload = { "contents": [{ "parts": [{ "text": systemPrompt + "\n\n" + prompt }] }] };
+            for (const modelName of modelsToTry) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                const payload = { "contents": [{ "parts": [{ "text": `${systemPrompt}\n\n${prompt}` }] }] };
 
                 try {
-                    var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (response.ok) {
-                        var data = await response.json();
-                        var text = data.candidates[0].content.parts[0].text;
+                        const data = await response.json();
+                        let text = data.candidates[0].content.parts[0].text;
                         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                        console.log('[RocketLauncher] Using Gemini model: ' + modelName);
+                        console.log(`[RocketLauncher] Using Gemini model: ${modelName}`);
 
                         // Update UI with used model name (V7.3 Fix)
-                        var modelBadge = document.getElementById('ai_model_name');
+                        const modelBadge = document.getElementById('ai_model_name');
                         if (modelBadge) {
-                            modelBadge.textContent = "(" + modelName + ")";
+                            modelBadge.textContent = `(${modelName})`;
                         }
 
                         return JSON.parse(text);
                     }
-                    lastError = "HTTP " + response.status;
+                    lastError = `HTTP ${response.status}`;
                 } catch (e) {
                     lastError = e.message;
                 }
             }
-            throw new Error("Gemini API Error: " + lastError + " (tried all models)");
 
+            throw new Error(`Gemini API Error: ${lastError} (tried all models)`);
         } else if (model.startsWith('claude')) {
             // Claude API (Anthropic)
-            var claudeKey = localStorage.getItem('tata_claude_api_key') || apiKey; // Fallback to Gemini key for now
-            var claudeUrl = "https://api.anthropic.com/v1/messages";
-            var claudePayload = {
+            const claudeKey = localStorage.getItem('tata_claude_api_key') || apiKey; // Fallback to Gemini key for now
+            const claudeUrl = "https://api.anthropic.com/v1/messages";
+            const claudePayload = {
                 model: "claude-3-haiku-20240307",
                 max_tokens: 4096,
-                messages: [{ role: "user", content: systemPrompt + "\n\n" + prompt }]
+                messages: [{ role: "user", content: `${systemPrompt}\n\n${prompt}` }]
             };
 
-            var claudeResponse = await fetch(claudeUrl, {
+            const claudeResponse = await fetch(claudeUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -788,15 +783,15 @@
                 body: JSON.stringify(claudePayload)
             });
 
-            if (!claudeResponse.ok) throw new Error("Claude API Error " + claudeResponse.status);
+            if (!claudeResponse.ok) throw new Error(`Claude API Error ${claudeResponse.status}`);
 
-            var claudeData = await claudeResponse.json();
-            var claudeText = claudeData.content[0].text;
+            const claudeData = await claudeResponse.json();
+            let claudeText = claudeData.content[0].text;
             claudeText = claudeText.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(claudeText);
         }
 
-        throw new Error("Unknown model: " + model);
+        throw new Error(`Unknown model: ${model}`);
     }
 
     // Legacy alias
@@ -805,44 +800,44 @@
     }
 
     function addChatBubble(type, html) {
-        var container = document.getElementById('chat_history');
+        const container = document.getElementById('chat_history');
         if (!container) return;
 
         // Wrapper for Layout (Message Row)
-        var wrapper = document.createElement('div');
-        wrapper.className = "chat-message-row " + type;
+        const wrapper = document.createElement('div');
+        wrapper.className = `chat-message-row ${type}`;
         wrapper.style.cssText = "display: flex; width: 100%; margin-bottom: 8px; align-items: flex-start;";
         wrapper.style.justifyContent = (type === 'user') ? 'flex-end' : 'flex-start';
 
         // V4: Per-Message Copy Button (User Only)
         if (type === 'user') {
             // Icon SVG (Copy)
-            var copyBtn = document.createElement('div');
+            const copyBtn = document.createElement('div');
             copyBtn.innerHTML = ICONS.copy; // Use existing copy icon
             copyBtn.title = "Copy Text";
             copyBtn.className = "msg-copy-btn";
             // Style: Hidden by default, show on hover
             copyBtn.style.cssText = "width: 24px; height: 24px; margin-right: 8px; cursor: pointer; color: #888; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center;";
 
-            var svg = copyBtn.querySelector('svg');
+            const svg = copyBtn.querySelector('svg');
             if (svg) { svg.style.width = '16px'; svg.style.height = '16px'; }
 
             // Copy Logic
-            copyBtn.onclick = function () {
-                var text = html.replace(/<[^>]*>?/gm, ''); // Strip HTML if any
+            copyBtn.onclick = () => {
+                const text = html.replace(/<[^>]*>?/gm, ''); // Strip HTML if any
                 navigator.clipboard.writeText(text).then(() => showToast("Copied!"));
             };
 
             // Hover Logic (Row)
-            wrapper.onmouseenter = function () { copyBtn.style.opacity = '1'; };
-            wrapper.onmouseleave = function () { copyBtn.style.opacity = '0'; };
+            wrapper.onmouseenter = () => { copyBtn.style.opacity = '1'; };
+            wrapper.onmouseleave = () => { copyBtn.style.opacity = '0'; };
 
             wrapper.appendChild(copyBtn);
         }
 
-        var bubble = document.createElement('div');
-        bubble.className = "chat-bubble " + type;
-        bubble.id = "msg_" + Date.now();
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${type}`;
+        bubble.id = `msg_${Date.now()}`;
         bubble.innerHTML = html;
 
         wrapper.appendChild(bubble);
@@ -852,7 +847,7 @@
     }
 
     function showToast(msg) {
-        var t = document.getElementById('toast');
+        const t = document.getElementById('toast');
         if (!t) return;
         t.innerText = msg;
         t.classList.add('show');
@@ -860,12 +855,12 @@
     }
 
     // ==================== RECENT CODE ====================
-    var RECENT_CODE_KEY = 'rocket_launcher_recent_code';
-    var MAX_RECENT = 5;
+    const RECENT_CODE_KEY = 'rocket_launcher_recent_code';
+    const MAX_RECENT = 5;
 
     function getRecentCodes() {
         try {
-            var data = localStorage.getItem(RECENT_CODE_KEY);
+            const data = localStorage.getItem(RECENT_CODE_KEY);
             return data ? JSON.parse(data) : [];
         } catch (e) {
             return [];
@@ -874,13 +869,13 @@
 
     function saveRecentCode(name, code) {
         if (!code || code.trim().length < 10) return;
-        var list = getRecentCodes();
+        let list = getRecentCodes();
         // Remove duplicate if same name exists
-        list = list.filter(function (item) { return item.name !== name; });
+        list = list.filter(item => { return item.name !== name; });
         // Add to front
         list.unshift({
             name: name || 'Untitled',
-            code: code,
+            code,
             timestamp: Date.now()
         });
         // Keep only MAX_RECENT
@@ -890,10 +885,10 @@
     }
 
     function renderRecentCodes() {
-        var container = document.getElementById('recent_code_list');
+        const container = document.getElementById('recent_code_list');
         if (!container) return;
 
-        var list = getRecentCodes();
+        const list = getRecentCodes();
         container.innerHTML = '';
 
         if (list.length === 0) {
@@ -901,27 +896,22 @@
             return;
         }
 
-        list.forEach(function (item, idx) {
-            var row = document.createElement('div');
+        list.forEach((item, idx) => {
+            const row = document.createElement('div');
             row.className = 'recent-code-item';
             row.title = item.name;
 
-            var timeAgo = getTimeAgo(item.timestamp);
+            const timeAgo = getTimeAgo(item.timestamp);
 
             row.innerHTML =
-                '<span class="rc-icon">📄</span>' +
-                '<div class="rc-info">' +
-                '<div class="rc-name">' + escapeHtml(item.name) + '</div>' +
-                '<div class="rc-time">' + timeAgo + '</div>' +
-                '</div>' +
-                '<span class="rc-load">LOAD</span>';
+                `<span class="rc-icon">📄</span><div class="rc-info"><div class="rc-name">${escapeHtml(item.name)}</div><div class="rc-time">${timeAgo}</div></div><span class="rc-load">LOAD</span>`;
 
-            row.onclick = function () {
+            row.onclick = () => {
                 setEditorCode(item.code);
-                var nameInput = document.getElementById('script_name_input');
+                const nameInput = document.getElementById('script_name_input');
                 if (nameInput) nameInput.value = item.name;
                 activateTab('tab_editor');
-                showToast('Loaded: ' + item.name);
+                showToast(`Loaded: ${item.name}`);
             };
 
             container.appendChild(row);
@@ -929,27 +919,27 @@
     }
 
     function getTimeAgo(ts) {
-        var diff = Date.now() - ts;
-        var mins = Math.floor(diff / 60000);
+        const diff = Date.now() - ts;
+        const mins = Math.floor(diff / 60000);
         if (mins < 1) return 'just now';
-        if (mins < 60) return mins + 'm ago';
-        var hours = Math.floor(mins / 60);
-        if (hours < 24) return hours + 'h ago';
-        var days = Math.floor(hours / 24);
-        return days + 'd ago';
+        if (mins < 60) return `${mins}m ago`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
     }
 
     function escapeHtml(str) {
-        var div = document.createElement('div');
+        const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     }
 
     function initRecentCode() {
         renderRecentCodes();
-        var btnClear = document.getElementById('btn_clear_recent');
+        const btnClear = document.getElementById('btn_clear_recent');
         if (btnClear) {
-            btnClear.addEventListener('click', function () {
+            btnClear.addEventListener('click', () => {
                 localStorage.removeItem(RECENT_CODE_KEY);
                 renderRecentCodes();
                 showToast('Recent code cleared');
@@ -958,10 +948,10 @@
     }
 
     // ==================== V3: CODEMIRROR ====================
-    var cmEditor = null;
+    let cmEditor = null;
 
     function initCodeMirror() {
-        var textarea = document.getElementById('code_editor');
+        const textarea = document.getElementById('code_editor');
         if (!textarea || typeof CodeMirror === 'undefined') {
             console.log("CodeMirror not available, using fallback textarea");
             return;
@@ -980,12 +970,12 @@
         });
 
         // Sync with hidden textarea for form submissions
-        cmEditor.on('change', function () {
+        cmEditor.on('change', () => {
             cmEditor.save();
         });
 
         // Style adjustments
-        var cmWrapper = cmEditor.getWrapperElement();
+        const cmWrapper = cmEditor.getWrapperElement();
         cmWrapper.style.flex = '1';
         cmWrapper.style.fontSize = '12px';
         cmWrapper.style.height = 'auto';
@@ -996,7 +986,7 @@
         if (cmEditor) {
             return cmEditor.getValue();
         }
-        var el = document.getElementById('code_editor');
+        const el = document.getElementById('code_editor');
         return el ? el.value : '';
     }
 
@@ -1004,9 +994,9 @@
         if (cmEditor) {
             cmEditor.setValue(code);
             // Force refresh to display immediately without click
-            setTimeout(function () { cmEditor.refresh(); }, 10);
+            setTimeout(() => { cmEditor.refresh(); }, 10);
         } else {
-            var el = document.getElementById('code_editor');
+            const el = document.getElementById('code_editor');
             if (el) el.value = code;
         }
     }
@@ -1016,17 +1006,17 @@
     window.setEditorCode = setEditorCode;
 
     // Save API Key from inline input
-    window.saveInlineApiKey = function () {
-        var input = document.getElementById('api_key_inline_input');
+    window.saveInlineApiKey = () => {
+        const input = document.getElementById('api_key_inline_input');
         if (!input || !input.value.trim()) {
             showToast('⚠️ กรุณากรอก API Key');
             return;
         }
-        var key = input.value.trim();
+        const key = input.value.trim();
         localStorage.setItem('tata_gemini_api_key', key);
 
         // ซ่อน section
-        var keySection = document.getElementById('api_key_section');
+        const keySection = document.getElementById('api_key_section');
         if (keySection) keySection.style.display = 'none';
 
         showToast('✅ บันทึก API Key แล้ว');
@@ -1046,23 +1036,21 @@
 // Export AI Call logic for ai-agent.js
 // ==========================================
 window.TATA = window.TATA || {};
-window.TATA.callGemini = async function (messages) {
-    var apiKey = localStorage.getItem('tata_gemini_api_key');
+window.TATA.callGemini = async messages => {
+    let apiKey = localStorage.getItem('tata_gemini_api_key');
     if (!apiKey) {
-        var inlineInput = document.getElementById('api_key_inline_input');
+        const inlineInput = document.getElementById('api_key_inline_input');
         if (inlineInput && inlineInput.value.trim()) {
             apiKey = inlineInput.value.trim();
         }
     }
     if (!apiKey) throw new Error('API Key missing. Please provide Gemini API Key.');
 
-    var geminiContents = [];
-    var systemInstruction = null;
+    const geminiContents = [];
+    let systemInstruction = null;
 
-    for (var i = 0; i < messages.length; i++) {
-        var msg = messages[i];
-
-        var textContent = msg.content || (msg.parts && msg.parts[0] ? msg.parts[0].text : '');
+    for (const msg of messages) {
+        let textContent = msg.content || (msg.parts && msg.parts[0] ? msg.parts[0].text : '');
         if (typeof textContent !== 'string') textContent = String(textContent);
         textContent = textContent.trim();
         if (!textContent) continue;
@@ -1077,7 +1065,7 @@ window.TATA.callGemini = async function (messages) {
         }
     }
 
-    var payload = {
+    const payload = {
         contents: geminiContents,
         generationConfig: {
             temperature: 0.7,
@@ -1088,28 +1076,28 @@ window.TATA.callGemini = async function (messages) {
         payload.systemInstruction = systemInstruction;
     }
 
-    var model = 'gemini-2.0-flash';
-    var userModel = localStorage.getItem('tata_ai_model');
+    let model = 'gemini-2.0-flash';
+    const userModel = localStorage.getItem('tata_ai_model');
     if (userModel) model = userModel;
 
-    var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    var response = await fetch(endpoint, {
+    const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-        var errText = await response.text();
-        throw new Error('API Error: ' + response.status + ' ' + errText);
+        const errText = await response.text();
+        throw new Error(`API Error: ${response.status} ${errText}`);
     }
 
-    var data = await response.json();
+    const data = await response.json();
     if (data.candidates && data.candidates[0] && data.candidates[0].content) {
         return {
             text: data.candidates[0].content.parts[0].text,
-            model: model
+            model
         };
     }
     throw new Error('Invalid response from AI');

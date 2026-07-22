@@ -3,7 +3,7 @@
  * Chat-based AI assistant for script generation
  * @version 1.0
  */
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
@@ -11,13 +11,13 @@
     // ==========================================
     // State
     // ==========================================
-    var chatHistory = [];
-    var isProcessing = false;
+    let chatHistory = [];
+    let isProcessing = false;
 
     // ==========================================
     // Prompt Templates (Feature 5)
     // ==========================================
-    var AI_PROMPT_TEMPLATES = {
+    const AI_PROMPT_TEMPLATES = {
         color: "Write a script that changes the [fill/stroke] color of all selected objects to [describe color]. ",
         transform: "Write a script that [resizes/rotates/moves/aligns] the selected objects by [amount/direction]. ",
         arrange: "Write a script that arranges the selected objects in a [grid/row/circle] with [spacing] spacing. ",
@@ -49,11 +49,11 @@
     // ==========================================
     function addMessage(role, content, type) {
         type = type || 'text';
-        var container = document.getElementById('chat_history');
+        const container = document.getElementById('chat_history');
         if (!container) return;
 
-        var msg = document.createElement('div');
-        msg.className = 'agent-msg ' + role;
+        const msg = document.createElement('div');
+        msg.className = `agent-msg ${role}`;
 
         if (role === 'user') {
             msg.style.cssText = 'align-self:flex-end;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:8px 12px;border-radius:12px 12px 4px 12px;font-size:11px;max-width:80%;line-height:1.4;';
@@ -65,38 +65,38 @@
 
         // Handle special content types
         if (type === 'code') {
-            var codeBlock = document.createElement('pre');
+            const codeBlock = document.createElement('pre');
             codeBlock.style.cssText = 'background:#0d0d1a;border:1px solid #2a2a4a;border-radius:6px;padding:8px;margin:6px 0;font-family:monospace;font-size:10px;overflow-x:auto;color:#a5b4fc;';
             codeBlock.textContent = content;
 
-            var wrapper = document.createElement('div');
+            const wrapper = document.createElement('div');
             wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
 
-            var actionRow = document.createElement('div');
+            const actionRow = document.createElement('div');
             actionRow.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;';
 
-            var useBtn = document.createElement('button');
+            const useBtn = document.createElement('button');
             useBtn.textContent = '📋 Use Code';
             useBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#6366f130;border:1px solid #6366f150;border-radius:4px;color:#a5b4fc;cursor:pointer;';
-            useBtn.onclick = function () {
-                var codeEl = document.getElementById('script_code');
+            useBtn.onclick = () => {
+                const codeEl = document.getElementById('script_code');
                 if (codeEl) {
                     codeEl.value = content;
-                    var modal = document.getElementById('script_modal');
+                    const modal = document.getElementById('script_modal');
 
                     TATA.showToast && TATA.showToast('Code copied to editor!', 'success');
                 }
             };
             actionRow.appendChild(useBtn);
 
-            var saveBtn = document.createElement('button');
+            const saveBtn = document.createElement('button');
             saveBtn.textContent = '💾 Save as Button';
             saveBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#10b98130;border:1px solid #10b98150;border-radius:4px;color:#6ee7b7;cursor:pointer;';
-            saveBtn.onclick = function () {
+            saveBtn.onclick = () => {
                 if (typeof TATA.saveUserScript === 'function') {
-                    var scriptName = 'AI Script ' + Math.floor(Math.random() * 1000);
+                    const scriptName = `AI Script ${Math.floor(Math.random() * 1000)}`;
                     TATA.saveUserScript(scriptName, '🤖', content, 'purple', false, null, false);
-                    TATA.showToast && TATA.showToast('✅ Saved as button: ' + scriptName, 'success');
+                    TATA.showToast && TATA.showToast(`✅ Saved as button: ${scriptName}`, 'success');
                     saveBtn.textContent = '✅ Saved!';
                     saveBtn.disabled = true;
                 } else {
@@ -108,8 +108,7 @@
             wrapper.appendChild(actionRow);
             msg.appendChild(wrapper);
         } else if (type === 'plan') {
-            msg.innerHTML = '<div style="margin-bottom:4px;">📝 <b>Plan:</b></div>' +
-                '<div style="font-size:10px;white-space:pre-wrap;color:#c4b5fd;line-height:1.5;">' + escapeHtml(content) + '</div>';
+            msg.innerHTML = `<div style="margin-bottom:4px;">📝 <b>Plan:</b></div><div style="font-size:10px;white-space:pre-wrap;color:#c4b5fd;line-height:1.5;">${escapeHtml(content)}</div>`;
         } else {
             msg.textContent = content;
         }
@@ -119,12 +118,12 @@
     }
 
     function setTyping(show) {
-        var el = document.getElementById('agent_typing');
+        const el = document.getElementById('agent_typing');
         if (el) el.style.display = show ? 'block' : 'none';
     }
 
     function clearChat() {
-        var container = document.getElementById('chat_history');
+        const container = document.getElementById('chat_history');
         if (container) {
             container.innerHTML = '';
             addMessage('system', '💬 Chat cleared. Ready for new conversation.');
@@ -138,17 +137,17 @@
     async function sendMessage(text) {
         if (!text || !text.trim() || isProcessing) return;
 
-        var userText = text.trim();
+        const userText = text.trim();
         addMessage('user', userText);
 
         // Build messages
-        var systemPrompt = getAgentSystemPrompt();
+        let systemPrompt = getAgentSystemPrompt();
 
         // Workspace Context: scan the active Illustrator document
         try {
-            var wsContext = await new Promise(function (resolve) {
+            const wsContext = await new Promise(resolve => {
                 if (TATA.host && TATA.host.run) {
-                    TATA.host.run('getWorkspaceContext', undefined, function (result) {
+                    TATA.host.run('getWorkspaceContext', undefined, result => {
                         resolve(result);
                     });
                 } else {
@@ -156,19 +155,14 @@
                 }
             });
             if (wsContext && wsContext !== "EvalScript error." && wsContext.indexOf('{') === 0) {
-                systemPrompt += "\n===== CURRENT WORKSPACE (Illustrator Document) =====\n" +
-                    wsContext + "\n\n" +
-                    "Use this workspace data to answer questions about the document.\n" +
-                    "When the user asks about objects, layers, colors, or text — reference THIS data.\n" +
-                    "When generating code, use the object names and layer structure from THIS context.\n" +
-                    "If the user asks to modify specific text, find the matching TextFrame from the data.\n\n";
+                systemPrompt += `\n===== CURRENT WORKSPACE (Illustrator Document) =====\n${wsContext}\n\nUse this workspace data to answer questions about the document.\nWhen the user asks about objects, layers, colors, or text — reference THIS data.\nWhen generating code, use the object names and layer structure from THIS context.\nIf the user asks to modify specific text, find the matching TextFrame from the data.\n\n`;
             }
         } catch (wsErr) {
             // Workspace context is optional — continue without it
         }
 
         // Build conversation for API
-        var messages = [];
+        const messages = [];
 
         messages.push({
             role: "system",
@@ -176,8 +170,8 @@
         });
 
         if (chatHistory.length > 0) {
-            for (var i = 0; i < chatHistory.length; i++) {
-                var c = chatHistory[i].content;
+            for (let i = 0; i < chatHistory.length; i++) {
+                let c = chatHistory[i].content;
                 if (typeof c !== 'string') c = String(c);
                 messages.push({
                     role: chatHistory[i].role === 'user' ? 'user' : 'model',
@@ -197,16 +191,16 @@
         setTyping(true);
 
         try {
-            var geminiCall = TATA.callGemini || (window.TATA && window.TATA.callGemini);
+            const geminiCall = TATA.callGemini || (window.TATA && window.TATA.callGemini);
             if (!geminiCall) {
                 throw new Error('TATA.callGemini not available. Please refresh panel.');
             }
-            var result = await geminiCall(messages);
-            var responseText = result.text;
+            const result = await geminiCall(messages);
+            const responseText = result.text;
 
             // Update model badge
-            var badge = document.getElementById('agent_model_badge');
-            if (badge) badge.textContent = '(' + result.model + ')';
+            const badge = document.getElementById('agent_model_badge');
+            if (badge) badge.textContent = `(${result.model})`;
 
             chatHistory.push({ role: 'assistant', content: responseText });
 
@@ -214,7 +208,7 @@
             parseAndDisplayResponse(responseText);
 
         } catch (e) {
-            addMessage('system', '❌ Error: ' + e.message);
+            addMessage('system', `❌ Error: ${e.message}`);
         } finally {
             isProcessing = false;
             setTyping(false);
@@ -225,11 +219,11 @@
     // Parse AI Response Tags
     // ==========================================
     function parseAndDisplayResponse(text) {
-        var remaining = text;
+        let remaining = text;
 
         // Check for [CODE] tags
-        var codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
-        var nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
+        const codeMatch = text.match(/\[CODE\]([\s\S]*?)\[\/CODE\]/i);
+        const nameMatch = text.match(/\[NAME\]([\s\S]*?)\[\/NAME\]/i);
         if (codeMatch) {
             remaining = remaining.replace(codeMatch[0], '').trim();
             if (nameMatch) remaining = remaining.replace(nameMatch[0], '').trim();
@@ -239,7 +233,7 @@
         }
 
         // Check for [PLAN] tags
-        var planMatch = text.match(/\[PLAN\]([\s\S]*?)\[\/PLAN\]/i);
+        const planMatch = text.match(/\[PLAN\]([\s\S]*?)\[\/PLAN\]/i);
         if (planMatch) {
             remaining = remaining.replace(planMatch[0], '').trim();
             if (remaining) addMessage('assistant', remaining);
@@ -262,16 +256,16 @@
 
 
     function openAgentModal() {
-        var aiTabBtn = document.querySelector('.tab-btn[data-tab="tab_ai"]');
+        const aiTabBtn = document.querySelector('.tab-btn[data-tab="tab_ai"]');
         if (aiTabBtn) {
             // Because TATA.switchTab might not be exposed exactly this way depending on how core.js loaded it
             // Let's just directly call the click event which is guaranteed to work
             aiTabBtn.click();
         }
 
-        var input = document.getElementById('prompt_input');
+        const input = document.getElementById('prompt_input');
         if (input) {
-            setTimeout(function () { input.focus(); }, 100);
+            setTimeout(() => { input.focus(); }, 100);
         }
     }
 
@@ -288,9 +282,9 @@
     // ==========================================
     TATA.AIAgent = {
         init: initAgent,
-        sendMessage: sendMessage,
+        sendMessage,
         openChat: openAgentModal,
-        clearChat: clearChat
+        clearChat
     };
 
     TATA.AI_PROMPT_TEMPLATES = AI_PROMPT_TEMPLATES;

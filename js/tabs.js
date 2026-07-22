@@ -3,7 +3,7 @@
  * Contains: Tab switching, renaming, button movement
  * @version 4.2
  */
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
@@ -12,8 +12,8 @@
     // Tab Setup (Legacy)
     // ==========================================
     function setupTabs() {
-        var tabs = document.querySelectorAll('.tab-btn');
-        tabs.forEach(function (tab) {
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => {
             tab.addEventListener('click', function () {
                 switchTab(this);
             });
@@ -24,8 +24,8 @@
     // Tab Switching
     // ==========================================
     function switchTab(tabBtn) {
-        var allTabs = document.querySelectorAll('.tab-btn');
-        var allContents = document.querySelectorAll('.tab-content');
+        const allTabs = document.querySelectorAll('.tab-btn');
+        const allContents = document.querySelectorAll('.tab-content');
 
         for (var i = 0; i < allTabs.length; i++) {
             allTabs[i].classList.remove('active');
@@ -36,14 +36,14 @@
 
         if (tabBtn) {
             tabBtn.classList.add('active');
-            var targetId = tabBtn.getAttribute('data-tab');
-            var targetContent = document.getElementById(targetId);
+            const targetId = tabBtn.getAttribute('data-tab');
+            const targetContent = document.getElementById(targetId);
             if (targetContent) {
                 targetContent.classList.add('active');
             }
 
             // Show tab-actions only on Button tab
-            var tabActions = document.querySelector('.tab-actions');
+            const tabActions = document.querySelector('.tab-actions');
             if (tabActions) {
                 tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
             }
@@ -54,15 +54,15 @@
     // Move Button to Tab (uses TATA.state)
     // ==========================================
     function moveButtonToTab(btnId, targetTabId) {
-        var layoutState = TATA.state.layoutState || {};
-        var foundSourceTab = null;
-        var oldRowIndex = -1;
-        var oldColIndex = -1;
+        const layoutState = TATA.state.layoutState || {};
+        let foundSourceTab = null;
+        let oldRowIndex = -1;
+        let oldColIndex = -1;
 
-        Object.keys(layoutState).forEach(function (tId) {
-            var rows = layoutState[tId];
-            rows.forEach(function (r, rIdx) {
-                var cIdx = r.indexOf(btnId);
+        Object.keys(layoutState).forEach(tId => {
+            const rows = layoutState[tId];
+            rows.forEach((r, rIdx) => {
+                const cIdx = r.indexOf(btnId);
                 if (cIdx !== -1) {
                     foundSourceTab = tId;
                     oldRowIndex = rIdx;

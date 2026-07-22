@@ -11,15 +11,15 @@
  *   }
  */
 
-(function (window) {
+(window => {
     'use strict';
 
-    var config = {
+    const config = {
         DEBUG: false,
 
-        log: function () {
+        log(...args) {
             if (this.DEBUG) {
-                console.log.apply(console, ['[Rocket Launcher]'].concat(Array.prototype.slice.call(arguments)));
+                console.log.apply(console, ['[Rocket Launcher]'].concat(Array.prototype.slice.call(args)));
             }
         }
     };
@@ -28,15 +28,15 @@
         if (typeof window.require === 'undefined') return;
 
         try {
-            var fs = window.require('fs');
-            var href = window.location.href || '';
-            var root = href.substring(0, href.lastIndexOf('/') + 1);
+            const fs = window.require('fs');
+            const href = window.location.href || '';
+            const root = href.substring(0, href.lastIndexOf('/') + 1);
             // Strip file:// protocol and decode, then point to js/config.local.json
-            var localPath = decodeURIComponent(root.replace(/^file:\/\//, '').replace(/^file:/, '')) + 'js/config.local.json';
+            const localPath = `${decodeURIComponent(root.replace(/^file:\/\//, '').replace(/^file:/, ''))}js/config.local.json`;
 
             if (fs.existsSync(localPath)) {
-                var raw = fs.readFileSync(localPath, 'utf8');
-                var local = JSON.parse(raw);
+                const raw = fs.readFileSync(localPath, 'utf8');
+                const local = JSON.parse(raw);
                 if (local.SUPABASE_URL) config.SUPABASE_URL = local.SUPABASE_URL;
                 if (local.SUPABASE_KEY) config.SUPABASE_KEY = local.SUPABASE_KEY;
                 if (local.DEBUG !== undefined) config.DEBUG = !!local.DEBUG;

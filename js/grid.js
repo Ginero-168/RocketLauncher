@@ -3,7 +3,7 @@
  * Contains: V2 Layout, Icons, Defaults, renderGrid, createGridButton, Event Delegation
  * @version 5.0 - Optimized with debounce, batched saves, event delegation
  */
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
@@ -11,7 +11,7 @@
     // ==========================================
     // Icons SVG Definitions
     // ==========================================
-    var ICONS = {
+    const ICONS = {
         fit: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v2H4v4H2V4a2 2 0 0 1 2-2zm16 0h-4v2h4v4h2V4a2 2 0 0 0-2-2zM4 20h4v-2H4v-4H2v4a2 2 0 0 0 2 2zm16 0h-4v-2h4v-4h2v4a2 2 0 0 0-2 2z" /></svg>',
         resize: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 12h-2.26l2.03-2.03l-1.41-1.41L15.31 10.6V8.34h-2v4.66h4.66v-2h-2.66zM7 12h2.26L7.23 14.03l1.41 1.41L10.69 13.4v2.26h2v-4.66H8.03v2H10.69z" /></svg>',
         follow: '<svg class="icon" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" /></svg>',
@@ -30,7 +30,7 @@
     // ==========================================
     // V2 Default Button Configuration
     // ==========================================
-    var v2Defaults = {
+    const v2Defaults = {
         tab_button: [
             { id: 'btn_fit', label: 'Fit', icon: ICONS.fit, script: 'Fit.jsx' },
             { id: 'btn_resize', label: 'Resize', icon: ICONS.resize, script: 'ResizeDialog.jsx' },
@@ -45,35 +45,35 @@
     };
 
     // In-memory layout state
-    var v2Layout = {};
-    var layoutLoaded = false;
+    let v2Layout = {};
+    let layoutLoaded = false;
 
     function cloneDefaults() {
         return JSON.parse(JSON.stringify(v2Defaults));
     }
 
     function normalizeLayout(layout) {
-        var isLayoutObject = layout && typeof layout === 'object' && !Array.isArray(layout);
-        var normalized = isLayoutObject ? layout : {};
-        var changed = !isLayoutObject;
-        var allLayoutIds = {};
+        const isLayoutObject = layout && typeof layout === 'object' && !Array.isArray(layout);
+        const normalized = isLayoutObject ? layout : {};
+        let changed = !isLayoutObject;
+        const allLayoutIds = {};
 
-        ['tab_button'].forEach(function (tabName) {
+        ['tab_button'].forEach(tabName => {
             if (!Array.isArray(normalized[tabName])) {
                 normalized[tabName] = [];
                 changed = true;
             }
-            normalized[tabName].forEach(function (item) {
+            normalized[tabName].forEach(item => {
                 if (item && item.id) allLayoutIds[item.id] = true;
             });
         });
 
-        Object.keys(v2Defaults).forEach(function (tabName) {
+        Object.keys(v2Defaults).forEach(tabName => {
             if (!Array.isArray(normalized[tabName])) {
                 normalized[tabName] = [];
                 changed = true;
             }
-            v2Defaults[tabName].forEach(function (def) {
+            v2Defaults[tabName].forEach(def => {
                 if (!allLayoutIds[def.id]) {
                     normalized[tabName].push(JSON.parse(JSON.stringify(def)));
                     allLayoutIds[def.id] = true;
@@ -82,16 +82,16 @@
             });
         });
 
-        return { layout: normalized, changed: changed };
+        return { layout: normalized, changed };
     }
 
     function loadV2Layout(forceReload) {
         if (layoutLoaded && !forceReload) return false;
 
-        var safeParse = TATA.safeParse || JSON.parse;
-        var saved = localStorage.getItem('tata_v2_layout');
-        var parsed = saved ? safeParse(saved, null) : cloneDefaults();
-        var result = normalizeLayout(parsed);
+        const safeParse = TATA.safeParse || JSON.parse;
+        const saved = localStorage.getItem('tata_v2_layout');
+        const parsed = saved ? safeParse(saved, null) : cloneDefaults();
+        const result = normalizeLayout(parsed);
         v2Layout = result.layout;
         layoutLoaded = true;
 
@@ -100,13 +100,13 @@
     }
 
     // Drag state (shared across delegation handlers)
-    var _draggedItem = null;
+    let _draggedItem = null;
 
     // ==========================================
     // Debounced/Batched Variants
     // ==========================================
-    var renderGridDebounced = TATA.debounce(renderGrid, 80);
-    var saveV2LayoutBatched = TATA.debounce(saveV2Layout, 150);
+    const renderGridDebounced = TATA.debounce(renderGrid, 80);
+    const saveV2LayoutBatched = TATA.debounce(saveV2Layout, 150);
 
     // ==========================================
     // Render Grid
@@ -114,16 +114,16 @@
     function renderGrid() {
         loadV2Layout();
 
-        ['tab_button'].forEach(function (tabName) {
-            var container = document.getElementById(tabName);
+        ['tab_button'].forEach(tabName => {
+            const container = document.getElementById(tabName);
             if (!container) return;
             container.innerHTML = '';
 
-            var items = v2Layout[tabName] || [];
-            var userItems = [];
-            var defaultItems = [];
+            const items = v2Layout[tabName] || [];
+            const userItems = [];
+            const defaultItems = [];
 
-            items.forEach(function (item) {
+            items.forEach(item => {
                 if (item.id && item.id.indexOf('btn_') === 0) {
                     defaultItems.push(item);
                 } else {
@@ -134,34 +134,34 @@
             function createSection(title, sectionItems) {
                 if (sectionItems.length === 0) return;
 
-                var sectionWrap = document.createElement('div');
+                const sectionWrap = document.createElement('div');
                 sectionWrap.className = 'script-section';
 
-                var header = document.createElement('div');
+                const header = document.createElement('div');
                 header.className = 'section-header';
 
-                var titleEl = document.createElement('h3');
+                const titleEl = document.createElement('h3');
                 titleEl.className = 'section-title';
                 titleEl.innerText = title;
                 header.appendChild(titleEl);
 
-                var arrowSvg = '<svg class="section-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>';
-                var arrowContainer = document.createElement('div');
+                const arrowSvg = '<svg class="section-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>';
+                const arrowContainer = document.createElement('div');
                 arrowContainer.innerHTML = arrowSvg;
                 header.appendChild(arrowContainer.firstChild);
 
-                var grid = document.createElement('div');
+                const grid = document.createElement('div');
                 grid.className = 'section-grid';
-                grid.id = 'grid_' + title.replace(/\s+/g, '_').toLowerCase();
+                grid.id = `grid_${title.replace(/\s+/g, '_').toLowerCase()}`;
 
-                header.addEventListener('click', function () {
+                header.addEventListener('click', () => {
                     header.classList.toggle('collapsed');
                     grid.classList.toggle('collapsed');
                 });
 
-                sectionItems.forEach(function (item) {
-                    var originalIndex = items.indexOf(item);
-                    var btn = createGridButton(item, tabName, originalIndex);
+                sectionItems.forEach(item => {
+                    const originalIndex = items.indexOf(item);
+                    const btn = createGridButton(item, tabName, originalIndex);
                     grid.appendChild(btn);
                 });
 
@@ -182,7 +182,7 @@
     // Create Grid Button (no per-element listeners)
     // ==========================================
     function createGridButton(item, tabName, index) {
-        var btn = document.createElement('div');
+        const btn = document.createElement('div');
         btn.className = 'grid-btn';
         btn.id = item.id;
         btn.draggable = true;
@@ -192,23 +192,23 @@
         // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
         if (item.color) {
             btn.style.borderColor = item.color;
-            btn.style.setProperty('--btn-color', item.color + '60');
+            btn.style.setProperty('--btn-color', `${item.color}60`);
         }
 
         if (item.id && item.id.indexOf('btn_') === 0) {
             btn.classList.add('default-script');
         }
 
-        var iconDiv = document.createElement('div');
+        const iconDiv = document.createElement('div');
         iconDiv.innerHTML = item.icon || ICONS.stars;
-        var svg = iconDiv.querySelector('svg');
+        const svg = iconDiv.querySelector('svg');
         if (svg) {
             svg.setAttribute('width', '24');
             svg.setAttribute('height', '24');
         }
         btn.appendChild(iconDiv);
 
-        var lbl = document.createElement('span');
+        const lbl = document.createElement('span');
         lbl.innerText = item.label;
         btn.appendChild(lbl);
 
@@ -222,17 +222,17 @@
         if (TATA._gridDelegated) return;
         TATA._gridDelegated = true;
 
-        var containers = document.querySelectorAll('[id="tab_button"]');
-        containers.forEach(function (container) {
+        const containers = document.querySelectorAll('[id="tab_button"]');
+        containers.forEach(container => {
 
             // Click delegation
-            container.addEventListener('click', function (e) {
-                var btn = e.target.closest('.grid-btn');
+            container.addEventListener('click', e => {
+                const btn = e.target.closest('.grid-btn');
                 if (!btn) return;
 
-                var tab = btn.dataset.tab;
-                var idx = parseInt(btn.dataset.index, 10);
-                var item = v2Layout[tab] && v2Layout[tab][idx];
+                const tab = btn.dataset.tab;
+                const idx = parseInt(btn.dataset.index, 10);
+                const item = v2Layout[tab] && v2Layout[tab][idx];
                 if (!item) return;
 
                 if (item.type === 'subpanel') {
@@ -245,71 +245,71 @@
             });
 
             // Context menu delegation
-            container.addEventListener('contextmenu', function (e) {
-                var btn = e.target.closest('.grid-btn');
+            container.addEventListener('contextmenu', e => {
+                const btn = e.target.closest('.grid-btn');
                 if (!btn) return;
                 e.preventDefault();
                 e.stopPropagation();
 
-                var tab = btn.dataset.tab;
-                var idx = parseInt(btn.dataset.index, 10);
-                var item = v2Layout[tab] && v2Layout[tab][idx];
+                const tab = btn.dataset.tab;
+                const idx = parseInt(btn.dataset.index, 10);
+                const item = v2Layout[tab] && v2Layout[tab][idx];
                 if (!item) return;
 
                 window.currentContextScriptId = item.id;
                 TATA.setCurrentContextId && TATA.setCurrentContextId(item.id);
 
-                var menu = document.getElementById('context_menu');
+                const menu = document.getElementById('context_menu');
                 if (menu) {
-                    var isDefault = (item.id.indexOf('btn_') === 0);
-                    var editBtn = document.getElementById('ctx_edit');
-                    var delBtn = document.getElementById('ctx_delete');
-                    var colorRow = document.getElementById('ctx_colors');
+                    const isDefault = (item.id.indexOf('btn_') === 0);
+                    const editBtn = document.getElementById('ctx_edit');
+                    const delBtn = document.getElementById('ctx_delete');
+                    const colorRow = document.getElementById('ctx_colors');
                     if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
                     if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
                     if (colorRow) colorRow.style.display = 'flex';
                     menu.style.display = 'block';
-                    var menuWidth = 140;
-                    var x = e.clientX;
+                    const menuWidth = 140;
+                    let x = e.clientX;
                     if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
-                    menu.style.left = x + 'px';
-                    menu.style.top = e.clientY + 'px';
+                    menu.style.left = `${x}px`;
+                    menu.style.top = `${e.clientY}px`;
                 }
             });
 
             // Drag delegation
-            container.addEventListener('dragstart', function (e) {
-                var btn = e.target.closest('.grid-btn');
+            container.addEventListener('dragstart', e => {
+                const btn = e.target.closest('.grid-btn');
                 if (!btn) return;
                 _draggedItem = btn;
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/html', btn.innerHTML);
-                var itemData = getItemDataFromElement(btn);
+                const itemData = getItemDataFromElement(btn);
                 e.dataTransfer.setData('text/plain', JSON.stringify(itemData));
             });
 
-            container.addEventListener('dragend', function () {
+            container.addEventListener('dragend', () => {
                 _draggedItem = null;
             });
 
-            container.addEventListener('dragover', function (e) {
+            container.addEventListener('dragover', e => {
                 e.preventDefault();
             });
 
-            container.addEventListener('drop', function (e) {
-                var btn = e.target.closest('.grid-btn');
+            container.addEventListener('drop', e => {
+                const btn = e.target.closest('.grid-btn');
                 if (btn && _draggedItem && _draggedItem !== btn) {
                     e.preventDefault();
                     e.stopPropagation();
                     try {
                         var srcTab = _draggedItem.dataset.tab;
                         var srcIdx = parseInt(_draggedItem.dataset.index, 10);
-                        var destTab = btn.dataset.tab;
-                        var destIdx = parseInt(btn.dataset.index, 10);
+                        const destTab = btn.dataset.tab;
+                        const destIdx = parseInt(btn.dataset.index, 10);
 
                         if (srcTab === destTab) {
-                            var list = v2Layout[srcTab];
-                            var temp = list[srcIdx];
+                            const list = v2Layout[srcTab];
+                            const temp = list[srcIdx];
                             list[srcIdx] = list[destIdx];
                             list[destIdx] = temp;
                         } else {
@@ -321,13 +321,13 @@
                         renderGridDebounced();
                     } catch (err) {
                         console.error('[TATA] Drop Error:', err);
-                        if (TATA.showToast) TATA.showToast('Drag failed: ' + err.message, 'error');
+                        if (TATA.showToast) TATA.showToast(`Drag failed: ${err.message}`, 'error');
                     }
                     return;
                 }
 
                 // Drop on section-grid (empty area)
-                var sectionGrid = e.target.closest('.section-grid');
+                const sectionGrid = e.target.closest('.section-grid');
                 if (sectionGrid && _draggedItem) {
                     e.preventDefault();
                     var srcTab = _draggedItem.dataset.tab;
@@ -350,8 +350,8 @@
     // Utility Functions
     // ==========================================
     function getItemDataFromElement(el) {
-        var tab = el.dataset.tab;
-        var idx = el.dataset.index;
+        const tab = el.dataset.tab;
+        const idx = el.dataset.index;
         return v2Layout[tab][idx];
     }
 
@@ -377,8 +377,8 @@
 
     // Direct binding for v2Layout
     Object.defineProperty(TATA, 'v2Layout', {
-        get: function () { return v2Layout; },
-        set: function (val) { v2Layout = val; }
+        get() { return v2Layout; },
+        set(val) { v2Layout = val; }
     });
 
     // ==========================================

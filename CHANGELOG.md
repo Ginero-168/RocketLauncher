@@ -6,6 +6,7 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 
 ### Changed
 - **CEP 11 Upgrade**: `CSXS/manifest.xml` now targets CEP 11.0 and Illustrator 2022+ (v25.3)
+- **CEP 11 Modernization**: All panel JS modules converted to ES6+ syntax (const/let, arrows, template literals, includes/startsWith, for-of where safe)
 - **Requirements**: README updated to Illustrator 2022+ / CEP 11.0
 
 ## [2.1.0] - 2026-07-22

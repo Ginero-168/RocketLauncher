@@ -3,45 +3,45 @@
  * Contains: startContextMenu, updateItemColor
  * @version 4.2
  */
-(function () {
+(() => {
     'use strict';
 
     window.TATA = window.TATA || {};
 
     // Context Menu State
-    var contextMenuEl = null;
-    var currentContextScriptId = null;
+    let contextMenuEl = null;
+    let currentContextScriptId = null;
 
     // Quick Color Palette
-    var COLORS = ['', '#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
+    const COLORS = ['', '#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
 
     // ==========================================
     // Start Context Menu
     // ==========================================
     function startContextMenu() {
         contextMenuEl = document.getElementById('context_menu');
-        var btnEdit = document.getElementById('ctx_edit');
-        var btnDelete = document.getElementById('ctx_delete');
-        var ctxColors = document.getElementById('ctx_colors');
+        const btnEdit = document.getElementById('ctx_edit');
+        const btnDelete = document.getElementById('ctx_delete');
+        const ctxColors = document.getElementById('ctx_colors');
 
         // Quick Colors Init
         if (ctxColors && ctxColors.children.length === 0) {
             ctxColors.innerHTML = '';
-            COLORS.forEach(function (c) {
-                var sw = document.createElement('div');
+            COLORS.forEach(c => {
+                const sw = document.createElement('div');
                 if (c === '') {
                     sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: transparent; cursor: pointer; border: 1px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.1s;';
                     sw.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1;">×</span>';
                     sw.title = "No Color";
                 } else {
-                    sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: ' + c + '; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;';
+                    sw.style.cssText = `width: 20px; height: 20px; border-radius: 50%; background: ${c}; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;`;
                 }
 
                 sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
                 sw.onmouseout = function () { this.style.transform = 'scale(1)'; };
-                sw.onclick = function (e) {
+                sw.onclick = e => {
                     e.stopPropagation();
-                    var targetId = window.currentContextScriptId || currentContextScriptId;
+                    const targetId = window.currentContextScriptId || currentContextScriptId;
                     if (targetId) {
                         updateItemColor(targetId, c);
                         if (contextMenuEl) contextMenuEl.style.display = 'none';
@@ -54,39 +54,39 @@
         // Global Hide (use addEventListener with guard to prevent overwriting other handlers)
         if (!TATA._contextMenuGlobalHandler) {
             TATA._contextMenuGlobalHandler = true;
-            document.addEventListener('click', function (e) {
+            document.addEventListener('click', e => {
                 if (contextMenuEl) contextMenuEl.style.display = 'none';
             });
         }
 
         // Copy / Duplicate Action
-        var btnCopy = document.getElementById('ctx_copy');
+        const btnCopy = document.getElementById('ctx_copy');
         if (btnCopy) {
-            btnCopy.onclick = function (e) {
+            btnCopy.onclick = e => {
                 e.stopPropagation();
-                var targetId = window.currentContextScriptId || currentContextScriptId;
+                const targetId = window.currentContextScriptId || currentContextScriptId;
                 if (!targetId) return;
 
                 if (contextMenuEl) contextMenuEl.style.display = 'none';
 
                 // Find the existing script (could be default or user)
-                var originalScript = null;
-                var isDefault = targetId.indexOf('btn_') === 0;
+                let originalScript = null;
+                const isDefault = targetId.indexOf('btn_') === 0;
 
                 if (isDefault) {
-                    var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : (TATA.v2Defaults || {});
-                    var defaults = [];
+                    const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : (TATA.v2Defaults || {});
+                    let defaults = [];
                     // Flatten all layout arrays (in case defaults are mixed in different tabs)
                     if (v2Layout['tab_button']) defaults = defaults.concat(v2Layout['tab_button']);
 
-                    for (var i = 0; i < defaults.length; i++) {
+                    for (let i = 0; i < defaults.length; i++) {
                         if (defaults[i].id === targetId) {
                             originalScript = Object.assign({}, defaults[i]); // Create a shallow copy
                             break;
                         }
                     }
                 } else {
-                    var userScripts = TATA.getUserScripts();
+                    const userScripts = TATA.getUserScripts();
                     originalScript = userScripts[targetId];
                 }
 
@@ -96,24 +96,24 @@
                 }
 
                 // Create a duplicate payload
-                var namePrefix = isDefault ? originalScript.label : originalScript.name;
-                var newName = namePrefix + " (Copy)";
-                var newId = "copy_" + Date.now();
-                var newIcon = originalScript.icon || "★";
-                var newColor = originalScript.color || "#60a5fa";
-                var newCode = isDefault ? (originalScript.code || "") : (originalScript.code || "");
+                const namePrefix = isDefault ? originalScript.label : originalScript.name;
+                const newName = `${namePrefix} (Copy)`;
+                const newId = `copy_${Date.now()}`;
+                const newIcon = originalScript.icon || "★";
+                const newColor = originalScript.color || "#60a5fa";
+                let newCode = isDefault ? (originalScript.code || "") : (originalScript.code || "");
 
                 // If it's a default script with a .jsx file, read the actual file content
                 if (isDefault && originalScript.script && originalScript.script.endsWith('.jsx')) {
                     try {
-                        var fs = require('fs');
-                        var path = require('path');
-                        var extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
-                        var jsxPath = path.join(extensionPath, 'jsx', originalScript.script);
+                        const fs = require('fs');
+                        const path = require('path');
+                        const extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
+                        const jsxPath = path.join(extensionPath, 'jsx', originalScript.script);
                         newCode = fs.readFileSync(jsxPath, 'utf8');
                     } catch (readErr) {
                         console.error('[TATA] Failed to read JSX file:', readErr);
-                        newCode = "// Could not read " + originalScript.script + " - file may not exist";
+                        newCode = `// Could not read ${originalScript.script} - file may not exist`;
                     }
                 }
 
@@ -131,8 +131,8 @@
 
         // Edit Action
         if (btnEdit) {
-            btnEdit.onclick = function () {
-                var targetId = window.currentContextScriptId || currentContextScriptId;
+            btnEdit.onclick = () => {
+                const targetId = window.currentContextScriptId || currentContextScriptId;
 
                 if (targetId && targetId.indexOf('btn_') === 0) {
                     TATA.showToast && TATA.showToast("Default scripts cannot be edited.", "error");
@@ -148,9 +148,9 @@
 
         // Delete Action
         if (btnDelete) {
-            btnDelete.onclick = function (e) {
+            btnDelete.onclick = e => {
                 e.stopPropagation();
-                var targetId = currentContextScriptId || window.currentContextScriptId;
+                const targetId = currentContextScriptId || window.currentContextScriptId;
 
                 if (targetId && targetId.indexOf('btn_') === 0) {
                     TATA.showToast && TATA.showToast("Default scripts cannot be deleted.", "error");
@@ -161,7 +161,7 @@
                 if (contextMenuEl) contextMenuEl.style.display = 'none';
 
                 if (targetId) {
-                    TATA.showConfirmModal && TATA.showConfirmModal("Delete this script?", "This action cannot be undone.", function (confirmed) {
+                    TATA.showConfirmModal && TATA.showConfirmModal("Delete this script?", "This action cannot be undone.", confirmed => {
                         if (confirmed) {
                             TATA.deleteUserScript && TATA.deleteUserScript(targetId);
                             currentContextScriptId = null;
@@ -177,15 +177,15 @@
     // Update Item Color
     // ==========================================
     function updateItemColor(targetId, newColor) {
-        var v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
-        var userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
-        var hotkeys = TATA.getHotkeys ? TATA.getHotkeys() : [];
-        var found = false;
+        const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
+        const userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
+        const hotkeys = TATA.getHotkeys ? TATA.getHotkeys() : [];
+        let found = false;
 
         // Update In-Memory Layout
-        ['tab_button'].forEach(function (tab) {
+        ['tab_button'].forEach(tab => {
             if (v2Layout[tab]) {
-                v2Layout[tab].forEach(function (item) {
+                v2Layout[tab].forEach(item => {
                     if (item.id === targetId) {
                         item.color = newColor;
                         found = true;
@@ -201,8 +201,8 @@
         }
 
         // Update Hotkeys
-        var hotkeyUpdated = false;
-        hotkeys.forEach(function (hk) {
+        let hotkeyUpdated = false;
+        hotkeys.forEach(hk => {
             if (hk && hk.id === targetId) {
                 hk.color = newColor;
                 hotkeyUpdated = true;
@@ -228,7 +228,7 @@
         }
         // Render & toast
         if (found) {
-            var renderFn = TATA.renderGridDebounced || TATA.renderGrid;
+            const renderFn = TATA.renderGridDebounced || TATA.renderGrid;
             renderFn && renderFn();
             TATA.showToast && TATA.showToast("Color Updated!", "success");
         } else {
