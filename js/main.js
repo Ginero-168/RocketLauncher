@@ -12,13 +12,9 @@
 	const DOM = TATA.DOM;
 	const checkStorageVersion = TATA.checkStorageVersion;
 	const backupBeforeSave = TATA.backupBeforeSave;
-	const restoreFromBackup = TATA.restoreFromBackup;
-	const verifyPanelHealth = TATA.verifyPanelHealth;
 	const showToast = TATA.showToast;
 	const showInputModal = TATA.showInputModal;
 	const showConfirmModal = TATA.showConfirmModal;
-	const switchTab = TATA.switchTab;
-	const moveButtonToTab = TATA.moveButtonToTab;
 
 	let csInterface = TATA.getCSInterface ? TATA.getCSInterface() : TATA.csInterface;
 	if (!csInterface) csInterface = new CSInterface();
@@ -27,10 +23,6 @@
 	// Export Core System Variables to TATA for modules to use
 	window.TATA = window.TATA || {};
 	if (TATA.setCSInterface) TATA.setCSInterface(csInterface);
-
-	// Context Menu Globals
-	const contextMenuEl = null;
-	const currentContextScriptId = null;
 
 
 	function init() {
@@ -1156,9 +1148,6 @@
 	const ICONS = TATA.ICONS || {};
 	const v2Defaults = TATA.v2Defaults || {};
 	var renderGrid = TATA.renderGrid;
-	const createGridButton = TATA.createGridButton;
-	const setupGridDrag = TATA.setupGridDrag;
-	const getItemDataFromElement = TATA.getItemDataFromElement;
 	var saveV2Layout = TATA.saveV2Layout;
 
 	function setupTabsV2() {

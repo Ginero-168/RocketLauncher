@@ -106,7 +106,5 @@
     }
 
     TATA.initScriptTransfer = initScriptTransfer;
-    TATA.importScript = importScript;
-    TATA.exportScript = exportScript;
 
 })();

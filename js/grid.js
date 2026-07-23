@@ -388,10 +388,7 @@
     TATA.v2Defaults = v2Defaults;
     TATA.renderGrid = renderGrid;
     TATA.renderGridDebounced = renderGridDebounced;
-    TATA.createGridButton = createGridButton;
     TATA.saveV2Layout = saveV2Layout;
-    TATA.saveV2LayoutBatched = saveV2LayoutBatched;
-    TATA.saveLayout = saveV2Layout; // legacy alias for tabs.js
     TATA.getV2Layout = getV2Layout;
     TATA.setV2Layout = setV2Layout;
     TATA.reloadV2Layout = reloadV2Layout;

@@ -15,18 +15,6 @@
     let isProcessing = false;
 
     // ==========================================
-    // Prompt Templates (Feature 5)
-    // ==========================================
-    const AI_PROMPT_TEMPLATES = {
-        color: "Write a script that changes the [fill/stroke] color of all selected objects to [describe color]. ",
-        transform: "Write a script that [resizes/rotates/moves/aligns] the selected objects by [amount/direction]. ",
-        arrange: "Write a script that arranges the selected objects in a [grid/row/circle] with [spacing] spacing. ",
-        clean: "Write a script that cleans up the current document by [removing stray points/empty groups/hidden layers]. ",
-        text: "Write a script that [creates/modifies/outlines] text in the document with [font/size/content]. ",
-        custom: ""
-    };
-
-    // ==========================================
     // System Prompt
     // ==========================================
     function getAgentSystemPrompt() {
@@ -286,8 +274,6 @@
         openChat: openAgentModal,
         clearChat
     };
-
-    TATA.AI_PROMPT_TEMPLATES = AI_PROMPT_TEMPLATES;
 
     // Auto-init when DOM is ready
     if (document.readyState === 'loading') {

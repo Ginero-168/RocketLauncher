@@ -575,47 +575,6 @@
 
 
 
-		function pickColor(targetInputId) {
-			try {
-				// Debug: verify variable state
-				// alert("Debug Client: primaryHex = " + primaryHex); 
-
-				// Modern EyeDropper (Chromium 95+) - Likely fails on CEP 5
-				if (window.EyeDropper) {
-					const ed = new EyeDropper();
-					ed.open().then(result => {
-						updatePrimary(result.sRGBHex.toUpperCase());
-					}).catch(e => { });
-				} else {
-					// Fallback: Use Native OS Color Picker via ExtendScript
-					// Validation
-					if (!primaryHex) primaryHex = "#FF0000";
-
-					let currentInt = parseInt(primaryHex.replace('#', ''), 16);
-					if (isNaN(currentInt)) currentInt = 0xFF0000;
-
-					alert("Debug: Starting Bridge... (Wait for Picker)");
-
-					// Use Direct String Injection for maximum reliability (no reload needed)
-					const script = `try {    var dec = $.colorPicker(${currentInt});    if(dec > -1) {       var hex = dec.toString(16).toUpperCase();       while(hex.length < 6) hex = '0' + hex;       '#' + hex;    } else { 'CANCELED'; } } catch(e) { 'ERR: ' + e.message; }`;
-
-					TATA.host.evalCode(script, res => {
-						if (res && res.indexOf('#') === 0) {
-							updatePrimary(res);
-						} else if (res === 'CANCELED') {
-							// Do nothing
-						} else {
-							// If function not found (because hostscript didn't reload), warn user
-							if (res.includes('undefined')) alert("Please reload the extension to apply the update.");
-							else alert(`Picker Error: ${res}`);
-						}
-					});
-				}
-			} catch (e) {
-				alert(`Client JS Error: ${e}`);
-			}
-		}
-
 		// Initial Run
 		drawWheel();
 		updatePrimary(primaryHex);

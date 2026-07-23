@@ -244,17 +244,11 @@
         window.currentContextScriptId = id;
     }
 
-    function getCurrentContextId() {
-        return currentContextScriptId || window.currentContextScriptId;
-    }
-
     // ==========================================
     // Export to TATA Namespace
     // ==========================================
     TATA.startContextMenu = startContextMenu;
     TATA.updateItemColor = updateItemColor;
     TATA.setCurrentContextId = setCurrentContextId;
-    TATA.getCurrentContextId = getCurrentContextId;
-    TATA.QUICK_COLORS = COLORS;
 
 })();

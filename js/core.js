@@ -94,11 +94,6 @@
         extensionPath = decodeURIComponent(loc);
     }
     const userScripts = {};
-    const pickerMode = localStorage.getItem('tata_picker_mode') || 'os';
-
-    // Context Menu Globals
-    let contextMenuEl = null;
-    let currentContextScriptId = null;
 
     // ==========================================
     // Storage Versioning
@@ -145,39 +140,13 @@
     }
 
     // ==========================================
-    // Backup/Restore Utilities
+    // Backup Utility
     // ==========================================
     function backupBeforeSave(key) {
         const current = localStorage.getItem(key);
         if (current) {
             localStorage.setItem(`${key}_backup`, current);
         }
-    }
-
-    function restoreFromBackup(key) {
-        const backup = localStorage.getItem(`${key}_backup`);
-        if (backup) {
-            try {
-                JSON.parse(backup);
-                localStorage.setItem(key, backup);
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    // ==========================================
-    // Health Check
-    // ==========================================
-    function verifyPanelHealth() {
-        const container = document.getElementById('tab_button');
-        if (!container) {
-            console.warn('[TATA] Health check: tab_button container missing');
-            return false;
-        }
-        return true;
     }
 
     // ==========================================
@@ -201,17 +170,9 @@
     TATA.DOM = DOM;
     TATA.csInterface = csInterface;
     TATA.extensionPath = extensionPath;
-    // Dynamic getter – always returns latest resolved path
-    TATA.getExtensionPathCore = () => extensionPath;
     TATA.userScripts = userScripts;
-    TATA.pickerMode = pickerMode;
-    TATA.contextMenuEl = contextMenuEl;
-    TATA.currentContextScriptId = currentContextScriptId;
     TATA.checkStorageVersion = checkStorageVersion;
     TATA.backupBeforeSave = backupBeforeSave;
-    TATA.restoreFromBackup = restoreFromBackup;
-    TATA.verifyPanelHealth = verifyPanelHealth;
     TATA.fetchWithTimeout = fetchWithTimeout;
-    TATA.STORAGE_VERSION = STORAGE_VERSION;
 
 })();

@@ -9,6 +9,10 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - **CEP 11 Modernization**: All panel JS modules converted to ES6+ syntax (const/let, arrows, template literals, includes/startsWith, for-of where safe)
 - **Requirements**: README updated to Illustrator 2022+ / CEP 11.0
 
+### Removed
+- Deleted `js/flow.js` (dead Flow Builder module, never loaded)
+- Removed unused TATA exports and aliases from `core.js`, `state.js`, `main.js`, `grid.js`, `tabs.js`, `context-menu.js`, and `color-tools.js`
+
 ## [2.1.0] - 2026-07-22
 
 ### Added
