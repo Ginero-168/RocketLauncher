@@ -102,9 +102,6 @@
 				TATA.initScriptTransfer();
 			}
 
-			// V3: Verify panel health after all rendering
-			setTimeout(verifyPanelHealth, 200);
-
 			// Show active AI model badge
 			const initModelBadge = document.getElementById('ai_model_name');
 			const initModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
