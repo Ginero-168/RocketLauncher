@@ -18,12 +18,15 @@
   - `grid.js`, `scripts.js`, `context-menu.js`, `hotkeys.js` — main panel
   - `scripting.js`, `ai-agent.js` — editor/AI
   - `color-tools.js`, `script-transfer.js` — extracted feature modules
+  - `chat.js` — team chat (polls Hostinger PHP backend every 10s)
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
 - `js/config.js` loads public defaults and merges `js/config.local.json` (gitignored) for optional server features.
+- `chat-backend/` contains PHP + MySQL backend files for the team chat feature (upload to Hostinger).
 
 ## Security Notes
 - Never commit `js/config.local.json`.
+- Never commit `chat-backend/config.php` (contains MySQL credentials).
 - User-provided JSX/ExtendScript in grid/scripting is intentionally executed directly; sandboxing would require a separate architectural change.
 
 ## CEP / Node

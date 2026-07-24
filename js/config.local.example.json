@@ -1,4 +1,4 @@
 {
-    "SUPABASE_URL": "https://your-project.supabase.co",
-    "SUPABASE_KEY": "your-anon-key"
+    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend",
+    "CHAT_ROOM_PASSWORD": ""
 }

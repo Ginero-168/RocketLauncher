@@ -22,7 +22,8 @@
 		/* Editor, AI, and Button tabs use flex */
 		#tab_button.active,
 		#tab_editor.active,
-		#tab_ai.active {
+		#tab_ai.active,
+		#tab_chat.active {
 			display: flex !important;
 			flex-direction: column;
 			padding: 8px 10px;
@@ -32,7 +33,8 @@
 		/* Collapsed State: Override ID-based !important rules */
 		body.collapsed #tab_button.active,
 		body.collapsed #tab_editor.active,
-		body.collapsed #tab_ai.active {
+		body.collapsed #tab_ai.active,
+		body.collapsed #tab_chat.active {
 			display: none !important;
 		}
 
@@ -409,6 +411,110 @@
 			line-height: 1.6;
 		}
 
+		/* Team Chat tab styles */
+		#tab_chat .chat-msg {
+			max-width: 85%;
+			padding: 6px 10px;
+			border-radius: 8px;
+			background: #1e1e36;
+			border: 1px solid #2a2a4a;
+			font-size: 12px;
+			line-height: 1.5;
+			word-wrap: break-word;
+		}
+		#tab_chat .chat-msg-me {
+			align-self: flex-end;
+			background: rgba(99, 102, 241, 0.15);
+			border-color: rgba(99, 102, 241, 0.3);
+		}
+		#tab_chat .chat-msg-header {
+			display: flex;
+			justify-content: space-between;
+			gap: 8px;
+			margin-bottom: 3px;
+		}
+		#tab_chat .chat-msg-user {
+			font-weight: 600;
+			color: #818cf8;
+			font-size: 11px;
+		}
+		#tab_chat .chat-msg-me .chat-msg-user {
+			color: #a78bfa;
+		}
+		#tab_chat .chat-msg-time {
+			font-size: 10px;
+			color: #666;
+		}
+		#tab_chat .chat-msg-body {
+			color: #ddd;
+			white-space: pre-wrap;
+		}
+		#tab_chat .chat-code-block {
+			background: #0d0d1a;
+			border: 1px solid #2a2a4a;
+			border-radius: 4px;
+			padding: 8px;
+			margin: 4px 0;
+			font-family: 'SF Mono', Monaco, monospace;
+			font-size: 11px;
+			overflow-x: auto;
+			color: #4ec9b0;
+			max-height: 200px;
+			overflow-y: auto;
+		}
+		#tab_chat .chat-btn-card {
+			background: #0d0d1a;
+			border: 1px solid #3a3a5c;
+			border-radius: 6px;
+			padding: 10px;
+			margin: 4px 0;
+		}
+		#tab_chat .chat-btn-card-label {
+			font-weight: 600;
+			color: #fff;
+			margin-bottom: 4px;
+		}
+		#tab_chat .chat-btn-card-meta {
+			font-size: 11px;
+			color: #888;
+			margin-bottom: 8px;
+		}
+		#tab_chat .chat-btn-import {
+			background: rgba(16, 185, 129, 0.2);
+			color: #34d399;
+			border: 1px solid rgba(16, 185, 129, 0.4);
+			border-radius: 4px;
+			padding: 6px 14px;
+			cursor: pointer;
+			font-size: 12px;
+			font-weight: 500;
+		}
+		#tab_chat .chat-btn-import:hover {
+			background: rgba(16, 185, 129, 0.35);
+		}
+		#tab_chat .chat-btn-code {
+			margin-top: 8px;
+		}
+		#tab_chat .chat-btn-code summary {
+			cursor: pointer;
+			font-size: 11px;
+			color: #888;
+			padding: 4px 0;
+		}
+		#tab_chat .chat-btn-code pre {
+			background: #0d0d1a;
+			border: 1px solid #2a2a4a;
+			border-radius: 4px;
+			padding: 8px;
+			margin-top: 4px;
+			font-size: 11px;
+			color: #4ec9b0;
+			max-height: 150px;
+			overflow: auto;
+			white-space: pre-wrap;
+			word-break: break-all;
+		}
+
 		/* AI Helper tab styles */
 		#tab_ai .chat-area {
 			flex: 1;
@@ -644,6 +750,7 @@
 		<button class="tab-btn active" data-tab="tab_button">Button</button>
 		<button class="tab-btn" data-tab="tab_editor">Editor</button>
 		<button class="tab-btn" data-tab="tab_ai">AI Helper</button>
+		<button class="tab-btn" data-tab="tab_chat">Chat</button>
 	</div>
 
 	<!-- Tab Actions (New/Import/Export) -->
@@ -831,8 +938,32 @@
 		</div>
 	</div>
 
+	<!-- TAB 4: Team Chat -->
+	<div id="tab_chat" class="tab-content" style="display: flex; flex-direction: column; height: 100%;">
+		<!-- Setup: Enter name -->
+		<div id="chat_setup" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px;">
+			<div style="font-size: 14px; color: #aaa; text-align: center;">
+				Enter your name to join the team chat
+			</div>
+			<input type="text" id="chat_username" placeholder="Your name" maxlength="50"
+				style="width: 200px; padding: 8px 12px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; text-align: center; font-size: 13px;">
+			<button id="chat_join" class="primary" style="width: auto; padding: 8px 24px;">Join Chat</button>
+		</div>
 
+		<!-- Main Chat -->
+		<div id="chat_main" style="display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden;">
+			<!-- Messages -->
+			<div id="chat_messages" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+			</div>
 
+			<!-- Input -->
+			<div style="display: flex; gap: 6px; padding: 8px; border-top: 1px solid #333;">
+				<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"
+					style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
+				<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
+			</div>
+		</div>
+	</div>
 
 	<!-- Footer Toolbar (V2 Redesign) -->
 	<div class="footer-toolbar">
@@ -1025,6 +1156,7 @@
 		<div id="ctx_colors" class="ctx-colors"></div>
 		<div id="ctx_edit" class="ctx-item ctx-edit">✏️ Edit</div>
 		<div id="ctx_copy" class="ctx-item ctx-copy">📄 Create a Copy</div>
+		<div id="ctx_share_chat" class="ctx-item ctx-share">💬 Share to Chat</div>
 		<div id="ctx_delete" class="ctx-item ctx-delete">🗑️ Delete</div>
 	</div>
 
@@ -1051,7 +1183,9 @@
 	<!-- Scripting (embedded in main panel) -->
 	<script src="js/scripting.js"></script>
 	<script src="js/ai-agent.js"></script>
-<script src="js/color-tools.js"></script>
+	<script src="js/color-tools.js"></script>
+	<!-- Team Chat (Hostinger backend) -->
+	<script src="js/chat.js"></script>
 	<!-- Main Logic -->
 	<script src="js/main.js"></script>
 

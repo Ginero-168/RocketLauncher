@@ -33,6 +33,7 @@ build/
 Sevret
 js/config.local.json
 *.local.json
+chat-backend/config.php
 
 # Generated / runtime artifacts
 package-lock.json

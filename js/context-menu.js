@@ -129,6 +129,23 @@
             };
         }
 
+        // Share to Chat Action
+        const btnShareChat = document.getElementById('ctx_share_chat');
+        if (btnShareChat) {
+            btnShareChat.onclick = e => {
+                e.stopPropagation();
+                const targetId = window.currentContextScriptId || currentContextScriptId;
+                if (!targetId) return;
+                if (contextMenuEl) contextMenuEl.style.display = 'none';
+
+                if (TATA.chat && typeof TATA.chat.shareButton === 'function') {
+                    TATA.chat.shareButton(targetId);
+                } else {
+                    TATA.showToast && TATA.showToast('Chat module not loaded', 'error');
+                }
+            };
+        }
+
         // Edit Action
         if (btnEdit) {
             btnEdit.onclick = () => {

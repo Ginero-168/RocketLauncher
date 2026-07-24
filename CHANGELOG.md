@@ -2,6 +2,19 @@
 
 All notable changes to the Rocket Launcher extension will be documented in this file.
 
+## [2.2.0] - 2026-07-22
+
+### Added
+- **Team Chat**: New "Chat" tab in main panel for private team communication
+  - PHP + MySQL backend on Hostinger shared hosting (`chat-backend/`)
+  - Polls every 10 seconds (non-real-time, suitable for shared hosting)
+  - No login required — just enter your name to join
+  - Share TATA button configs to chat (right-click → "Share to Chat")
+  - Import shared buttons from chat with one click
+  - Code block rendering with triple-backtick syntax
+  - Auto-cleanup of messages older than 30 days
+  - Config via `js/config.local.json` (`CHAT_BACKEND_URL`, `CHAT_ROOM_PASSWORD`)
+
 ## [2.1.1] - 2026-07-22
 
 ### Changed

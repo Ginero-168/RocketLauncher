@@ -2,12 +2,12 @@
  * Rocket Launcher Extension - Configuration Loader
  *
  * Loads public defaults here and merges private credentials from
- * js/config.local.json (not tracked in git). To configure cloud sync,
+ * js/config.local.json (not tracked in git). To configure chat,
  * create js/config.local.json with:
  *
  *   {
- *       "SUPABASE_URL": "https://your-project.supabase.co",
- *       "SUPABASE_KEY": "your-anon-key"
+ *       "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend",
+ *       "CHAT_ROOM_PASSWORD": ""
  *   }
  */
 
@@ -16,6 +16,10 @@
 
     const config = {
         DEBUG: false,
+
+        // Chat backend URL (set in config.local.json)
+        CHAT_BACKEND_URL: '',
+        CHAT_ROOM_PASSWORD: '',
 
         log(...args) {
             if (this.DEBUG) {
@@ -37,8 +41,8 @@
             if (fs.existsSync(localPath)) {
                 const raw = fs.readFileSync(localPath, 'utf8');
                 const local = JSON.parse(raw);
-                if (local.SUPABASE_URL) config.SUPABASE_URL = local.SUPABASE_URL;
-                if (local.SUPABASE_KEY) config.SUPABASE_KEY = local.SUPABASE_KEY;
+                if (local.CHAT_BACKEND_URL) config.CHAT_BACKEND_URL = local.CHAT_BACKEND_URL;
+                if (local.CHAT_ROOM_PASSWORD !== undefined) config.CHAT_ROOM_PASSWORD = local.CHAT_ROOM_PASSWORD;
                 if (local.DEBUG !== undefined) config.DEBUG = !!local.DEBUG;
             }
         } catch (e) {
