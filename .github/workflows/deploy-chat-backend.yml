@@ -1,0 +1,64 @@
+name: Deploy Chat Backend to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'chat-backend/**'
+      - '.github/workflows/deploy-chat-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate config.php from GitHub Secrets
+        working-directory: chat-backend
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          ROOM_PASSWORD: ${{ secrets.CHAT_ROOM_PASSWORD }}
+          CLEANUP_DAYS: ${{ secrets.CLEANUP_DAYS }}
+        run: |
+          python3 - <<'PYEOF'
+          import os
+
+          def q(s):
+              return "'" + s.replace("'", "\\'") + "'" if s is not None else "''"
+
+          cfg = f"""<?php
+          define('DB_HOST', {q(os.environ.get('DB_HOST', 'localhost'))});
+          define('DB_NAME', {q(os.environ.get('DB_NAME', ''))});
+          define('DB_USER', {q(os.environ.get('DB_USER', ''))});
+          define('DB_PASS', {q(os.environ.get('DB_PASS', ''))});
+          define('DB_CHARSET', 'utf8mb4');
+          define('ROOM_PASSWORD', {q(os.environ.get('ROOM_PASSWORD', ''))});
+          define('CLEANUP_DAYS', {int(os.environ.get('CLEANUP_DAYS', '30'))});
+          """
+
+          with open('config.php', 'w', encoding='utf-8') as f:
+              f.write(cfg)
+
+          print('Generated chat-backend/config.php')
+          PYEOF
+
+      - name: Deploy to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./chat-backend/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          # Do NOT delete remote files that are not in the repo (prevents deleting server config manually set)
+          dangerous-clean-slate: false
+          # Exclude setup.php after first deploy for security; remove this line if you still need setup.php on server
+          exclude: |
+            setup.php
+            README.md
