@@ -20,6 +20,17 @@
     };
 
     // ==========================================
+    // Safe toast helper (TATA might not exist yet)
+    // ==========================================
+    function safeToast(message, type) {
+        if (window.TATA && typeof TATA.showToast === 'function') {
+            TATA.showToast(message, type);
+        } else {
+            console.log(`[Chat] ${type}: ${message}`);
+        }
+    }
+
+    // ==========================================
     // DOM helpers
     // ==========================================
     function $(id) { return document.getElementById(id); }
@@ -53,7 +64,7 @@
     async function sendMessage(content, messageType, buttonData) {
         const url = getBackendUrl();
         if (!url) {
-            TATA.showToast && TATA.showToast('Chat backend not configured', 'error');
+            safeToast('Chat backend not configured', 'error');
             return false;
         }
 
@@ -71,14 +82,14 @@
             });
             const data = await res.json();
             if (!data.ok) {
-                TATA.showToast && TATA.showToast(`Chat error: ${data.error}`, 'error');
+                safeToast(`Chat error: ${data.error}`, 'error');
                 return false;
             }
             // Immediately poll for new messages after sending
             pollMessages();
             return true;
         } catch (e) {
-            TATA.showToast && TATA.showToast(`Chat send failed: ${e.message}`, 'error');
+            safeToast(`Chat send failed: ${e.message}`, 'error');
             return false;
         }
     }
@@ -215,7 +226,7 @@
     // ==========================================
     function importButtonConfig(btnData) {
         if (!btnData || !btnData.label) {
-            TATA.showToast && TATA.showToast('Invalid button data', 'error');
+            safeToast('Invalid button data', 'error');
             return;
         }
 
@@ -231,10 +242,10 @@
                 id,
                 false
             );
-            TATA.showToast && TATA.showToast(`Imported "${btnData.label}" to panel`, 'success');
+            safeToast(`Imported "${btnData.label}" to panel`, 'success');
             if (typeof TATA.renderGrid === 'function') TATA.renderGrid();
         } else {
-            TATA.showToast && TATA.showToast('Panel not ready for import', 'error');
+            safeToast('Panel not ready for import', 'error');
         }
     }
 
@@ -243,7 +254,7 @@
     // ==========================================
     async function shareButtonToChat(btnId) {
         if (!chatState.username) {
-            TATA.showToast && TATA.showToast('Open Chat tab and enter your name first', 'error');
+            safeToast('Open Chat tab and enter your name first', 'error');
             return;
         }
 
@@ -258,7 +269,7 @@
         }
 
         if (!btnData) {
-            TATA.showToast && TATA.showToast('Button not found', 'error');
+            safeToast('Button not found', 'error');
             return;
         }
 
@@ -279,7 +290,7 @@
             shareData
         );
         if (ok) {
-            TATA.showToast && TATA.showToast(`Shared "${shareData.label}" to chat`, 'success');
+            safeToast(`Shared "${shareData.label}" to chat`, 'success');
         }
     }
 
@@ -311,7 +322,7 @@
             nameBtn.onclick = () => {
                 const name = nameInput.value.trim();
                 if (!name) {
-                    TATA.showToast && TATA.showToast('Enter your name', 'error');
+                    safeToast('Enter your name', 'error');
                     return;
                 }
                 chatState.username = name;
@@ -374,10 +385,18 @@
     };
 
     // Auto-init when DOM ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChat);
-    } else {
+    // Wait for TATA core to be available before binding
+    function bootChat() {
+        if (typeof window.TATA === 'undefined') {
+            setTimeout(bootChat, 50);
+            return;
+        }
         initChat();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootChat);
+    } else {
+        bootChat();
     }
 
 })();

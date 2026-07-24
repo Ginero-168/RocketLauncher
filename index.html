@@ -19,7 +19,7 @@
 			display: none;
 		}
 
-		/* Editor, AI, and Button tabs use flex */
+		/* Editor, AI, Button, and Chat tabs use flex */
 		#tab_button.active,
 		#tab_editor.active,
 		#tab_ai.active,
@@ -28,6 +28,12 @@
 			flex-direction: column;
 			padding: 8px 10px;
 			gap: 4px;
+		}
+
+		/* Chat tab should not scroll as a whole — only the message list scrolls */
+		#tab_chat.active {
+			overflow: hidden !important;
+			height: calc(100vh - 120px);
 		}
 
 		/* Collapsed State: Override ID-based !important rules */
@@ -939,7 +945,7 @@
 	</div>
 
 	<!-- TAB 4: Team Chat -->
-	<div id="tab_chat" class="tab-content" style="display: flex; flex-direction: column; height: 100%;">
+	<div id="tab_chat" class="tab-content">
 		<!-- Setup: Enter name -->
 		<div id="chat_setup" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px;">
 			<div style="font-size: 14px; color: #aaa; text-align: center;">
