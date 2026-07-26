@@ -82,6 +82,8 @@ jobs:
               http_response_code(500);
               exit('Failed to write config.php');
           }}
+          @unlink(__DIR__ . '/setup.php');
+          @unlink(__DIR__ . '/ping.php');
           @unlink(__FILE__);
           echo 'OK';
           """
