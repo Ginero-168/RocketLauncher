@@ -18,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate config.php from GitHub Secrets
+      - name: Generate config and installer from GitHub Secrets
         working-directory: chat-backend
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
@@ -27,8 +27,11 @@ jobs:
           DB_PASS: ${{ secrets.DB_PASS }}
           ROOM_PASSWORD: ${{ secrets.CHAT_ROOM_PASSWORD }}
           CLEANUP_DAYS: ${{ secrets.CLEANUP_DAYS }}
+          INSTALL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
         run: |
           python3 - <<'PYEOF'
+          import base64
           import os
 
           def q(s):
@@ -59,6 +62,35 @@ jobs:
               f.write(cfg)
 
           print('Generated chat-backend/config.php')
+
+          # Derive backend URL from FTP username (e.g. u123.domain.com -> domain.com)
+          ftp_username = os.environ.get('FTP_USERNAME', '')
+          domain = ftp_username.split('.', 1)[1] if '.' in ftp_username else 'yourdomain.com'
+          backend_url = f"https://{domain}/chat-backend"
+
+          # Generate a one-time PHP installer that creates config.php on the server
+          token = os.environ.get('INSTALL_TOKEN', '')
+          cfg_b64 = base64.b64encode(cfg.encode('utf-8')).decode('utf-8')
+          installer = f"""<?php
+          if (!isset($_GET['token']) || $_GET['token'] !== '{token}') {{
+              http_response_code(403);
+              exit('Forbidden');
+          }}
+          $cfg = base64_decode('{cfg_b64}');
+          $ok = @file_put_contents(__DIR__ . '/config.php', $cfg);
+          if ($ok === false) {{
+              http_response_code(500);
+              exit('Failed to write config.php');
+          }}
+          @unlink(__FILE__);
+          echo 'OK';
+          """
+
+          with open('install-config.php', 'w', encoding='utf-8') as f:
+              f.write(installer)
+
+          print('Generated chat-backend/install-config.php')
+          print('Backend URL:', backend_url)
           PYEOF
 
       - name: Deploy chat-backend to Hostinger via FTP
@@ -89,7 +121,7 @@ jobs:
                       ftp.mkd(part)
                       ftp.cwd(part)
 
-          SKIP_FILES = {'setup.php', 'ping.php'}
+          SKIP_FILES = {'setup.php', 'ping.php', 'config.php'}
 
           def safe_delete(ftp, name):
               try:
@@ -113,7 +145,7 @@ jobs:
                           pass
 
                   for name in files:
-                      if name in SKIP_FILES or name == 'config.php':
+                      if name in SKIP_FILES:
                           print('Skipping', name)
                           continue
                       local_path = os.path.join(root, name)
@@ -121,18 +153,6 @@ jobs:
                       with open(local_path, 'rb') as f:
                           ftp.storbinary('STOR ' + remote_path, f)
                       print('Uploaded', remote_path)
-
-          def upload_config(ftp, local, name='config.php'):
-              # Some hosts reject direct STOR of config.php; use temp name + rename
-              local_path = os.path.join(local, name)
-              temp_name = name + '.tmp'
-              print('Uploading', name, 'as', temp_name)
-              safe_delete(ftp, name)
-              with open(local_path, 'rb') as f:
-                  ftp.storbinary('STOR ' + temp_name, f)
-              print('Renaming', temp_name, '->', name)
-              ftp.rename(temp_name, name)
-              print('Config uploaded as', name)
 
           print('FTP server:', server)
           print('FTP remote dir:', remote_dir)
@@ -165,19 +185,27 @@ jobs:
           print('Local files in', local_dir, ':', os.listdir(local_dir))
 
           upload_dir(ftp, local_dir, '')
-
-          # Upload config.php using temp file + rename to avoid host rejecting the filename
-          upload_config(ftp, local_dir, 'config.php')
-
           print('Remote files after upload:', ftp.nlst())
 
           # Remove setup/debug endpoints from the server for security
-          for name in SKIP_FILES:
+          for name in {'setup.php', 'ping.php'}:
               safe_delete(ftp, name)
 
           ftp.quit()
           print('Deploy complete')
           PYEOF
+
+      - name: Create config.php on server via PHP installer
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          INSTALL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Derive backend URL from FTP username (e.g. u123.domain.com -> domain.com)
+          domain="${FTP_USERNAME#*.}"
+          backend_url="https://${domain}/chat-backend"
+          echo "Backend URL: $backend_url"
+          response=$(curl -f -sS "${backend_url}/install-config.php?token=${INSTALL_TOKEN}")
+          echo "Installer response: $response"
 
       - name: Post-deploy notes
         run: |
