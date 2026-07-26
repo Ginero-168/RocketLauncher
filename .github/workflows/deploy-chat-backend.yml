@@ -89,6 +89,8 @@ jobs:
                       ftp.mkd(part)
                       ftp.cwd(part)
 
+          SKIP_FILES = {'setup.php', 'ping.php'}
+
           def upload_dir(ftp, local, remote_prefix):
               for root, dirs, files in os.walk(local):
                   rel = os.path.relpath(root, local)
@@ -104,11 +106,22 @@ jobs:
                           pass
 
                   for name in files:
+                      if name in SKIP_FILES:
+                          print('Skipping', name)
+                          continue
                       local_path = os.path.join(root, name)
                       remote_path = (remote_root + '/' + name) if remote_root else name
                       with open(local_path, 'rb') as f:
                           ftp.storbinary('STOR ' + remote_path, f)
                       print('Uploaded', remote_path)
+
+          def cleanup_files(ftp, files):
+              for name in files:
+                  try:
+                      ftp.delete(name)
+                      print('Deleted remote', name)
+                  except ftplib.error_perm:
+                      print('Remote file not found or could not delete:', name)
 
           ftp = None
           try:
@@ -132,6 +145,10 @@ jobs:
           # Move into (and create if needed) the target directory, relative to FTP home
           mkdir_p(ftp, remote_dir)
           upload_dir(ftp, local_dir, '')
+
+          # Remove setup/debug endpoints from the server for security
+          cleanup_files(ftp, SKIP_FILES)
+
           ftp.quit()
           print('Deploy complete')
           PYEOF
@@ -139,6 +156,4 @@ jobs:
       - name: Post-deploy notes
         run: |
           echo "Deployment finished."
-          echo "Visit https://yourdomain.com/chat-backend/ping.php to verify."
-          echo "Then visit https://yourdomain.com/chat-backend/setup.php to create the database table."
-          echo "Remember to delete setup.php and ping.php after setup for security."
+          echo "Backend URL: https://yourdomain.com/chat-backend"
