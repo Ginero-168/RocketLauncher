@@ -91,6 +91,13 @@ jobs:
 
           SKIP_FILES = {'setup.php', 'ping.php'}
 
+          def safe_delete(ftp, name):
+              try:
+                  ftp.delete(name)
+                  print('Deleted remote', name)
+              except ftplib.error_perm:
+                  print('Remote file not found or could not delete:', name)
+
           def upload_dir(ftp, local, remote_prefix):
               for root, dirs, files in os.walk(local):
                   rel = os.path.relpath(root, local)
@@ -106,7 +113,7 @@ jobs:
                           pass
 
                   for name in files:
-                      if name in SKIP_FILES:
+                      if name in SKIP_FILES or name == 'config.php':
                           print('Skipping', name)
                           continue
                       local_path = os.path.join(root, name)
@@ -115,13 +122,17 @@ jobs:
                           ftp.storbinary('STOR ' + remote_path, f)
                       print('Uploaded', remote_path)
 
-          def cleanup_files(ftp, files):
-              for name in files:
-                  try:
-                      ftp.delete(name)
-                      print('Deleted remote', name)
-                  except ftplib.error_perm:
-                      print('Remote file not found or could not delete:', name)
+          def upload_config(ftp, local, name='config.php'):
+              # Some hosts reject direct STOR of config.php; use temp name + rename
+              local_path = os.path.join(local, name)
+              temp_name = name + '.tmp'
+              print('Uploading', name, 'as', temp_name)
+              safe_delete(ftp, name)
+              with open(local_path, 'rb') as f:
+                  ftp.storbinary('STOR ' + temp_name, f)
+              print('Renaming', temp_name, '->', name)
+              ftp.rename(temp_name, name)
+              print('Config uploaded as', name)
 
           print('FTP server:', server)
           print('FTP remote dir:', remote_dir)
@@ -155,8 +166,14 @@ jobs:
 
           upload_dir(ftp, local_dir, '')
 
+          # Upload config.php using temp file + rename to avoid host rejecting the filename
+          upload_config(ftp, local_dir, 'config.php')
+
+          print('Remote files after upload:', ftp.nlst())
+
           # Remove setup/debug endpoints from the server for security
-          cleanup_files(ftp, SKIP_FILES)
+          for name in SKIP_FILES:
+              safe_delete(ftp, name)
 
           ftp.quit()
           print('Deploy complete')
