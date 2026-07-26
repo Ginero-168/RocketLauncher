@@ -31,9 +31,8 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 
 1. **Create MySQL database** in hPanel → Databases → MySQL Databases
 2. **Push to `main`** to trigger the deploy workflow
-3. **Verify deploy**: Visit `https://yourdomain.com/chat-backend/ping.php`
-4. **Run setup once**: Visit `https://yourdomain.com/chat-backend/setup.php` to create the `chat_messages` table
-5. **Delete `setup.php` and `ping.php` after first run** for security
+3. **Run the setup wizard**: Visit `https://yourdomain.com/chat-backend/setup.php`, enter your MySQL credentials, and click **Create Config & Table**
+4. **Delete `setup.php` and `ping.php` after setup** for security
 
 ### Manual Backend Setup (without Actions)
 

@@ -1,7 +1,6 @@
 # TATA Chat Backend
 
 PHP + MySQL backend for the TATA Panel chat feature.
-Upload this folder to your Hostinger shared hosting.
 
 ## Setup (3 steps)
 
@@ -11,24 +10,20 @@ In **hPanel > Databases > MySQL Databases**:
 - Create a user and grant all privileges to this database
 - Note the credentials
 
-### 2. Configure
-- Copy `config.example.php` to `config.php`
-- Edit `config.php` with your MySQL credentials
-- (Optional) Set `ROOM_PASSWORD` to restrict access
+### 2. Deploy files
+Push this repo to `main`; the GitHub Actions workflow deploys `chat-backend/` to Hostinger automatically.
 
-### 3. Verify deploy
-Visit in your browser:
-```
-https://yourdomain.com/chat-backend/ping.php
-```
-You should see JSON with `"config_exists": true` and `"db_connected": true`.
-
-### 4. Run setup
+### 3. Run the setup wizard
 Visit in your browser:
 ```
 https://yourdomain.com/chat-backend/setup.php
 ```
-You should see "Table 'chat_messages' created successfully."
+Enter your MySQL credentials and click **Create Config & Table**.
+
+The wizard creates:
+- `config.php` with your database settings
+- The `chat_messages` table
+- The `uploads/` directory for image uploads
 
 **Delete `setup.php` and `ping.php` after setup is complete for security.**
 
@@ -36,16 +31,16 @@ You should see "Table 'chat_messages' created successfully."
 
 | File | Purpose |
 |---|---|
-| `config.example.php` | Template config — copy to `config.php` |
+| `config.example.php` | Template config — used by the setup wizard |
 | `config.php` | Your actual config (do NOT commit this) |
-| `setup.php` | One-time table creation — delete after use |
+| `setup.php` | One-time setup wizard — delete after use |
 | `ping.php` | Health/debug endpoint — delete after use |
-| `send.php` | POST endpoint to send a message |
+| `send.php` | POST endpoint to send a message or upload an image |
 | `poll.php` | GET endpoint to fetch new messages |
 
 ## API
 
-### Send message
+### Send text message
 ```
 POST /chat-backend/send.php
 Content-Type: application/json
@@ -59,6 +54,18 @@ Content-Type: application/json
 }
 ```
 
+### Send image
+```
+POST /chat-backend/send.php
+Content-Type: multipart/form-data
+
+username=John
+message_type=image
+password=
+content=Optional caption
+image=<binary image file>
+```
+
 ### Poll messages
 ```
 GET /chat-backend/poll.php?since=0&password=
@@ -67,5 +74,6 @@ GET /chat-backend/poll.php?since=0&password=
 ## Security notes
 - `config.php` contains your DB password — do NOT commit it to git
 - The `.gitignore` in the parent repo already excludes `config.php`
+- The deploy workflow never overwrites `config.php`
 - For production, consider enabling `ROOM_PASSWORD`
-- Messages auto-delete after 30 days (configurable in `config.php`)
+- Messages (and their image files) auto-delete after 30 days (configurable in `config.php`)
