@@ -44,15 +44,16 @@ jobs:
           except ValueError:
               cleanup_days = 30
 
-          cfg = f"""<?php
-define('DB_HOST', {q(os.environ.get('DB_HOST', 'localhost'))});
-define('DB_NAME', {q(os.environ.get('DB_NAME', ''))});
-define('DB_USER', {q(os.environ.get('DB_USER', ''))});
-define('DB_PASS', {q(os.environ.get('DB_PASS', ''))});
-define('DB_CHARSET', 'utf8mb4');
-define('ROOM_PASSWORD', {q(os.environ.get('ROOM_PASSWORD', ''))});
-define('CLEANUP_DAYS', {cleanup_days});
-"""
+          cfg = (
+              "<?php\n"
+              f"define('DB_HOST', {q(os.environ.get('DB_HOST', 'localhost'))});\n"
+              f"define('DB_NAME', {q(os.environ.get('DB_NAME', ''))});\n"
+              f"define('DB_USER', {q(os.environ.get('DB_USER', ''))});\n"
+              f"define('DB_PASS', {q(os.environ.get('DB_PASS', ''))});\n"
+              "define('DB_CHARSET', 'utf8mb4');\n"
+              f"define('ROOM_PASSWORD', {q(os.environ.get('ROOM_PASSWORD', ''))});\n"
+              f"define('CLEANUP_DAYS', {cleanup_days});\n"
+          )
 
           with open('config.php', 'w', encoding='utf-8') as f:
               f.write(cfg)
