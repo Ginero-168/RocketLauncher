@@ -963,10 +963,18 @@
 			</div>
 
 			<!-- Input -->
-			<div style="display: flex; gap: 6px; padding: 8px; border-top: 1px solid #333;">
-				<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"
-					style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
-				<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
+			<div id="chat_input_area" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 1px solid #333;">
+				<div id="chat_image_preview" style="display: none; align-items: center; gap: 8px;">
+					<img id="chat_image_thumb" src="" alt="" style="max-height: 60px; max-width: 100px; border-radius: 4px; border: 1px solid #3a3a5c;">
+					<button id="chat_image_remove" type="button" class="secondary" style="padding: 4px 8px; font-size: 11px;">Remove</button>
+				</div>
+				<div style="display: flex; gap: 6px; align-items: flex-end;">
+					<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"
+						style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
+					<input type="file" id="chat_image_input" accept="image/*" style="display: none;">
+					<button id="chat_image_btn" type="button" class="secondary" style="width: auto; padding: 8px 12px;" title="Send image">🖼</button>
+					<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
+				</div>
 			</div>
 		</div>
 	</div>

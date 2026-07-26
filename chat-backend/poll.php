@@ -4,7 +4,7 @@
  * GET endpoint: poll.php?since=ID&password=xxx
  *
  * Response (JSON):
- *   { ok: true, messages: [ { id, username, message_type, content, button_data, created_at } ] }
+ *   { ok: true, messages: [ { id, username, message_type, content, button_data, file_path, created_at } ] }
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -30,12 +30,7 @@ ini_set('error_log', __DIR__ . '/php-errors.log');
 
 if (!file_exists(__DIR__ . '/config.php')) {
     http_response_code(500);
-    echo json_encode([
-        'ok' => false,
-        'error' => 'Server config missing',
-        'debug_dir' => __DIR__,
-        'debug_files' => scandir(__DIR__),
-    ]);
+    echo json_encode(['ok' => false, 'error' => 'Server config missing']);
     exit;
 }
 
@@ -54,7 +49,7 @@ if (ROOM_PASSWORD !== '') {
 $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
 $limit = 100; // max messages per poll
 
-// Auto-cleanup old messages
+// Auto-cleanup old messages and their image files
 if (CLEANUP_DAYS > 0) {
     try {
         $cleanupPdo = new PDO(
@@ -63,6 +58,17 @@ if (CLEANUP_DAYS > 0) {
             DB_PASS,
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
+
+        $oldMessages = $cleanupPdo->query(
+            "SELECT file_path FROM chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL " . CLEANUP_DAYS . " DAY)"
+        )->fetchAll();
+
+        foreach ($oldMessages as $msg) {
+            if (!empty($msg['file_path'])) {
+                @unlink(__DIR__ . '/' . $msg['file_path']);
+            }
+        }
+
         $cleanupPdo->exec(
             "DELETE FROM chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL " . CLEANUP_DAYS . " DAY)"
         );
@@ -82,8 +88,11 @@ try {
         ]
     );
 
+    // Ensure file_path column exists (idempotent migration)
+    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
+
     $stmt = $pdo->prepare("
-        SELECT id, username, message_type, content, button_data, created_at
+        SELECT id, username, message_type, content, button_data, file_path, created_at
         FROM chat_messages
         WHERE id > :since
         ORDER BY id ASC
@@ -102,6 +111,7 @@ try {
             'message_type' => $row['message_type'],
             'content' => $row['content'],
             'button_data' => $row['button_data'] ? json_decode($row['button_data'], true) : null,
+            'file_path' => $row['file_path'],
             'created_at' => $row['created_at'],
         ];
     }
@@ -110,5 +120,5 @@ try {
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['ok' => false, 'error' => 'Database error']);
 }

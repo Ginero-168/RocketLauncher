@@ -3,8 +3,9 @@
  * TATA Chat - Send Message
  * POST endpoint: send.php
  *
- * Body (JSON):
- *   { username, content, message_type, button_data, password }
+ * Supports:
+ * - JSON body: { username, content, message_type, button_data, password }
+ * - Multipart form: username, content, message_type, password, image (file)
  *
  * Response (JSON):
  *   { ok: true, id: 123 }
@@ -39,14 +40,15 @@ if (!file_exists(__DIR__ . '/config.php')) {
 
 require_once __DIR__ . '/config.php';
 
-// Read JSON body
-$raw = file_get_contents('php://input');
-$body = json_decode($raw, true);
-
-if (!$body) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Invalid JSON']);
-    exit;
+// Parse request body (JSON or multipart)
+$isMultipart = !empty($_FILES);
+$body = $_POST;
+if (!$isMultipart && $_SERVER['CONTENT_TYPE'] && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
+    $raw = file_get_contents('php://input');
+    $parsed = json_decode($raw, true);
+    if ($parsed) {
+        $body = $parsed;
+    }
 }
 
 // Check room password
@@ -61,9 +63,10 @@ if (ROOM_PASSWORD !== '') {
 
 // Validate input
 $username = trim($body['username'] ?? '');
-$content = trim($body['content'] ?? '');
 $messageType = $body['message_type'] ?? 'text';
+$content = trim($body['content'] ?? '');
 $buttonData = $body['button_data'] ?? null;
+$filePath = null;
 
 if ($username === '' || mb_strlen($username) > 50) {
     http_response_code(400);
@@ -71,23 +74,74 @@ if ($username === '' || mb_strlen($username) > 50) {
     exit;
 }
 
-if ($content === '') {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Content required']);
-    exit;
-}
-
-// Limit message size (prevent abuse)
-if (mb_strlen($content) > 10000) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Message too long (max 10000 chars)']);
-    exit;
-}
-
-// Validate message_type
-$allowedTypes = ['text', 'button_config'];
+$allowedTypes = ['text', 'button_config', 'image'];
 if (!in_array($messageType, $allowedTypes, true)) {
     $messageType = 'text';
+}
+
+// Handle image upload
+if ($messageType === 'image') {
+    if (empty($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Image upload failed']);
+        exit;
+    }
+
+    $file = $_FILES['image'];
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $maxSize = 5 * 1024 * 1024; // 5 MB
+    if ($file['size'] > $maxSize) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Image too large (max 5 MB)']);
+        exit;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!in_array($mime, $allowedMimes, true)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Invalid image type']);
+        exit;
+    }
+
+    $ext = match ($mime) {
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        default => 'bin',
+    };
+
+    $filename = bin2hex(random_bytes(16)) . '.' . $ext;
+    $destination = $uploadDir . '/' . $filename;
+    if (!@move_uploaded_file($file['tmp_name'], $destination)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Failed to save image']);
+        exit;
+    }
+
+    $filePath = 'uploads/' . $filename;
+    if ($content === '') {
+        $content = $filename;
+    }
+} else {
+    // Text / button_config messages require content
+    if ($content === '') {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Content required']);
+        exit;
+    }
+
+    if (mb_strlen($content) > 10000) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Message too long (max 10000 chars)']);
+        exit;
+    }
 }
 
 // Sanitize button_data (must be valid JSON object or null)
@@ -106,9 +160,12 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
+    // Ensure file_path column exists (idempotent migration)
+    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
+
     $stmt = $pdo->prepare("
-        INSERT INTO chat_messages (username, message_type, content, button_data)
-        VALUES (:username, :message_type, :content, :button_data)
+        INSERT INTO chat_messages (username, message_type, content, button_data, file_path)
+        VALUES (:username, :message_type, :content, :button_data, :file_path)
     ");
 
     $stmt->execute([
@@ -116,11 +173,12 @@ try {
         ':message_type' => $messageType,
         ':content' => $content,
         ':button_data' => $buttonData ? json_encode($buttonData) : null,
+        ':file_path' => $filePath,
     ]);
 
     echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['ok' => false, 'error' => 'Database error']);
 }

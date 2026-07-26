@@ -17,6 +17,7 @@
         polling: false,
         pollTimer: null,
         active: false,
+        selectedImage: null,
     };
 
     // ==========================================
@@ -61,24 +62,41 @@
         return (window.TATA_CONFIG && TATA_CONFIG.CHAT_ROOM_PASSWORD) || '';
     }
 
-    async function sendMessage(content, messageType, buttonData) {
+    async function sendMessage(content, messageType, buttonData, imageFile) {
         const url = getBackendUrl();
         if (!url) {
             safeToast('Chat backend not configured', 'error');
             return false;
         }
 
+        const type = messageType || 'text';
+        const isImage = type === 'image' && imageFile;
+
+        let body;
+        let headers = {};
+        if (isImage) {
+            body = new FormData();
+            body.append('username', chatState.username);
+            body.append('content', content || imageFile.name || 'Image');
+            body.append('message_type', 'image');
+            body.append('password', getRoomPassword());
+            body.append('image', imageFile);
+        } else {
+            headers['Content-Type'] = 'application/json';
+            body = JSON.stringify({
+                username: chatState.username,
+                content,
+                message_type: type,
+                button_data: buttonData || null,
+                password: getRoomPassword(),
+            });
+        }
+
         try {
             const res = await fetch(`${url}/send.php`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: chatState.username,
-                    content,
-                    message_type: messageType || 'text',
-                    button_data: buttonData || null,
-                    password: getRoomPassword(),
-                }),
+                headers,
+                body,
             });
             const data = await res.json();
             if (!data.ok) {
@@ -176,6 +194,29 @@
             }
 
             wrapper.appendChild(card);
+        } else if (msg.message_type === 'image' && msg.file_path) {
+            // Render image message
+            const img = document.createElement('img');
+            img.className = 'chat-msg-image';
+            img.src = `${getBackendUrl()}/${msg.file_path}`;
+            img.alt = msg.content || 'Image';
+            img.style.maxWidth = '200px';
+            img.style.maxHeight = '150px';
+            img.style.borderRadius = '6px';
+            img.style.cursor = 'pointer';
+            img.style.border = '1px solid #3a3a5c';
+            img.onclick = () => window.open(img.src, '_blank');
+            wrapper.appendChild(img);
+
+            if (msg.content && msg.content !== msg.file_path.split('/').pop()) {
+                const caption = document.createElement('div');
+                caption.className = 'chat-msg-caption';
+                caption.textContent = msg.content;
+                caption.style.fontSize = '11px';
+                caption.style.color = '#aaa';
+                caption.style.marginTop = '4px';
+                wrapper.appendChild(caption);
+            }
         } else {
             // Regular text message
             const body = document.createElement('div');
@@ -295,11 +336,39 @@
     }
 
     // ==========================================
+    // Image upload helpers
+    // ==========================================
+    function clearImagePreview() {
+        const preview = $('chat_image_preview');
+        const thumb = $('chat_image_thumb');
+        const input = $('chat_image_input');
+        chatState.selectedImage = null;
+        if (preview) preview.style.display = 'none';
+        if (thumb) thumb.src = '';
+        if (input) input.value = '';
+    }
+
+    function showImagePreview(file) {
+        const preview = $('chat_image_preview');
+        const thumb = $('chat_image_thumb');
+        if (!preview || !thumb) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            thumb.src = e.target.result;
+            preview.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ==========================================
     // Init / Activate / Deactivate
     // ==========================================
     function initChat() {
         const input = $('chat_input');
         const sendBtn = $('chat_send');
+        const imageBtn = $('chat_image_btn');
+        const imageInput = $('chat_image_input');
+        const imageRemove = $('chat_image_remove');
         const nameInput = $('chat_username');
         const nameBtn = $('chat_join');
         const chatSetup = $('chat_setup');
@@ -333,13 +402,38 @@
             };
         }
 
+        // Image picker button
+        if (imageBtn && imageInput) {
+            imageBtn.onclick = () => imageInput.click();
+            imageInput.onchange = () => {
+                const file = imageInput.files[0];
+                if (file) {
+                    chatState.selectedImage = file;
+                    showImagePreview(file);
+                }
+            };
+        }
+
+        // Remove selected image
+        if (imageRemove) {
+            imageRemove.onclick = clearImagePreview;
+        }
+
         // Send button
         if (sendBtn) {
             sendBtn.onclick = () => {
                 const text = input ? input.value.trim() : '';
-                if (!text) return;
-                input.value = '';
-                sendMessage(text, 'text', null);
+                const imageFile = chatState.selectedImage || null;
+
+                if (!text && !imageFile) return;
+
+                const type = imageFile ? 'image' : 'text';
+                sendMessage(text, type, null, imageFile).then(ok => {
+                    if (ok) {
+                        if (input) input.value = '';
+                        clearImagePreview();
+                    }
+                });
             };
         }
 
