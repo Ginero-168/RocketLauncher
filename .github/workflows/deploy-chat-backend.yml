@@ -123,6 +123,9 @@ jobs:
                   except ftplib.error_perm:
                       print('Remote file not found or could not delete:', name)
 
+          print('FTP server:', server)
+          print('FTP remote dir:', remote_dir)
+
           ftp = None
           try:
               # Hostinger shared hosting default is plain FTP on port 21
@@ -142,8 +145,14 @@ jobs:
                   print('FTP connection failed:', e2, file=sys.stderr)
                   sys.exit(1)
 
+          print('FTP home dir:', ftp.pwd())
+
           # Move into (and create if needed) the target directory, relative to FTP home
           mkdir_p(ftp, remote_dir)
+          print('FTP target dir:', ftp.pwd())
+
+          print('Local files in', local_dir, ':', os.listdir(local_dir))
+
           upload_dir(ftp, local_dir, '')
 
           # Remove setup/debug endpoints from the server for security
