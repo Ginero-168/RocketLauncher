@@ -30,7 +30,12 @@ ini_set('error_log', __DIR__ . '/php-errors.log');
 
 if (!file_exists(__DIR__ . '/config.php')) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Server config missing']);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Server config missing',
+        'debug_dir' => __DIR__,
+        'debug_files' => scandir(__DIR__),
+    ]);
     exit;
 }
 
