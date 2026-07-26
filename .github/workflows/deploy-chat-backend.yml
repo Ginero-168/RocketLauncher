@@ -78,54 +78,59 @@ define('CLEANUP_DAYS', {cleanup_days});
           remote_dir = os.environ['FTP_REMOTE_DIR']
           local_dir = 'chat-backend'
 
-          def ensure_remote_dir(ftp, path):
+          def mkdir_p(ftp, path):
+              # Create remote directory tree relative to the current FTP working directory.
               parts = [p for p in path.split('/') if p]
-              current = ''
               for part in parts:
-                  current += '/' + part
                   try:
-                      ftp.mkd(current)
+                      ftp.cwd(part)
                   except ftplib.error_perm:
-                      pass  # likely already exists
+                      ftp.mkd(part)
+                      ftp.cwd(part)
 
-          def upload_dir(ftp, local, remote):
+          def upload_dir(ftp, local, remote_prefix):
               for root, dirs, files in os.walk(local):
                   rel = os.path.relpath(root, local)
-                  remote_root = remote.rstrip('/')
+                  remote_root = remote_prefix.rstrip('/')
                   if rel != '.':
-                      remote_root += '/' + rel.replace('\\', '/')
-                  try:
-                      ftp.mkd(remote_root)
-                  except ftplib.error_perm:
-                      pass
+                      rel_path = rel.replace('\\', '/')
+                      remote_root = (remote_root + '/' + rel_path) if remote_root else rel_path
+
+                  if remote_root:
+                      try:
+                          ftp.mkd(remote_root)
+                      except ftplib.error_perm:
+                          pass
 
                   for name in files:
                       local_path = os.path.join(root, name)
-                      remote_path = remote_root + '/' + name
+                      remote_path = (remote_root + '/' + name) if remote_root else name
                       with open(local_path, 'rb') as f:
                           ftp.storbinary('STOR ' + remote_path, f)
                       print('Uploaded', remote_path)
 
           ftp = None
           try:
-              # Try FTPS first (Hostinger uses explicit TLS on port 21)
-              ftp = ftplib.FTP_TLS(server)
+              # Hostinger shared hosting default is plain FTP on port 21
+              ftp = ftplib.FTP(server)
               ftp.login(username, password)
-              ftp.prot_p()
-              print('Connected via FTPS')
+              ftp.set_pasv(True)
+              print('Connected via plain FTP')
           except Exception as e:
-              print('FTPS failed:', e)
+              print('Plain FTP failed:', e)
               try:
-                  ftp = ftplib.FTP(server)
+                  ftp = ftplib.FTP_TLS(server)
                   ftp.login(username, password)
-                  print('Connected via plain FTP')
+                  ftp.prot_p()
+                  ftp.set_pasv(True)
+                  print('Connected via FTPS')
               except Exception as e2:
                   print('FTP connection failed:', e2, file=sys.stderr)
                   sys.exit(1)
 
-          ensure_remote_dir(ftp, remote_dir)
-          ftp.cwd(remote_dir)
-          upload_dir(ftp, local_dir, remote_dir)
+          # Move into (and create if needed) the target directory, relative to FTP home
+          mkdir_p(ftp, remote_dir)
+          upload_dir(ftp, local_dir, '')
           ftp.quit()
           print('Deploy complete')
           PYEOF
