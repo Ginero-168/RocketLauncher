@@ -30,8 +30,10 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 ### Hostinger Setup
 
 1. **Create MySQL database** in hPanel → Databases → MySQL Databases
-2. **Run setup once**: Visit `https://yourdomain.com/chat-backend/setup.php` in your browser to create the `chat_messages` table
-3. **Delete `setup.php` after first run** for security
+2. **Push to `main`** to trigger the deploy workflow
+3. **Verify deploy**: Visit `https://yourdomain.com/chat-backend/ping.php`
+4. **Run setup once**: Visit `https://yourdomain.com/chat-backend/setup.php` to create the `chat_messages` table
+5. **Delete `setup.php` and `ping.php` after first run** for security
 
 ### Manual Backend Setup (without Actions)
 

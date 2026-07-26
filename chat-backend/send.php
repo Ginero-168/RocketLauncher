@@ -26,6 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/php-errors.log');
+
+if (!file_exists(__DIR__ . '/config.php')) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Server config missing']);
+    exit;
+}
+
 require_once __DIR__ . '/config.php';
 
 // Read JSON body

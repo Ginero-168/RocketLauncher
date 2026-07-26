@@ -8,6 +8,8 @@ on:
       - 'chat-backend/**'
       - '.github/workflows/deploy-chat-backend.yml'
 
+  workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,17 +32,27 @@ jobs:
           import os
 
           def q(s):
-              return "'" + s.replace("'", "\\'") + "'" if s is not None else "''"
+              if s is None:
+                  return "''"
+              # Escape single quotes and backslashes for PHP single-quoted strings
+              escaped = s.replace('\\', '\\\\').replace("'", "\\'")
+              return "'" + escaped + "'"
+
+          cleanup = os.environ.get('CLEANUP_DAYS', '')
+          try:
+              cleanup_days = int(cleanup) if cleanup.strip() else 30
+          except ValueError:
+              cleanup_days = 30
 
           cfg = f"""<?php
-          define('DB_HOST', {q(os.environ.get('DB_HOST', 'localhost'))});
-          define('DB_NAME', {q(os.environ.get('DB_NAME', ''))});
-          define('DB_USER', {q(os.environ.get('DB_USER', ''))});
-          define('DB_PASS', {q(os.environ.get('DB_PASS', ''))});
-          define('DB_CHARSET', 'utf8mb4');
-          define('ROOM_PASSWORD', {q(os.environ.get('ROOM_PASSWORD', ''))});
-          define('CLEANUP_DAYS', {int(os.environ.get('CLEANUP_DAYS', '30'))});
-          """
+define('DB_HOST', {q(os.environ.get('DB_HOST', 'localhost'))});
+define('DB_NAME', {q(os.environ.get('DB_NAME', ''))});
+define('DB_USER', {q(os.environ.get('DB_USER', ''))});
+define('DB_PASS', {q(os.environ.get('DB_PASS', ''))});
+define('DB_CHARSET', 'utf8mb4');
+define('ROOM_PASSWORD', {q(os.environ.get('ROOM_PASSWORD', ''))});
+define('CLEANUP_DAYS', {cleanup_days});
+"""
 
           with open('config.php', 'w', encoding='utf-8') as f:
               f.write(cfg)
@@ -48,17 +60,79 @@ jobs:
           print('Generated chat-backend/config.php')
           PYEOF
 
-      - name: Deploy to Hostinger via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./chat-backend/
-          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
-          # Do NOT delete remote files that are not in the repo (prevents deleting server config manually set)
-          dangerous-clean-slate: false
-          # Exclude setup.php after first deploy for security; remove this line if you still need setup.php on server
-          exclude: |
-            setup.php
-            README.md
+      - name: Deploy chat-backend to Hostinger via FTP
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          python3 - <<'PYEOF'
+          import ftplib
+          import os
+          import sys
+
+          server = os.environ['FTP_SERVER']
+          username = os.environ['FTP_USERNAME']
+          password = os.environ['FTP_PASSWORD']
+          remote_dir = os.environ['FTP_REMOTE_DIR']
+          local_dir = 'chat-backend'
+
+          def ensure_remote_dir(ftp, path):
+              parts = [p for p in path.split('/') if p]
+              current = ''
+              for part in parts:
+                  current += '/' + part
+                  try:
+                      ftp.mkd(current)
+                  except ftplib.error_perm:
+                      pass  # likely already exists
+
+          def upload_dir(ftp, local, remote):
+              for root, dirs, files in os.walk(local):
+                  rel = os.path.relpath(root, local)
+                  remote_root = remote.rstrip('/')
+                  if rel != '.':
+                      remote_root += '/' + rel.replace('\\', '/')
+                  try:
+                      ftp.mkd(remote_root)
+                  except ftplib.error_perm:
+                      pass
+
+                  for name in files:
+                      local_path = os.path.join(root, name)
+                      remote_path = remote_root + '/' + name
+                      with open(local_path, 'rb') as f:
+                          ftp.storbinary('STOR ' + remote_path, f)
+                      print('Uploaded', remote_path)
+
+          ftp = None
+          try:
+              # Try FTPS first (Hostinger uses explicit TLS on port 21)
+              ftp = ftplib.FTP_TLS(server)
+              ftp.login(username, password)
+              ftp.prot_p()
+              print('Connected via FTPS')
+          except Exception as e:
+              print('FTPS failed:', e)
+              try:
+                  ftp = ftplib.FTP(server)
+                  ftp.login(username, password)
+                  print('Connected via plain FTP')
+              except Exception as e2:
+                  print('FTP connection failed:', e2, file=sys.stderr)
+                  sys.exit(1)
+
+          ensure_remote_dir(ftp, remote_dir)
+          ftp.cwd(remote_dir)
+          upload_dir(ftp, local_dir, remote_dir)
+          ftp.quit()
+          print('Deploy complete')
+          PYEOF
+
+      - name: Post-deploy notes
+        run: |
+          echo "Deployment finished."
+          echo "Visit https://yourdomain.com/chat-backend/ping.php to verify."
+          echo "Then visit https://yourdomain.com/chat-backend/setup.php to create the database table."
+          echo "Remember to delete setup.php and ping.php after setup for security."

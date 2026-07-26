@@ -16,14 +16,21 @@ In **hPanel > Databases > MySQL Databases**:
 - Edit `config.php` with your MySQL credentials
 - (Optional) Set `ROOM_PASSWORD` to restrict access
 
-### 3. Run setup
+### 3. Verify deploy
+Visit in your browser:
+```
+https://yourdomain.com/chat-backend/ping.php
+```
+You should see JSON with `"config_exists": true` and `"db_connected": true`.
+
+### 4. Run setup
 Visit in your browser:
 ```
 https://yourdomain.com/chat-backend/setup.php
 ```
 You should see "Table 'chat_messages' created successfully."
 
-**Delete `setup.php` after setup is complete.**
+**Delete `setup.php` and `ping.php` after setup is complete for security.**
 
 ## Files
 
@@ -32,6 +39,7 @@ You should see "Table 'chat_messages' created successfully."
 | `config.example.php` | Template config — copy to `config.php` |
 | `config.php` | Your actual config (do NOT commit this) |
 | `setup.php` | One-time table creation — delete after use |
+| `ping.php` | Health/debug endpoint — delete after use |
 | `send.php` | POST endpoint to send a message |
 | `poll.php` | GET endpoint to fetch new messages |
 

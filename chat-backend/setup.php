@@ -8,6 +8,20 @@
  * Delete this file after successful setup.
  */
 
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/php-errors.log');
+
+if (!file_exists(__DIR__ . '/config.php')) {
+    http_response_code(500);
+    echo "<h2>Missing config.php</h2>";
+    echo "<p>The file <code>chat-backend/config.php</code> was not found on the server.</p>";
+    echo "<p>Make sure GitHub Actions deployed successfully and generated config.php from your secrets.</p>";
+    echo "<p>You can also check <code>ping.php</code> for deployment status.</p>";
+    exit;
+}
+
 require_once __DIR__ . '/config.php';
 
 try {
