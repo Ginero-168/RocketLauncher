@@ -1,7 +1,7 @@
 <?php
 /**
  * TATA Chat - Poll Messages
- * GET endpoint: poll.php?since=ID&password=xxx
+ * GET endpoint: poll.php?since=ID
  *
  * Response (JSON):
  *   { ok: true, messages: [ { id, username, message_type, content, button_data, file_path, created_at } ] }
@@ -10,7 +10,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Chat-Room');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -32,18 +32,8 @@ require_once __DIR__ . '/lib.php';
 
 if (!tata_is_configured()) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Server config missing — run setup.php']);
+    echo json_encode(['ok' => false, 'error' => 'Server configuration missing']);
     exit;
-}
-
-// Check room password
-$roomPassword = tata_room_password();
-if ($roomPassword !== '') {
-    if (($_GET['password'] ?? '') !== $roomPassword) {
-        http_response_code(403);
-        echo json_encode(['ok' => false, 'error' => 'Wrong room password']);
-        exit;
-    }
 }
 
 $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
@@ -51,13 +41,7 @@ $limit = 100; // max messages per poll
 
 try {
     $pdo = tata_pdo();
-
-    // Ensure file_path column exists (idempotent migration)
-    try {
-        $pdo->exec('ALTER TABLE chat_messages ADD COLUMN file_path VARCHAR(255) NULL AFTER button_data');
-    } catch (PDOException $e) {
-        // Column already exists
-    }
+    $room = tata_require_room($pdo);
 
     // Throttled housekeeping: purge expired messages and retune retention.
     try {
@@ -70,12 +54,13 @@ try {
     $stmt = $pdo->prepare('
         SELECT id, username, message_type, content, button_data, file_path, created_at
         FROM chat_messages
-        WHERE id > :since
+        WHERE room_id = :room_id AND id > :since
         ORDER BY id ASC
         LIMIT :limit
     ');
 
     $stmt->bindValue(':since', $since, PDO::PARAM_INT);
+    $stmt->bindValue(':room_id', $room['id'], PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
 
@@ -92,9 +77,22 @@ try {
         ];
     }
 
-    echo json_encode(['ok' => true, 'messages' => $messages]);
+    echo json_encode(['ok' => true, 'room' => $room, 'messages' => $messages]);
 
+} catch (OutOfBoundsException $e) {
+    http_response_code(404);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+} catch (UnexpectedValueException $e) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+} catch (OverflowException $e) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Database error']);
+} catch (Throwable $e) {
+    http_response_code(500);
+    error_log('[TATA Chat poll.php] ' . $e->getMessage());
+    echo json_encode(['ok' => false, 'error' => 'Server error']);
 }

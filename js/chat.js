@@ -1,6 +1,6 @@
 /**
  * TATA Panel - Chat Module
- * Private team chat with code/button sharing via Hostinger PHP backend.
+ * Public and password-protected chat rooms with media/button sharing.
  * Polls every 10 seconds (non-real-time).
  */
 (() => {
@@ -24,6 +24,9 @@
         attachments: [],
         dragDepth: 0,
         sending: false,
+        room: { slug: 'public', name: 'Public Lounge', is_private: false },
+        roomPassword: '',
+        mediaUrls: new Set(),
     };
 
     // ==========================================
@@ -64,8 +67,78 @@
         return (window.TATA_CONFIG && TATA_CONFIG.CHAT_BACKEND_URL) || '';
     }
 
-    function getRoomPassword() {
-        return (window.TATA_CONFIG && TATA_CONFIG.CHAT_ROOM_PASSWORD) || '';
+    function getRoomHeaders(includeJson, roomSlug, roomPassword) {
+        const headers = {
+            'X-Chat-Room': roomSlug || chatState.room.slug,
+        };
+        const password = roomPassword === undefined ? chatState.roomPassword : roomPassword;
+        if (password) {
+            headers.Authorization = `Bearer ${password}`;
+        }
+        if (includeJson) {
+            headers['Content-Type'] = 'application/json';
+        }
+        return headers;
+    }
+
+    function clearRenderedMessages() {
+        const container = $('chat_messages');
+        if (container) container.textContent = '';
+        for (const url of chatState.mediaUrls) URL.revokeObjectURL(url);
+        chatState.mediaUrls.clear();
+        chatState.lastId = 0;
+    }
+
+    function roomStorageKey(slug) {
+        return `tata_chat_room_password_${slug}`;
+    }
+
+    function rememberRoom(room) {
+        if (!room || room.slug === 'public') return;
+        const saved = getRecentRooms().filter(item => item && item.slug !== room.slug);
+        saved.unshift({ slug: room.slug, name: room.name, is_private: true });
+        localStorage.setItem('tata_chat_recent_rooms', JSON.stringify(saved.slice(0, 8)));
+        renderRecentRooms();
+    }
+
+    function updateRoomUi() {
+        const name = $('chat_room_name');
+        const badge = $('chat_room_badge');
+        if (name) name.textContent = chatState.room.name;
+        if (badge) {
+            badge.textContent = chatState.room.is_private ? 'PRIVATE' : 'PUBLIC';
+            badge.classList.toggle('private', !!chatState.room.is_private);
+        }
+    }
+
+    async function roomRequest(payload) {
+        const url = getBackendUrl();
+        if (!url) throw new Error('Chat backend not configured');
+        const res = await fetch(`${url}/rooms.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Room request failed');
+        return data.room;
+    }
+
+    async function enterRoom(slug, password) {
+        const room = await roomRequest({ action: 'join', room: slug || 'public', password: password || '' });
+        chatState.room = room;
+        chatState.roomPassword = password || '';
+        if (room.is_private && password) {
+            sessionStorage.setItem(roomStorageKey(room.slug), password);
+            rememberRoom(room);
+        }
+        clearRenderedMessages();
+        updateRoomUi();
+        const panel = $('chat_rooms_panel');
+        if (panel) panel.style.display = 'none';
+        await pollMessages();
+        safeToast(`Joined ${room.name}`, 'success');
+        return room;
     }
 
     async function sendMessage(content, messageType, buttonData, imageFile) {
@@ -79,23 +152,20 @@
         const isImage = type === 'image' && imageFile;
 
         let body;
-        let headers = {};
+        let headers = getRoomHeaders(!isImage);
         if (isImage) {
             const isSvg = /svg/i.test(imageFile.type) || /\.svg$/i.test(imageFile.name || '');
             body = new FormData();
             body.append('username', chatState.username);
             body.append('content', content || (isSvg ? 'SVG selection' : imageFile.name || 'Image'));
             body.append('message_type', 'image');
-            body.append('password', getRoomPassword());
             body.append('image', imageFile);
         } else {
-            headers['Content-Type'] = 'application/json';
             body = JSON.stringify({
                 username: chatState.username,
                 content,
                 message_type: type,
                 button_data: buttonData || null,
-                password: getRoomPassword(),
             });
         }
 
@@ -124,15 +194,22 @@
         const url = getBackendUrl();
         if (!url) return;
 
+        const roomSlug = chatState.room.slug;
+        const roomPassword = chatState.roomPassword;
+        const since = chatState.lastId;
         chatState.polling = true;
         try {
-            const res = await fetch(
-                `${url}/poll.php?since=${chatState.lastId}&password=${encodeURIComponent(getRoomPassword())}`
-            );
+            const res = await fetch(`${url}/poll.php?since=${since}`, {
+                headers: getRoomHeaders(false, roomSlug, roomPassword),
+            });
             const data = await res.json();
+            // A slow response from the previous room must never render in the
+            // newly selected room.
+            if (chatState.room.slug !== roomSlug) return;
             if (data.ok && data.messages && data.messages.length > 0) {
                 for (const msg of data.messages) {
-                    renderMessage(msg);
+                    await renderMessage(msg, roomSlug);
+                    if (chatState.room.slug !== roomSlug) return;
                     if (msg.id > chatState.lastId) chatState.lastId = msg.id;
                 }
                 trimMessages();
@@ -143,15 +220,76 @@
             console.warn('[Chat] Poll failed:', e.message);
         } finally {
             chatState.polling = false;
+            // If the room changed while this request was in flight, immediately
+            // fetch the new room instead of waiting for the next 10-second tick.
+            if (chatState.room.slug !== roomSlug) {
+                pollMessages();
+            }
         }
     }
 
     // ==========================================
     // Render
     // ==========================================
-    function renderMessage(msg) {
+    async function copyText(value) {
+        const text = String(value || '');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw new Error('Clipboard unavailable');
+    }
+
+    async function fetchMessageMedia(msg, roomSlug, roomPassword) {
+        if (msg._mediaBlob) return msg._mediaBlob;
+        const res = await fetch(`${getBackendUrl()}/media.php?id=${encodeURIComponent(msg.id)}`, {
+            headers: getRoomHeaders(false, roomSlug, roomPassword),
+        });
+        if (!res.ok) throw new Error('Media is unavailable');
+        msg._mediaBlob = await res.blob();
+        return msg._mediaBlob;
+    }
+
+    async function copyMessage(msg) {
+        if (msg.message_type === 'button_config' && msg.button_data) {
+            await copyText(JSON.stringify(msg.button_data, null, 2));
+            return 'Button configuration copied';
+        }
+        if (msg.message_type === 'image' && msg.file_path) {
+            const blob = await fetchMessageMedia(msg);
+            if (/svg/i.test(blob.type) || /\.svg$/i.test(msg.file_path)) {
+                await copyText(await blob.text());
+                return 'SVG source copied';
+            }
+            if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+                try {
+                    await navigator.clipboard.write([new window.ClipboardItem({ [blob.type]: blob })]);
+                    return 'Image copied';
+                } catch (e) {
+                    // Older CEP builds only allow text clipboard writes.
+                }
+            }
+            await copyText(msg.content || `Image message #${msg.id}`);
+            return 'Image caption copied';
+        }
+        await copyText(msg.content || '');
+        return 'Message copied';
+    }
+
+    async function renderMessage(msg, expectedRoomSlug) {
         const container = $('chat_messages');
         if (!container) return;
+        const roomSlug = expectedRoomSlug || chatState.room.slug;
+        const roomPassword = chatState.roomPassword;
+        let createdMediaUrl = '';
 
         const wrapper = document.createElement('div');
         wrapper.className = 'chat-msg';
@@ -162,7 +300,32 @@
 
         const header = document.createElement('div');
         header.className = 'chat-msg-header';
-        header.innerHTML = `<span class="chat-msg-user">${escapeHtml(msg.username)}</span><span class="chat-msg-time">${formatTime(msg.created_at)}</span>`;
+        const user = document.createElement('span');
+        user.className = 'chat-msg-user';
+        user.textContent = msg.username;
+        const time = document.createElement('span');
+        time.className = 'chat-msg-time';
+        time.textContent = formatTime(msg.created_at);
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'chat-msg-copy';
+        copyBtn.textContent = 'Copy';
+        copyBtn.title = 'Copy this message';
+        copyBtn.onclick = async () => {
+            copyBtn.disabled = true;
+            try {
+                safeToast(await copyMessage(msg), 'success');
+                copyBtn.textContent = 'Copied';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
+            } catch (e) {
+                safeToast(`Copy failed: ${e.message}`, 'error');
+            } finally {
+                copyBtn.disabled = false;
+            }
+        };
+        header.appendChild(user);
+        header.appendChild(time);
+        header.appendChild(copyBtn);
         wrapper.appendChild(header);
 
         if (msg.message_type === 'button_config' && msg.button_data) {
@@ -178,7 +341,8 @@
             const meta = document.createElement('div');
             meta.className = 'chat-btn-card-meta';
             const bd = msg.button_data;
-            meta.textContent = `${bd.icon || '★'} · ${bd.color || 'default'}`;
+            const iconLabel = /^\s*<svg[\s>]/i.test(bd.icon || '') ? 'SVG icon' : (bd.icon || '★');
+            meta.textContent = `${iconLabel} · ${bd.color || 'default'}`;
             card.appendChild(meta);
 
             const importBtn = document.createElement('button');
@@ -204,22 +368,31 @@
         } else if (msg.message_type === 'image' && msg.file_path) {
             // Render image or SVG message
             const isSvg = /\.svg$/i.test(msg.file_path);
-            const mediaUrl = `${getBackendUrl()}/${msg.file_path}`;
+            try {
+                const blob = await fetchMessageMedia(msg, roomSlug, roomPassword);
+                createdMediaUrl = URL.createObjectURL(blob);
+                chatState.mediaUrls.add(createdMediaUrl);
+            } catch (e) {
+                const unavailable = document.createElement('div');
+                unavailable.className = 'chat-msg-media-error';
+                unavailable.textContent = 'Media unavailable';
+                wrapper.appendChild(unavailable);
+            }
 
-            if (isSvg) {
+            if (createdMediaUrl && isSvg) {
                 const img = document.createElement('img');
                 img.className = 'chat-msg-image';
-                img.src = mediaUrl;
+                img.src = createdMediaUrl;
                 img.alt = msg.content || 'SVG';
                 img.onerror = () => { img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40"><text y="20">SVG preview unavailable</text></svg>'; };
                 img.onclick = () => {
-                    try { window.open(mediaUrl, '_blank'); } catch (e) { }
+                    try { window.open(createdMediaUrl, '_blank'); } catch (e) { }
                 };
                 wrapper.appendChild(img);
-            } else {
+            } else if (createdMediaUrl) {
                 const img = document.createElement('img');
                 img.className = 'chat-msg-image';
-                img.src = mediaUrl;
+                img.src = createdMediaUrl;
                 img.alt = msg.content || 'Image';
                 img.onclick = () => window.open(img.src, '_blank');
                 wrapper.appendChild(img);
@@ -263,6 +436,13 @@
             wrapper.appendChild(body);
         }
 
+        if (chatState.room.slug !== roomSlug) {
+            if (createdMediaUrl) {
+                URL.revokeObjectURL(createdMediaUrl);
+                chatState.mediaUrls.delete(createdMediaUrl);
+            }
+            return;
+        }
         container.appendChild(wrapper);
     }
 
@@ -285,6 +465,11 @@
     function importButtonConfig(btnData) {
         if (!btnData || !btnData.label) {
             safeToast('Invalid button data', 'error');
+            return;
+        }
+        if (!window.confirm(
+            `Import "${btnData.label}"?\n\nShared buttons may contain Illustrator code. Review the code before running it.`
+        )) {
             return;
         }
 
@@ -687,6 +872,64 @@
         if (rename) rename.value = name;
     }
 
+    function getRecentRooms() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('tata_chat_recent_rooms') || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function renderRecentRooms() {
+        const list = $('chat_recent_rooms');
+        if (!list) return;
+        list.textContent = '';
+        const rooms = getRecentRooms();
+        if (!rooms.length) {
+            const empty = document.createElement('div');
+            empty.className = 'chat-room-empty';
+            empty.textContent = 'Private rooms you join will appear here.';
+            list.appendChild(empty);
+            return;
+        }
+
+        rooms.forEach(room => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'chat-room-recent';
+            button.innerHTML = `<span>◆</span><span>${escapeHtml(room.name)}</span><code>${escapeHtml(room.slug)}</code>`;
+            button.onclick = async () => {
+                const savedPassword = sessionStorage.getItem(roomStorageKey(room.slug)) || '';
+                if (!savedPassword) {
+                    const codeInput = $('chat_join_code');
+                    if (codeInput) codeInput.value = room.slug;
+                    const passwordInput = $('chat_join_password');
+                    if (passwordInput) passwordInput.focus();
+                    return;
+                }
+                try {
+                    await enterRoom(room.slug, savedPassword);
+                } catch (e) {
+                    sessionStorage.removeItem(roomStorageKey(room.slug));
+                    safeToast(e.message, 'error');
+                }
+            };
+            list.appendChild(button);
+        });
+    }
+
+    async function runRoomAction(button, action) {
+        if (button) button.disabled = true;
+        try {
+            await action();
+        } catch (e) {
+            safeToast(e.message, 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
     /**
      * Send the typed text and every staged attachment.
      * Attachments go one per message so each renders on its own.
@@ -745,11 +988,19 @@
         const settingsPanel = $('chat_settings');
         const renameInput = $('chat_rename');
         const renameSave = $('chat_rename_save');
+        const roomToggle = $('chat_room_toggle');
+        const roomsPanel = $('chat_rooms_panel');
+        const roomsClose = $('chat_rooms_close');
+        const publicJoin = $('chat_public_join');
+        const privateJoin = $('chat_private_join');
+        const privateCreate = $('chat_private_create');
 
         // Restore username
         if (nameInput && chatState.username) {
             nameInput.value = chatState.username;
         }
+        updateRoomUi();
+        renderRecentRooms();
 
         // If already has username, show chat
         if (chatState.username && chatSetup && chatMain) {
@@ -808,6 +1059,56 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     saveName();
+                }
+            });
+        }
+
+        if (roomToggle && roomsPanel) {
+            roomToggle.onclick = () => {
+                roomsPanel.style.display = roomsPanel.style.display === 'none' ? 'flex' : 'none';
+            };
+        }
+        if (roomsClose && roomsPanel) {
+            roomsClose.onclick = () => { roomsPanel.style.display = 'none'; };
+        }
+        if (publicJoin) {
+            publicJoin.onclick = () => runRoomAction(publicJoin, () => enterRoom('public', ''));
+        }
+        if (privateJoin) {
+            privateJoin.onclick = () => runRoomAction(privateJoin, async () => {
+                const slug = ($('chat_join_code').value || '').trim();
+                const password = $('chat_join_password').value || '';
+                if (!slug || !password) throw new Error('Enter the room code and password');
+                await enterRoom(slug, password);
+                $('chat_join_password').value = '';
+            });
+        }
+        if (privateCreate) {
+            privateCreate.onclick = () => runRoomAction(privateCreate, async () => {
+                const name = ($('chat_create_name').value || '').trim();
+                const password = $('chat_create_password').value || '';
+                if (!name || !password) throw new Error('Enter a room name and password');
+                const room = await roomRequest({
+                    action: 'create',
+                    name,
+                    password,
+                    username: chatState.username,
+                });
+                chatState.room = room;
+                chatState.roomPassword = password;
+                sessionStorage.setItem(roomStorageKey(room.slug), password);
+                rememberRoom(room);
+                clearRenderedMessages();
+                updateRoomUi();
+                roomsPanel.style.display = 'none';
+                $('chat_create_name').value = '';
+                $('chat_create_password').value = '';
+                await pollMessages();
+                try {
+                    await copyText(room.slug);
+                    safeToast(`Created ${room.name}. Invite code copied.`, 'success');
+                } catch (e) {
+                    safeToast(`Created ${room.name}. Invite code: ${room.slug}`, 'success');
                 }
             });
         }
@@ -871,6 +1172,13 @@
         deactivate: deactivateChat,
         shareButton: shareButtonToChat,
         sendMessage,
+        _test: {
+            renderMessage,
+            copyMessage,
+            getRoomHeaders,
+            enterRoom,
+            pollMessages,
+        },
     };
 
     // Auto-init when DOM ready

@@ -1,6 +1,2 @@
-# Deny PHP execution in uploads directory
-php_flag engine off
-
-<FilesMatch "\.(?i:php)$">
-  Require all denied
-</FilesMatch>
+# Media is served only through ../media.php after room authorization.
+Require all denied

@@ -433,12 +433,12 @@
 			background: rgba(99, 102, 241, 0.15);
 			border-color: rgba(99, 102, 241, 0.3);
 		}
-		#tab_chat .chat-msg-header {
-			display: flex;
-			justify-content: space-between;
-			gap: 8px;
-			margin-bottom: 3px;
-		}
+			#tab_chat .chat-msg-header {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 3px;
+			}
 		#tab_chat .chat-msg-user {
 			font-weight: 600;
 			color: #818cf8;
@@ -447,10 +447,29 @@
 		#tab_chat .chat-msg-me .chat-msg-user {
 			color: #a78bfa;
 		}
-		#tab_chat .chat-msg-time {
-			font-size: 10px;
-			color: #666;
-		}
+			#tab_chat .chat-msg-time {
+				font-size: 10px;
+				color: #666;
+				margin-left: auto;
+			}
+			#tab_chat .chat-msg-copy {
+				width: auto;
+				margin: -2px -4px -2px 0;
+				padding: 2px 6px;
+				border: 0;
+				border-radius: 4px;
+				background: transparent;
+				color: #777;
+				font-size: 9px;
+				font-family: inherit;
+				cursor: pointer;
+			}
+			#tab_chat .chat-msg-copy:hover,
+			#tab_chat .chat-msg-copy:focus-visible {
+				background: rgba(129, 140, 248, .14);
+				color: #c7d2fe;
+				outline: none;
+			}
 		#tab_chat .chat-msg-body {
 			color: #ddd;
 			white-space: pre-wrap;
@@ -531,11 +550,12 @@
 			border-bottom: 1px solid #2a2a4a;
 			flex-shrink: 0;
 		}
-		#chat_whoami {
-			font-size: 11px;
-			color: #818cf8;
-			font-weight: 600;
-			overflow: hidden;
+			#chat_whoami {
+				font-size: 11px;
+				color: #818cf8;
+				font-weight: 600;
+				max-width: 34%;
+				overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
@@ -552,7 +572,7 @@
 			padding: 0;
 			flex-shrink: 0;
 		}
-		#tab_chat .chat-icon-btn:hover {
+			#tab_chat .chat-icon-btn:hover {
 			background: #23233d;
 			color: #fff;
 		}
@@ -734,13 +754,162 @@
 			initial-value: 0deg;
 		}
 
-		@keyframes gemini-rotate {
-			to {
-				--rotation: 360deg;
+			@keyframes gemini-rotate {
+				to {
+					--rotation: 360deg;
+				}
 			}
-		}
-
-		.prompt-box {
+				#chat_room_toggle {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				min-width: 0;
+				flex: 1;
+				padding: 4px 7px;
+				border: 1px solid #303050;
+				border-radius: 6px;
+				background: #17172b;
+				color: #e5e7eb;
+				cursor: pointer;
+				font-family: inherit;
+			}
+			#chat_room_name {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				font-size: 11px;
+				font-weight: 600;
+			}
+			#chat_room_badge {
+				padding: 1px 4px;
+				border-radius: 3px;
+				background: rgba(16, 185, 129, .16);
+				color: #6ee7b7;
+				font: 700 8px/1.4 'SF Mono', Monaco, monospace;
+				letter-spacing: .05em;
+			}
+			#chat_room_badge.private {
+				background: rgba(139, 92, 246, .18);
+				color: #c4b5fd;
+			}
+			#chat_rooms_panel {
+				display: flex;
+				flex-direction: column;
+				gap: 9px;
+				max-height: 72%;
+				overflow-y: auto;
+				padding: 10px;
+				border-bottom: 1px solid #34345a;
+				background: #111122;
+				flex-shrink: 0;
+			}
+			#tab_chat .chat-room-panel-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+			#tab_chat .chat-room-panel-head strong {
+				color: #eef2ff;
+				font-size: 12px;
+			}
+			#tab_chat .chat-room-card {
+				padding: 9px;
+				border: 1px solid #2e2e50;
+				border-radius: 7px;
+				background: #17172c;
+			}
+			#tab_chat .chat-room-card-title {
+				margin-bottom: 6px;
+				color: #a5b4fc;
+				font-size: 10px;
+				font-weight: 700;
+				letter-spacing: .05em;
+				text-transform: uppercase;
+			}
+			#tab_chat .chat-room-fields {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+				gap: 5px;
+			}
+			#tab_chat .chat-room-fields.create {
+				grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+			}
+			#tab_chat .chat-room-fields input {
+				min-width: 0;
+				padding: 6px 7px;
+				border: 1px solid #38385d;
+				border-radius: 5px;
+				background: #0d0d1c;
+				color: #fff;
+				font-family: inherit;
+				font-size: 11px;
+			}
+			#tab_chat .chat-room-fields button,
+			#chat_public_join {
+				width: auto;
+				margin: 0;
+				padding: 6px 9px;
+				border: 1px solid #4f46e5;
+				border-radius: 5px;
+				background: rgba(79, 70, 229, .2);
+				color: #c7d2fe;
+				font-family: inherit;
+				font-size: 10px;
+				font-weight: 600;
+				cursor: pointer;
+			}
+			#chat_recent_rooms {
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+			}
+			#tab_chat .chat-room-recent {
+				display: grid;
+				grid-template-columns: auto 1fr auto;
+				align-items: center;
+				gap: 6px;
+				width: 100%;
+				padding: 5px 7px;
+				border: 1px solid transparent;
+				border-radius: 5px;
+				background: transparent;
+				color: #c4b5fd;
+				text-align: left;
+				cursor: pointer;
+			}
+			#tab_chat .chat-room-recent:hover {
+				border-color: #37375b;
+				background: #1b1b32;
+			}
+			#tab_chat .chat-room-recent code,
+			#tab_chat .chat-room-empty {
+				color: #666681;
+				font-size: 9px;
+			}
+			#tab_chat .chat-msg-media-error {
+				padding: 12px;
+				border: 1px dashed #5b3342;
+				border-radius: 5px;
+				color: #fda4af;
+				font-size: 10px;
+			}
+				@media (max-width: 420px) {
+					#tab_chat .chat-room-fields,
+					#tab_chat .chat-room-fields.create {
+						grid-template-columns: 1fr;
+					}
+					#chat_whoami {
+						display: none;
+					}
+					#tab_chat .chat-compose-row {
+						flex-wrap: wrap;
+					}
+					#tab_chat .chat-compose-row textarea {
+						flex: 1 0 100% !important;
+						width: 100%;
+					}
+				}
+			.prompt-box {
 			display: flex;
 			gap: 8px;
 			align-items: center;
@@ -1134,11 +1303,48 @@
 				</div>
 			</div>
 
-			<!-- Header bar -->
-			<div id="chat_bar">
-				<span id="chat_whoami" title="You are chatting as this name"></span>
-				<button id="chat_settings_btn" type="button" class="chat-icon-btn" title="Chat settings">⚙</button>
-			</div>
+				<!-- Header bar -->
+				<div id="chat_bar">
+					<button id="chat_room_toggle" type="button" title="Switch or create a room">
+						<span id="chat_room_badge">PUBLIC</span>
+						<span id="chat_room_name">Public Lounge</span>
+						<span aria-hidden="true" style="margin-left:auto;color:#666;">▾</span>
+					</button>
+					<span id="chat_whoami" title="You are chatting as this name"></span>
+					<button id="chat_settings_btn" type="button" class="chat-icon-btn" title="Chat settings">⚙</button>
+				</div>
+
+				<!-- Public/private room switcher -->
+				<div id="chat_rooms_panel" style="display: none;">
+					<div class="chat-room-panel-head">
+						<strong>Rooms</strong>
+						<button id="chat_rooms_close" type="button" class="chat-icon-btn" title="Close rooms">×</button>
+					</div>
+					<div class="chat-room-card">
+						<div class="chat-room-card-title">Open room</div>
+						<button id="chat_public_join" type="button">🌐 Join Public Lounge</button>
+					</div>
+					<div class="chat-room-card">
+						<div class="chat-room-card-title">Join private room</div>
+						<div class="chat-room-fields">
+							<input id="chat_join_code" type="text" placeholder="Invite code" maxlength="80">
+							<input id="chat_join_password" type="password" placeholder="Password" maxlength="128">
+							<button id="chat_private_join" type="button">Join</button>
+						</div>
+					</div>
+					<div class="chat-room-card">
+						<div class="chat-room-card-title">Create private room</div>
+						<div class="chat-room-fields create">
+							<input id="chat_create_name" type="text" placeholder="Room name" maxlength="80">
+							<input id="chat_create_password" type="password" placeholder="6+ character password" maxlength="128">
+							<button id="chat_private_create" type="button">Create</button>
+						</div>
+					</div>
+					<div class="chat-room-card">
+						<div class="chat-room-card-title">Recent private rooms</div>
+						<div id="chat_recent_rooms"></div>
+					</div>
+				</div>
 
 			<!-- Settings drawer -->
 			<div id="chat_settings" style="display: none;">
@@ -1157,7 +1363,7 @@
 			<!-- Input -->
 			<div id="chat_input_area" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 1px solid #333;">
 				<div id="chat_attachments" style="display: none;"></div>
-				<div style="display: flex; gap: 6px; align-items: flex-end;">
+					<div class="chat-compose-row" style="display: flex; gap: 6px; align-items: flex-end;">
 					<textarea id="chat_input" placeholder="Type a message, paste or drop an image… (Shift+Enter for new line)"
 						style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
 					<input type="file" id="chat_image_input" accept="image/*,.svg" multiple style="display: none;">

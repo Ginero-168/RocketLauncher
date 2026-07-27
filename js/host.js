@@ -48,7 +48,10 @@
 			const cs = getCS();
 			if (!cs) return safeCall(callback, 'ERR: csInterface not available');
 
-			const paramsPart = typeof params !== 'undefined' ? `, ${JSON.stringify(params)}` : '';
+				// Keep the CEP → ExtendScript boundary explicit: the host router
+				// accepts a JSON string, not a cross-runtime object literal.
+				const serializedParams = typeof params !== 'undefined' ? JSON.stringify(params) : undefined;
+				const paramsPart = typeof serializedParams !== 'undefined' ? `, ${JSON.stringify(serializedParams)}` : '';
 			const script = `try { TATA.run(${JSON.stringify(command)}${paramsPart}); } catch(e) { "Error: " + e.message; }`;
 			cs.evalScript(script, callback);
 		},

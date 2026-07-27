@@ -24,7 +24,7 @@ function renderForm($values, $error = '') {
     $name = esc($values['db_name'] ?? '');
     $user = esc($values['db_user'] ?? '');
     $pass = esc($values['db_pass'] ?? '');
-    $room = esc($values['room_password'] ?? '');
+    $adminToken = esc($values['admin_setup_token'] ?? '');
     $cleanup = esc($values['cleanup_days'] ?? '30');
     $errorHtml = $error ? "<p style='color:#ff6b6b'>" . esc($error) . "</p>" : '';
 
@@ -62,9 +62,9 @@ function renderForm($values, $error = '') {
             <label>Database Password</label>
             <input type="password" name="db_pass" value="{$pass}" required>
 
-            <label>Room Password (optional)</label>
-            <input type="text" name="room_password" value="{$room}">
-            <div class="hint">Leave empty for a public chat room.</div>
+            <label>Admin Setup Token</label>
+            <input type="password" name="admin_setup_token" value="{$adminToken}" minlength="12" required>
+            <div class="hint">A one-time secret required to claim the admin panel.</div>
 
             <label>Auto-cleanup (days)</label>
             <input type="number" name="cleanup_days" value="{$cleanup}" min="0">
@@ -158,12 +158,12 @@ $values = [
     'db_name' => trim($_POST['db_name'] ?? ''),
     'db_user' => trim($_POST['db_user'] ?? ''),
     'db_pass' => $_POST['db_pass'] ?? '',
-    'room_password' => trim($_POST['room_password'] ?? ''),
+    'admin_setup_token' => (string)($_POST['admin_setup_token'] ?? ''),
     'cleanup_days' => trim($_POST['cleanup_days'] ?? '30'),
 ];
 
-if ($values['db_name'] === '' || $values['db_user'] === '') {
-    renderForm($values, 'Database name and user are required.');
+if ($values['db_name'] === '' || $values['db_user'] === '' || strlen($values['admin_setup_token']) < 12) {
+    renderForm($values, 'Database name, user, and an admin setup token of at least 12 characters are required.');
     exit;
 }
 
@@ -188,7 +188,7 @@ $written = tata_write_config([
     'db_user' => $values['db_user'],
     'db_pass' => $values['db_pass'],
     'db_charset' => 'utf8mb4',
-    'room_password' => $values['room_password'],
+    'admin_setup_token' => $values['admin_setup_token'],
 ]);
 
 if (!$written) {
@@ -202,22 +202,17 @@ $pdo = new PDO($testDsn, $values['db_user'], $values['db_pass'], [PDO::ATTR_ERRM
 $pdo->exec("
 CREATE TABLE IF NOT EXISTS chat_messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    room_id INT NULL,
     username VARCHAR(50) NOT NULL,
     message_type VARCHAR(20) NOT NULL DEFAULT 'text',
     content TEXT NOT NULL,
     button_data JSON NULL,
     file_path VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_created (created_at)
+    INDEX idx_created (created_at),
+    INDEX idx_room_id (room_id, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
-
-// Add file_path column if upgrading from an older schema
-try {
-    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN file_path VARCHAR(255) NULL AFTER button_data");
-} catch (PDOException $e) {
-    // Column likely already exists; ignore
-}
 
 // Settings table used by the admin panel and the adaptive retention engine
 $pdo->exec("
@@ -226,6 +221,38 @@ CREATE TABLE IF NOT EXISTS chat_settings (
     setting_value TEXT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
+
+// Public Lounge plus password-protected private rooms.
+$pdo->exec("
+CREATE TABLE IF NOT EXISTS chat_rooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(80) NOT NULL UNIQUE,
+    name VARCHAR(80) NOT NULL,
+    password_hash VARCHAR(255) NULL,
+    created_by VARCHAR(50) NOT NULL DEFAULT '',
+    created_ip_hash CHAR(64) NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_room_created (created_at),
+    INDEX idx_room_creator (created_ip_hash, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+$pdo->exec("
+CREATE TABLE IF NOT EXISTS chat_rate_limits (
+    ip_hash CHAR(64) NOT NULL,
+    scope VARCHAR(96) NOT NULL,
+    window_started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    request_count INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (ip_hash, scope)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+$pdo->exec("
+    INSERT INTO chat_rooms (slug, name, password_hash, created_by)
+    VALUES ('public', 'Public Lounge', NULL, 'system')
+    ON DUPLICATE KEY UPDATE name = VALUES(name)
+");
+$publicId = (int)$pdo->query("SELECT id FROM chat_rooms WHERE slug = 'public' LIMIT 1")->fetchColumn();
+$assignPublic = $pdo->prepare("UPDATE chat_messages SET room_id = :room_id WHERE room_id IS NULL");
+$assignPublic->execute([':room_id' => $publicId]);
 
 // Seed the retention window from the value entered in this form
 $seed = $pdo->prepare("
@@ -242,7 +269,7 @@ if (!is_dir($uploadDir)) {
 }
 $htaccess = $uploadDir . '/.htaccess';
 if (!file_exists($htaccess)) {
-    @file_put_contents($htaccess, "# Deny PHP execution in uploads directory\nphp_flag engine off\n\n<FilesMatch \"\\\\.(?i:php)\$\">\n  Require all denied\n</FilesMatch>\n");
+    @file_put_contents($htaccess, "# Media is served only through ../media.php after room authorization.\nRequire all denied\n");
 }
 
 renderSuccess("Created <code>chat-config.json</code> and the <code>chat_messages</code> table successfully.");

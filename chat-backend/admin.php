@@ -6,7 +6,15 @@
  * Protected by a dedicated admin password (set on first visit).
  */
 
+session_set_cookie_params([
+    'httponly' => true,
+    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'samesite' => 'Strict',
+]);
 session_start();
+if (empty($_SESSION['tata_csrf'])) {
+    $_SESSION['tata_csrf'] = bin2hex(random_bytes(32));
+}
 
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
@@ -80,10 +88,10 @@ HTML;
 // ------------------------------------------------------------------
 try {
     $pdo = tata_pdo();
-    tata_ensure_schema($pdo);
+    tata_ensure_chat_schema($pdo);
 } catch (Throwable $e) {
     page('TATA Chat Admin', '<div class="card"><h1>Not configured</h1>'
-        . '<p class="sub">Run <code>setup.php</code> first to create <code>chat-config.json</code> and the database tables.</p></div>');
+        . '<p class="sub">Configure the required deployment secrets and deploy the backend again.</p></div>');
     exit;
 }
 
@@ -95,16 +103,40 @@ $noticeType = 'ok';
 // First run: create the admin password
 // ------------------------------------------------------------------
 if ($settings['admin_password_hash'] === '') {
+    $setupToken = tata_admin_setup_token();
+    if ($setupToken === '') {
+        page('TATA Chat Admin - Setup locked', <<<'HTML'
+<div class="card">
+  <h1>Admin setup locked</h1>
+  <p class="sub">Set <code>ADMIN_SETUP_TOKEN</code> in the deployment configuration, deploy again, then return here.</p>
+</div>
+HTML);
+        exit;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_password'])) {
         $pw = (string)$_POST['new_password'];
         $confirm = (string)($_POST['confirm_password'] ?? '');
+        $providedToken = (string)($_POST['setup_token'] ?? '');
 
-        if (strlen($pw) < 8) {
+        try {
+            tata_enforce_rate_limit($pdo, 'admin-setup', 10, 300);
+        } catch (OverflowException $e) {
+            $err = 'Too many setup attempts. Try again later.';
+        }
+
+        if (isset($err)) {
+            // Keep the rate-limit error.
+        } elseif (!hash_equals($setupToken, $providedToken)) {
+            $err = 'Invalid admin setup token.';
+        } elseif (strlen($pw) < 8) {
             $err = 'Password must be at least 8 characters.';
         } elseif ($pw !== $confirm) {
             $err = 'Passwords do not match.';
         } else {
             tata_set_setting($pdo, 'admin_password_hash', password_hash($pw, PASSWORD_DEFAULT));
+            tata_clear_admin_setup_token();
+            session_regenerate_id(true);
             $_SESSION['tata_admin'] = true;
             header('Location: admin.php');
             exit;
@@ -118,6 +150,8 @@ if ($settings['admin_password_hash'] === '') {
   <p class="sub">This password protects the chat settings panel. It is stored as a bcrypt hash.</p>
   {$errHtml}
   <form method="post">
+    <label>Setup token</label>
+    <input type="password" name="setup_token" required autocomplete="one-time-code">
     <label>New password</label>
     <input type="password" name="new_password" required autofocus>
     <div class="hint">Minimum 8 characters.</div>
@@ -141,13 +175,20 @@ if (isset($_GET['logout'])) {
 
 if (empty($_SESSION['tata_admin'])) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['password'])) {
-        if (password_verify((string)$_POST['password'], $settings['admin_password_hash'])) {
+        try {
+            tata_enforce_rate_limit($pdo, 'admin-login', 10, 300);
+        } catch (OverflowException $e) {
+            $err = 'Too many login attempts. Try again later.';
+        }
+        if (!isset($err) && password_verify((string)$_POST['password'], $settings['admin_password_hash'])) {
             session_regenerate_id(true);
             $_SESSION['tata_admin'] = true;
             header('Location: admin.php');
             exit;
         }
-        $err = 'Incorrect password.';
+        if (!isset($err)) {
+            $err = 'Incorrect password.';
+        }
     }
 
     $errHtml = isset($err) ? '<div class="msg err">' . h($err) . '</div>' : '';
@@ -170,6 +211,11 @@ HTML);
 // Actions
 // ------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (!hash_equals((string)$_SESSION['tata_csrf'], (string)($_POST['csrf_token'] ?? ''))) {
+        http_response_code(403);
+        page('TATA Chat Admin - Forbidden', '<div class="card"><h1>Request expired</h1><p class="sub">Reload the admin page and try again.</p></div>');
+        exit;
+    }
     $action = $_POST['action'];
 
     if ($action === 'save_settings') {
@@ -287,12 +333,14 @@ $maxDays = (int)$settings['retention_max_days'];
 $quotaMb = (int)$settings['storage_quota_mb'];
 $targetPct = (int)$settings['storage_target_pct'];
 $maintHours = (int)$settings['maintenance_hours'];
+$csrfToken = h($_SESSION['tata_csrf']);
 
 $body .= <<<HTML
 <div class="card">
   <h2>Retention &amp; quota</h2>
-  <form method="post">
-    <input type="hidden" name="action" value="save_settings">
+	  <form method="post">
+	    <input type="hidden" name="action" value="save_settings">
+	    <input type="hidden" name="csrf_token" value="{$csrfToken}">
 
     <label><input type="checkbox" name="adaptive_enabled" value="1" {$adaptiveChecked}>
       Adaptive retention</label>
@@ -343,16 +391,18 @@ $body .= <<<HTML
 <div class="card">
   <h2>Maintenance</h2>
   <p class="hint">Purge expired messages now and recalculate the retention window.</p>
-  <form method="post">
-    <input type="hidden" name="action" value="run_maintenance">
+	  <form method="post">
+	    <input type="hidden" name="action" value="run_maintenance">
+	    <input type="hidden" name="csrf_token" value="{$csrfToken}">
     <button type="submit" class="ghost">Run maintenance now</button>
   </form>
 </div>
 
 <div class="card">
   <h2>Admin password</h2>
-  <form method="post">
-    <input type="hidden" name="action" value="change_password">
+	  <form method="post">
+	    <input type="hidden" name="action" value="change_password">
+	    <input type="hidden" name="csrf_token" value="{$csrfToken}">
     <label>New password</label>
     <input type="password" name="new_password" required>
     <div class="hint">Minimum 8 characters.</div>

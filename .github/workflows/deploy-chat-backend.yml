@@ -25,12 +25,13 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}
-          ROOM_PASSWORD: ${{ secrets.CHAT_ROOM_PASSWORD }}
+          ADMIN_SETUP_TOKEN: ${{ secrets.ADMIN_SETUP_TOKEN }}
         run: |
           python3 - <<'PYEOF'
           import base64
           import json
           import os
+          import sys
 
           cfg = {
               'db_host': os.environ.get('DB_HOST', 'localhost'),
@@ -38,13 +39,19 @@ jobs:
               'db_user': os.environ.get('DB_USER', ''),
               'db_pass': os.environ.get('DB_PASS', ''),
               'db_charset': 'utf8mb4',
-              'room_password': os.environ.get('ROOM_PASSWORD', ''),
+              'admin_setup_token': os.environ.get('ADMIN_SETUP_TOKEN', ''),
           }
 
-          if not cfg['db_name'] or not cfg['db_user']:
-              print('WARNING: DB_NAME and/or DB_USER secret is empty.')
-              print('tata-env.php will be created with empty values.')
-              print('Run setup.php in the browser to fill in credentials manually.')
+          missing = [name for name, value in {
+              'DB_NAME': cfg['db_name'],
+              'DB_USER': cfg['db_user'],
+              'DB_PASS': cfg['db_pass'],
+              'ADMIN_SETUP_TOKEN': cfg['admin_setup_token'],
+          }.items() if not value]
+          if missing:
+              sys.exit('Missing required GitHub Secrets: ' + ', '.join(missing))
+          if len(cfg['admin_setup_token']) < 12:
+              sys.exit('ADMIN_SETUP_TOKEN must be at least 12 characters')
 
           b64 = base64.b64encode(json.dumps(cfg, ensure_ascii=False).encode('utf-8')).decode('utf-8')
           with open('tata-env.php', 'w', encoding='utf-8') as f:
@@ -82,7 +89,8 @@ jobs:
                       ftp.mkd(part)
                       ftp.cwd(part)
 
-          # No files are deleted during deploy. setup.php/ping.php can be removed manually after use.
+          excluded_runtime_files = {'setup.php', 'ping.php', 'install-config.php'}
+
           def upload_dir(ftp, local, remote_prefix):
               for root, dirs, files in os.walk(local):
                   rel = os.path.relpath(root, local)
@@ -98,6 +106,9 @@ jobs:
                           pass
 
                   for name in files:
+                      if rel == '.' and name in excluded_runtime_files:
+                          print('Skipped runtime-only file', name)
+                          continue
                       local_path = os.path.join(root, name)
                       remote_path = (remote_root + '/' + name) if remote_root else name
                       with open(local_path, 'rb') as f:
@@ -107,24 +118,17 @@ jobs:
           print('FTP server:', server)
           print('FTP remote dir:', remote_dir)
 
-          ftp = None
           try:
-              # Hostinger shared hosting default is plain FTP on port 21
-              ftp = ftplib.FTP(server)
+              # Secrets and the generated runtime config must never cross the
+              # network over plain FTP. Fail closed when FTPS is unavailable.
+              ftp = ftplib.FTP_TLS(server)
               ftp.login(username, password)
+              ftp.prot_p()
               ftp.set_pasv(True)
-              print('Connected via plain FTP')
+              print('Connected via FTPS')
           except Exception as e:
-              print('Plain FTP failed:', e)
-              try:
-                  ftp = ftplib.FTP_TLS(server)
-                  ftp.login(username, password)
-                  ftp.prot_p()
-                  ftp.set_pasv(True)
-                  print('Connected via FTPS')
-              except Exception as e2:
-                  print('FTP connection failed:', e2, file=sys.stderr)
-                  sys.exit(1)
+              print('Encrypted FTP connection failed:', e, file=sys.stderr)
+              sys.exit(1)
 
           print('FTP home dir:', ftp.pwd())
 
@@ -133,6 +137,12 @@ jobs:
           print('FTP target dir:', ftp.pwd())
 
           upload_dir(ftp, local_dir, '')
+          for retired in excluded_runtime_files:
+              try:
+                  ftp.delete(retired)
+                  print('Removed unsafe runtime file', retired)
+              except ftplib.error_perm:
+                  pass
           print('Remote files after upload:', ftp.nlst())
 
           ftp.quit()

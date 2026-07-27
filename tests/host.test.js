@@ -43,7 +43,7 @@ describe('js/host.js gateway', () => {
         expect(evalScriptMock).toHaveBeenCalledTimes(1);
         const script = evalScriptMock.mock.calls[0][0];
         expect(script).toContain('TATA.run("placeSvg"');
-        expect(script).toContain('{"path":"/tmp/test.svg"}');
+        expect(script).toContain('"{\\"path\\":\\"/tmp/test.svg\\"}"');
         expect(evalScriptMock.mock.calls[0][1]).toBe(cb);
     });
 
@@ -73,7 +73,7 @@ describe('js/host.js gateway', () => {
         window.TATA.host.run('placeSvg', { path: "C:\\temp\\Bob's.svg" }, jest.fn());
 
         const script = evalScriptMock.mock.calls[0][0];
-        expect(script).toContain('"path":"C:\\\\temp\\\\Bob\'s.svg"');
+        expect(script).toContain('\\"path\\":\\"C:\\\\\\\\temp\\\\\\\\Bob\'s.svg\\"');
     });
 
     test('host.evalFile builds $.evalFile script and passes params', () => {

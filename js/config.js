@@ -6,8 +6,7 @@
  * create js/config.local.json with:
  *
  *   {
- *       "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend",
- *       "CHAT_ROOM_PASSWORD": ""
+     *       "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend"
  *   }
  */
 
@@ -19,7 +18,6 @@
 
         // Chat backend URL (set in config.local.json)
         CHAT_BACKEND_URL: '',
-        CHAT_ROOM_PASSWORD: '',
 
         log(...args) {
             if (this.DEBUG) {
@@ -42,7 +40,6 @@
                 const raw = fs.readFileSync(localPath, 'utf8');
                 const local = JSON.parse(raw);
                 if (local.CHAT_BACKEND_URL) config.CHAT_BACKEND_URL = local.CHAT_BACKEND_URL;
-                if (local.CHAT_ROOM_PASSWORD !== undefined) config.CHAT_ROOM_PASSWORD = local.CHAT_ROOM_PASSWORD;
                 if (local.DEBUG !== undefined) config.DEBUG = !!local.DEBUG;
             }
         } catch (e) {

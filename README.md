@@ -8,7 +8,7 @@ Adobe Illustrator CEP 11 extension with team chat feature.
 
 ## Auto-Deploy Chat Backend to Hostinger
 
-This repo includes a GitHub Actions workflow (`.github/workflows/deploy-chat-backend.yml`) that deploys the `chat-backend/` folder to Hostinger shared hosting via FTP every time you push to `main`.
+This repo includes a GitHub Actions workflow (`.github/workflows/deploy-chat-backend.yml`) that deploys the `chat-backend/` folder to Hostinger shared hosting over FTPS every time you push to `main`.
 
 ### Required GitHub Secrets
 
@@ -24,16 +24,16 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 | `DB_NAME` | `u123456789_tata_chat` | MySQL database name |
 | `DB_USER` | `u123456789_tata_chat` | MySQL username |
 | `DB_PASS` | `your-db-password` | MySQL password |
-| `CHAT_ROOM_PASSWORD` | *(optional)* | Leave empty for public room |
-| `CLEANUP_DAYS` | `30` | Auto-delete messages older than N days |
-
+| `ADMIN_SETUP_TOKEN` | `random-long-secret` | Required once when claiming the admin panel |
 ### Hostinger Setup
 
 1. **Create MySQL database** in hPanel → Databases → MySQL Databases
-2. **Push to `main`** to trigger the deploy workflow
-3. **Run the setup wizard**: Visit `https://yourdomain.com/chat-backend/setup.php`, enter your MySQL credentials, and click **Create Config & Table**
-4. **Set the admin password**: Visit `https://yourdomain.com/chat-backend/admin.php` right away and choose a password — the first visitor to an unclaimed panel can set it
-5. **Delete `setup.php` and `ping.php` after setup** for security
+2. **Add every required GitHub Secret** above
+3. **Push to `main`** to deploy and initialize/migrate the schema on first use
+4. **Set the admin password**: Visit `https://yourdomain.com/chat-backend/admin.php`, enter `ADMIN_SETUP_TOKEN`, and choose a password
+
+The workflow deliberately does not deploy `setup.php`, `ping.php`, or the retired
+`install-config.php`, and removes those exact files from the remote backend if found.
 
 ### Admin panel
 
@@ -64,8 +64,7 @@ Then create `js/config.local.json`:
 
 ```json
 {
-    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend",
-    "CHAT_ROOM_PASSWORD": ""
+    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend"
 }
 ```
 

@@ -29,6 +29,8 @@ const TATA_SETTING_DEFAULTS = [
     'last_adjust_reason'  => '',
     // bcrypt hash for the admin panel. Empty means "not configured yet".
     'admin_password_hash' => '',
+    // Database schema version for idempotent upgrades.
+    'schema_version'      => '1',
 ];
 
 /**
@@ -69,15 +71,14 @@ function tata_config(): array
                 'db_user' => '',
                 'db_pass' => '',
                 'db_charset' => 'utf8mb4',
-                'room_password' => '',
+                'admin_setup_token' => '',
             ];
             return $config;
         }
     }
 
-    // tata-env.php is the deploy-managed config source. It is base64-encoded JSON
-    // so credentials are not plain text on disk and the file is treated like any
-    // other PHP deploy artifact by Hostinger.
+    // tata-env.php is the deploy-managed config source. Base64 keeps the generated
+    // PHP syntactically simple; filesystem and web-server controls provide secrecy.
     $envPath = __DIR__ . '/tata-env.php';
     if (is_readable($envPath)) {
         $tataEnv = [];
@@ -88,7 +89,7 @@ function tata_config(): array
                 'db_user' => '',
                 'db_pass' => '',
                 'db_charset' => 'utf8mb4',
-                'room_password' => '',
+                'admin_setup_token' => '',
             ];
             tata_write_config($config);
             return $config;
@@ -105,7 +106,7 @@ function tata_config(): array
                 'db_user' => defined('DB_USER') ? DB_USER : '',
                 'db_pass' => defined('DB_PASS') ? DB_PASS : '',
                 'db_charset' => defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4',
-                'room_password' => defined('ROOM_PASSWORD') ? ROOM_PASSWORD : '',
+                'admin_setup_token' => '',
             ];
             tata_write_config($config);
             return $config;
@@ -180,9 +181,237 @@ function tata_require_pdo(): PDO
     return tata_pdo();
 }
 
-function tata_room_password(): string
+function tata_admin_setup_token(): string
 {
-    return (string)(tata_config()['room_password'] ?? '');
+    $token = (string)(tata_config()['admin_setup_token'] ?? '');
+    if ($token !== '') {
+        return $token;
+    }
+
+    // Existing installations may already have chat-config.json, which takes
+    // precedence over the deploy-managed file. Read only the one-time token from
+    // tata-env.php so a new deployment can still bootstrap the admin account.
+    $envPath = __DIR__ . '/tata-env.php';
+    if (is_readable($envPath)) {
+        $tataEnv = [];
+        include $envPath;
+        if (is_array($tataEnv)) {
+            return (string)($tataEnv['admin_setup_token'] ?? '');
+        }
+    }
+    return '';
+}
+
+function tata_clear_admin_setup_token(): void
+{
+    $path = tata_config_path();
+    if (!is_readable($path)) {
+        return;
+    }
+    $config = json_decode((string)file_get_contents($path), true);
+    if (!is_array($config) || !array_key_exists('admin_setup_token', $config)) {
+        return;
+    }
+    unset($config['admin_setup_token']);
+    tata_write_config($config);
+}
+
+/**
+ * Upgrade the chat schema to room-aware storage. The version guard keeps DDL
+ * out of normal requests after the first successful migration.
+ */
+function tata_ensure_chat_schema(PDO $pdo): void
+{
+    tata_ensure_schema($pdo);
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            room_id INT NULL,
+            username VARCHAR(50) NOT NULL,
+            message_type VARCHAR(20) NOT NULL DEFAULT 'text',
+            content TEXT NOT NULL,
+            button_data JSON NULL,
+            file_path VARCHAR(255) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_created (created_at),
+            INDEX idx_room_id (room_id, id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS chat_rooms (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(80) NOT NULL UNIQUE,
+            name VARCHAR(80) NOT NULL,
+            password_hash VARCHAR(255) NULL,
+            created_by VARCHAR(50) NOT NULL DEFAULT '',
+            created_ip_hash CHAR(64) NOT NULL DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_room_created (created_at),
+            INDEX idx_room_creator (created_ip_hash, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS chat_rate_limits (
+            ip_hash CHAR(64) NOT NULL,
+            scope VARCHAR(96) NOT NULL,
+            window_started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            request_count INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (ip_hash, scope)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    $public = $pdo->prepare("
+        INSERT INTO chat_rooms (slug, name, password_hash, created_by)
+        VALUES ('public', 'Public Lounge', NULL, 'system')
+        ON DUPLICATE KEY UPDATE name = VALUES(name)
+    ");
+    $public->execute();
+
+    $versionStmt = $pdo->prepare("
+        SELECT setting_value FROM chat_settings WHERE setting_key = 'schema_version'
+    ");
+    $versionStmt->execute();
+    $version = (int)($versionStmt->fetchColumn() ?: 1);
+    if ($version < 2) {
+        $columnStmt = $pdo->prepare("
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'chat_messages'
+              AND column_name = 'room_id'
+        ");
+        $columnStmt->execute();
+        if ((int)$columnStmt->fetchColumn() === 0) {
+            $pdo->exec("ALTER TABLE chat_messages ADD COLUMN room_id INT NULL AFTER id");
+            $pdo->exec("ALTER TABLE chat_messages ADD INDEX idx_room_id (room_id, id)");
+        }
+
+        $publicId = (int)$pdo->query("SELECT id FROM chat_rooms WHERE slug = 'public' LIMIT 1")->fetchColumn();
+        $update = $pdo->prepare("UPDATE chat_messages SET room_id = :room_id WHERE room_id IS NULL");
+        $update->execute([':room_id' => $publicId]);
+    }
+
+    if ($version < 3) {
+        $ipColumn = $pdo->prepare("
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'chat_rooms'
+              AND column_name = 'created_ip_hash'
+        ");
+        $ipColumn->execute();
+        if ((int)$ipColumn->fetchColumn() === 0) {
+            $pdo->exec("ALTER TABLE chat_rooms ADD COLUMN created_ip_hash CHAR(64) NOT NULL DEFAULT '' AFTER created_by");
+            $pdo->exec("ALTER TABLE chat_rooms ADD INDEX idx_room_creator (created_ip_hash, created_at)");
+        }
+    }
+
+    $setVersion = $pdo->prepare("
+        INSERT INTO chat_settings (setting_key, setting_value)
+        VALUES ('schema_version', '3')
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+    ");
+    $setVersion->execute();
+    tata_settings($pdo, true);
+}
+
+function tata_room_slug(string $value): string
+{
+    $value = strtolower(trim($value));
+    $value = preg_replace('/[^a-z0-9_-]+/', '-', $value);
+    return trim((string)$value, '-');
+}
+
+function tata_bearer_token(): string
+{
+    $header = (string)($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+    if (preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
+        return trim($matches[1]);
+    }
+    return '';
+}
+
+/**
+ * Resolve and authorize the room selected by the client.
+ *
+ * Public Lounge needs no password. Private rooms require their password on
+ * every API request so a leaked room slug alone grants no access.
+ */
+function tata_require_room(PDO $pdo, ?string $slug = null, ?string $password = null): array
+{
+    tata_ensure_chat_schema($pdo);
+
+    $slug = tata_room_slug($slug ?? (string)($_SERVER['HTTP_X_CHAT_ROOM'] ?? 'public'));
+    if ($slug === '') {
+        $slug = 'public';
+    }
+    $password = $password ?? tata_bearer_token();
+
+    $stmt = $pdo->prepare("
+        SELECT id, slug, name, password_hash, created_at
+        FROM chat_rooms
+        WHERE slug = :slug
+        LIMIT 1
+    ");
+    $stmt->execute([':slug' => $slug]);
+    $room = $stmt->fetch();
+    if (!$room) {
+        throw new OutOfBoundsException('Room not found');
+    }
+
+    if (!empty($room['password_hash'])
+        && ($password === '' || !password_verify($password, $room['password_hash']))) {
+        tata_enforce_rate_limit($pdo, 'room-auth-' . $room['id'], 30, 300);
+        throw new UnexpectedValueException('Wrong room password');
+    }
+
+    return [
+        'id' => (int)$room['id'],
+        'slug' => $room['slug'],
+        'name' => $room['name'],
+        'is_private' => !empty($room['password_hash']),
+        'created_at' => $room['created_at'],
+    ];
+}
+
+function tata_enforce_rate_limit(PDO $pdo, string $scope, int $maxRequests, int $windowSeconds): void
+{
+    $ipHash = hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare("
+            SELECT request_count, window_started_at
+            FROM chat_rate_limits
+            WHERE ip_hash = :ip_hash AND scope = :scope
+            FOR UPDATE
+        ");
+        $stmt->execute([':ip_hash' => $ipHash, ':scope' => $scope]);
+        $row = $stmt->fetch();
+        $expired = !$row || (time() - strtotime($row['window_started_at'])) >= $windowSeconds;
+
+        if ($expired) {
+            $reset = $pdo->prepare("
+                INSERT INTO chat_rate_limits (ip_hash, scope, window_started_at, request_count)
+                VALUES (:ip_hash, :scope, NOW(), 1)
+                ON DUPLICATE KEY UPDATE window_started_at = NOW(), request_count = 1
+            ");
+            $reset->execute([':ip_hash' => $ipHash, ':scope' => $scope]);
+        } elseif ((int)$row['request_count'] >= $maxRequests) {
+            $pdo->rollBack();
+            throw new OverflowException('Too many requests. Try again shortly.');
+        } else {
+            $increment = $pdo->prepare("
+                UPDATE chat_rate_limits SET request_count = request_count + 1
+                WHERE ip_hash = :ip_hash AND scope = :scope
+            ");
+            $increment->execute([':ip_hash' => $ipHash, ':scope' => $scope]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 function tata_ensure_schema(PDO $pdo): void
@@ -276,7 +505,8 @@ function tata_db_bytes(PDO $pdo): int
     $stmt = $pdo->prepare("
         SELECT COALESCE(SUM(data_length + index_length), 0) AS bytes
         FROM information_schema.TABLES
-        WHERE table_schema = :db AND table_name IN ('chat_messages', 'chat_settings')
+        WHERE table_schema = :db
+          AND table_name IN ('chat_messages', 'chat_settings', 'chat_rooms', 'chat_rate_limits')
     ");
     $stmt->execute([':db' => tata_config()['db_name']]);
     $row = $stmt->fetch();
@@ -467,6 +697,7 @@ function tata_run_maintenance(PDO $pdo, bool $force = false): array
 
     $retention = max(0, (int)$settings['retention_days']);
     $purged = tata_purge_older_than($pdo, $retention);
+    $pdo->exec("DELETE FROM chat_rate_limits WHERE window_started_at < DATE_SUB(NOW(), INTERVAL 1 DAY)");
 
     $report = [
         'ran' => true,

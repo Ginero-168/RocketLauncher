@@ -1,4 +1,3 @@
 {
-    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend",
-    "CHAT_ROOM_PASSWORD": ""
+    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend"
 }

@@ -1,0 +1,47 @@
+name: Validate Extension
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install test dependencies
+        run: npm install --ignore-scripts
+
+      - name: Run JavaScript tests
+        run: npm test -- --runInBand
+
+      - name: Check JavaScript syntax
+        run: |
+          for file in js/*.js tests/*.js; do
+            node --check "$file"
+          done
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, fileinfo, mbstring, pdo_mysql
+
+      - name: Check PHP syntax
+        run: |
+          find chat-backend -maxdepth 1 -name '*.php' -print0 |
+            xargs -0 -n1 php -l
+
+      - name: Check whitespace
+        run: git diff --check

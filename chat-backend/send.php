@@ -4,8 +4,9 @@
  * POST endpoint: send.php
  *
  * Supports:
- * - JSON body: { username, content, message_type, button_data, password }
- * - Multipart form: username, content, message_type, password, image (file)
+ * - JSON body: { username, content, message_type, button_data }
+ * - Multipart form: username, content, message_type, image (file)
+ * - Room selection: X-Chat-Room + optional Authorization: Bearer <password>
  *
  * Response (JSON):
  *   { ok: true, id: 123 }
@@ -14,7 +15,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Chat-Room');
 
 /**
  * Remove dangerous constructs from SVG files before serving them from our domain.
@@ -25,36 +26,57 @@ header('Access-Control-Allow-Headers: Content-Type');
  */
 function sanitize_svg(string $svg): string
 {
-    // Bail out if it doesn't even look like an SVG.
-    if (stripos($svg, '<svg') === false) {
+    if (!class_exists('DOMDocument')) {
+        throw new RuntimeException('SVG sanitizer unavailable');
+    }
+    if (stripos($svg, '<!DOCTYPE') !== false || stripos($svg, '<!ENTITY') !== false) {
+        throw new RuntimeException('Unsafe SVG document');
+    }
+
+    $previous = libxml_use_internal_errors(true);
+    $doc = new DOMDocument();
+    $loaded = $doc->loadXML($svg, LIBXML_NONET | LIBXML_NOBLANKS);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+    if (!$loaded || !$doc->documentElement || strtolower($doc->documentElement->localName) !== 'svg') {
         throw new RuntimeException('Not an SVG document');
     }
 
-    $svg = preg_replace(
-        [
-            // Remove <script> elements entirely (including CDATA-wrapped).
-            '#<script[\s\S]*?</script>#i',
-            // Remove <foreignObject>, <iframe>, <object>, <embed>, <use>.
-            '#<(foreignObject|iframe|object|embed|use)[\s\S]*?</\1>#i',
-            '#<(foreignObject|iframe|object|embed|use)\s+[^>]*/?>#i',
-            // Remove event handlers (onload, onclick, ...).
-            '#\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i',
-            // Remove JavaScript URLs.
-            '#(xlink:href|href)\s*=\s*(["\'])javascript:.*?\2#i',
-            // Remove XML entity definitions and DOCTYPE declarations (XXE protection).
-            '#<!ENTITY\s+.*?>#i',
-            '#<!DOCTYPE\s+[\s\S]*?>#i',
-        ],
-        '',
-        $svg
-    );
+    $blocked = ['script', 'foreignobject', 'iframe', 'object', 'embed'];
+    $nodes = [];
+    foreach ($doc->getElementsByTagName('*') as $node) {
+        $nodes[] = $node;
+    }
+    foreach (array_reverse($nodes) as $node) {
+        if (in_array(strtolower($node->localName), $blocked, true)) {
+            if ($node->parentNode) {
+                $node->parentNode->removeChild($node);
+            }
+            continue;
+        }
 
-    // Ensure the XML prologue (if any) still declares UTF-8 and standalone=no.
-    if (stripos($svg, '<?xml') === false) {
-        $svg = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" . ltrim($svg);
+        $remove = [];
+        foreach ($node->attributes as $attribute) {
+            $name = strtolower($attribute->nodeName);
+            $value = trim($attribute->nodeValue);
+            if (strpos($name, 'on') === 0
+                || (($name === 'href' || $name === 'xlink:href')
+                    && !preg_match('/^(#|data:image\/(?:png|jpeg|gif|webp);base64,)/i', $value))
+                || (($name === 'style' || $name === 'filter')
+                    && preg_match('/(javascript:|expression\s*\(|url\s*\(\s*[\'"]?(?!#|data:image\/(?:png|jpeg|gif|webp);base64,))/i', $value))) {
+                $remove[] = $attribute->nodeName;
+            }
+        }
+        foreach ($remove as $name) {
+            $node->removeAttribute($name);
+        }
+        if (strtolower($node->localName) === 'style'
+            && preg_match('/(@import|javascript:|expression\s*\(|url\s*\(\s*[\'"]?(?!#|data:image\/(?:png|jpeg|gif|webp);base64,))/i', $node->textContent)) {
+            $node->parentNode->removeChild($node);
+        }
     }
 
-    return $svg;
+    return $doc->saveXML($doc->documentElement);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -77,14 +99,14 @@ require_once __DIR__ . '/lib.php';
 
 if (!tata_is_configured()) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Server config missing — run setup.php']);
+    echo json_encode(['ok' => false, 'error' => 'Server configuration missing']);
     exit;
 }
 
 // Parse request body (JSON or multipart)
 $isMultipart = !empty($_FILES);
 $body = $_POST;
-if (!$isMultipart && $_SERVER['CONTENT_TYPE'] && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
+if (!$isMultipart && !empty($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
     $raw = file_get_contents('php://input');
     $parsed = json_decode($raw, true);
     if ($parsed) {
@@ -92,14 +114,29 @@ if (!$isMultipart && $_SERVER['CONTENT_TYPE'] && strpos($_SERVER['CONTENT_TYPE']
     }
 }
 
-// Check room password
-$roomPassword = tata_room_password();
-if ($roomPassword !== '') {
-    if (($body['password'] ?? '') !== $roomPassword) {
-        http_response_code(403);
-        echo json_encode(['ok' => false, 'error' => 'Wrong room password']);
-        exit;
-    }
+try {
+    $pdo = tata_require_pdo();
+    $room = tata_require_room(
+        $pdo,
+        (string)($_SERVER['HTTP_X_CHAT_ROOM'] ?? ($body['room'] ?? 'public')),
+        tata_bearer_token()
+    );
+} catch (OutOfBoundsException $e) {
+    http_response_code(404);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    exit;
+} catch (UnexpectedValueException $e) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    exit;
+} catch (OverflowException $e) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    exit;
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Server error']);
+    exit;
 }
 
 // Validate input
@@ -118,6 +155,22 @@ if ($username === '' || mb_strlen($username) > 50) {
 $allowedTypes = ['text', 'button_config', 'image'];
 if (!in_array($messageType, $allowedTypes, true)) {
     $messageType = 'text';
+}
+if (mb_strlen($content) > 10000) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Message too long (max 10000 chars)']);
+    exit;
+}
+
+try {
+    tata_enforce_rate_limit($pdo, 'send-room-' . $room['id'], 60, 60);
+    if ($messageType === 'image') {
+        tata_enforce_rate_limit($pdo, 'upload-room-' . $room['id'], 15, 60);
+    }
+} catch (OverflowException $e) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    exit;
 }
 
 // Handle image upload
@@ -157,7 +210,7 @@ if ($messageType === 'image') {
 
     // Refuse uploads that would push storage past the configured quota
     try {
-        $stats = tata_storage_stats(tata_require_pdo());
+        $stats = tata_storage_stats($pdo);
         if ($stats['total_bytes'] + $file['size'] > $stats['quota_bytes']) {
             http_response_code(507);
             echo json_encode(['ok' => false, 'error' => 'Storage quota full — ask an admin to free up space']);
@@ -191,7 +244,13 @@ if ($messageType === 'image') {
     if ($isSvg) {
         // SVG may arrive via Illustrator export as application/octet-stream or with a
         // non-standard extension; the live file must be sanitized and written.
-        $clean = sanitize_svg($rawSvgContent);
+        try {
+            $clean = sanitize_svg($rawSvgContent);
+        } catch (Throwable $e) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Unsafe or invalid SVG']);
+            exit;
+        }
         if (@file_put_contents($destination, $clean) === false) {
             http_response_code(500);
             echo json_encode(['ok' => false, 'error' => 'Failed to save SVG']);
@@ -217,11 +276,6 @@ if ($messageType === 'image') {
         exit;
     }
 
-    if (mb_strlen($content) > 10000) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Message too long (max 10000 chars)']);
-        exit;
-    }
 }
 
 // Sanitize button_data (must be valid JSON object or null)
@@ -231,19 +285,44 @@ if ($buttonData !== null) {
         $buttonData = null;
     }
 }
+if ($messageType === 'button_config') {
+    if (!is_array($buttonData)
+        || trim((string)($buttonData['label'] ?? '')) === ''
+        || mb_strlen((string)($buttonData['label'] ?? '')) > 100
+        || mb_strlen((string)($buttonData['code'] ?? '')) > 40000) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Invalid panel button configuration']);
+        exit;
+    }
+    $icon = (string)($buttonData['icon'] ?? '★');
+    if (stripos(ltrim($icon), '<svg') === 0) {
+        try {
+            $icon = sanitize_svg($icon);
+        } catch (Throwable $e) {
+            $icon = '★';
+        }
+    } else {
+        $icon = substr(strip_tags($icon), 0, 32) ?: '★';
+    }
+    $buttonData = [
+        'id' => substr((string)($buttonData['id'] ?? ''), 0, 100),
+        'label' => trim((string)$buttonData['label']),
+        'icon' => substr($icon, 0, 5000),
+        'color' => substr((string)($buttonData['color'] ?? 'gray'), 0, 30),
+        'code' => (string)($buttonData['code'] ?? ''),
+        'script' => substr((string)($buttonData['script'] ?? ''), 0, 500),
+        'type' => substr((string)($buttonData['type'] ?? 'code'), 0, 30),
+    ];
+}
 
 try {
-    $pdo = tata_require_pdo();
-
-    // Ensure the schema is up to date (file_path column, etc.)
-    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
-
     $stmt = $pdo->prepare("
-        INSERT INTO chat_messages (username, message_type, content, button_data, file_path)
-        VALUES (:username, :message_type, :content, :button_data, :file_path)
+        INSERT INTO chat_messages (room_id, username, message_type, content, button_data, file_path)
+        VALUES (:room_id, :username, :message_type, :content, :button_data, :file_path)
     ");
 
     $stmt->execute([
+        ':room_id' => $room['id'],
         ':username' => $username,
         ':message_type' => $messageType,
         ':content' => $content,
@@ -254,6 +333,9 @@ try {
     echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
 
 } catch (Throwable $e) {
+    if ($filePath !== null && isset($destination) && is_file($destination)) {
+        @unlink($destination);
+    }
     http_response_code(500);
     error_log('[TATA Chat send.php] ' . $e->getMessage());
     echo json_encode(['ok' => false, 'error' => 'Server error']);
