@@ -501,9 +501,22 @@
     // ==========================================
     // Drag & drop / paste
     // ==========================================
-    function setDropActive(active) {
+    function setDropActive(active, message) {
         const zone = $('chat_dropzone');
-        if (zone) zone.classList.toggle('active', active);
+        if (!zone) return;
+        zone.classList.toggle('active', active);
+        if (message) {
+            const text = zone.querySelector('.chat-dropzone-inner div:last-child');
+            if (text) text.textContent = message;
+        }
+    }
+
+    function isFileDrop(dt) {
+        if (!dt) return false;
+        // Native files or a file path passed as text.
+        if (dt.types && Array.from(dt.types).some(t => t === 'Files')) return true;
+        if (dt.files && dt.files.length) return true;
+        return false;
     }
 
     function bindDropTarget(target) {
@@ -513,7 +526,13 @@
             e.preventDefault();
             e.stopPropagation();
             chatState.dragDepth++;
-            setDropActive(true);
+
+            const dt = e.dataTransfer;
+            if (isFileDrop(dt)) {
+                setDropActive(true, 'Drop images or SVG files to send');
+            } else {
+                setDropActive(true, 'Drag from the Illustrator canvas is not supported — use the AI button');
+            }
         });
 
         target.addEventListener('dragover', e => {
@@ -537,6 +556,12 @@
 
             const dt = e.dataTransfer;
             if (!dt) return;
+
+            // Drops from the Illustrator canvas do not carry usable data in CEP panels.
+            if (!isFileDrop(dt)) {
+                safeToast('Dragging from the Illustrator canvas is not supported. Use the AI button to send the selection as SVG.', 'error');
+                return;
+            }
 
             if (dt.files && dt.files.length) {
                 addAttachments(dt.files);
@@ -585,20 +610,69 @@
     }
 
     function handlePaste(e) {
-        const items = e.clipboardData && e.clipboardData.items;
+        const cd = e.clipboardData;
+        const items = cd && cd.items;
         if (!items) return;
 
-        const files = [];
+        // Prefer SVG if Illustrator put it on the clipboard.
+        for (const item of items) {
+            if (item.kind === 'file' && item.type === 'image/svg+xml') {
+                const file = item.getAsFile();
+                if (file) {
+                    e.preventDefault();
+                    addAttachments([file]);
+                    return;
+                }
+            }
+        }
+
+        // If the only pasted image is a generic PNG, it is almost certainly the
+        // bitmap preview Illustrator places on the clipboard. Export the current
+        // selection as real SVG instead, but only when something is selected.
+        const pastedImages = [];
         for (const item of items) {
             if (item.kind === 'file') {
                 const file = item.getAsFile();
-                if (file) files.push(file);
+                if (file) pastedImages.push(file);
             }
         }
-        if (files.length) {
+
+        if (pastedImages.length === 1 && pastedImages[0].type === 'image/png') {
             e.preventDefault();
-            addAttachments(files);
+            attachIllustratorSelectionAsSvgFallback(pastedImages[0]);
+            return;
         }
+
+        if (pastedImages.length) {
+            e.preventDefault();
+            addAttachments(pastedImages);
+        }
+    }
+
+    /**
+     * When the user pastes a PNG from Illustrator, try to export the current
+     * selection as SVG. If Illustrator has no selection, fall back to the PNG.
+     */
+    function attachIllustratorSelectionAsSvgFallback(fallbackPng) {
+        if (!TATA.host || typeof TATA.host.run !== 'function') {
+            addAttachments([fallbackPng]);
+            return;
+        }
+
+        TATA.host.run('hasSelection', {}, res => {
+            let data;
+            try {
+                data = JSON.parse(String(res || '').replace(/^"|"$/g, ''));
+            } catch (e) {
+                data = { hasSelection: false };
+            }
+
+            if (data && data.hasSelection) {
+                attachIllustratorSelection();
+            } else {
+                addAttachments([fallbackPng]);
+            }
+        });
     }
 
     // ==========================================

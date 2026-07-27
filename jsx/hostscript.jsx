@@ -507,6 +507,13 @@ var TATA = {
         return result;
     },
 
+    hasSelection: function () {
+        if (app.documents.length === 0) return JSON.stringify({ hasSelection: false, count: 0 });
+        var doc = app.activeDocument;
+        var count = (doc.selection && doc.selection.length) ? doc.selection.length : 0;
+        return JSON.stringify({ hasSelection: count > 0, count: count });
+    },
+
     saveSelectionAsRichSvg: function (params) {
         if (app.documents.length === 0) return "No Doc";
         var doc = app.activeDocument;
