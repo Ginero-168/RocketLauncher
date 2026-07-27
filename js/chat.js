@@ -726,7 +726,7 @@
             if (isFileDrop(dt)) {
                 setDropActive(true, 'Drop images or SVG files to send');
             } else {
-                setDropActive(true, 'Drag from the Illustrator canvas is not supported — use the AI button');
+                setDropActive(true, 'Drop to attach the Illustrator selection as SVG');
             }
         });
 
@@ -752,12 +752,6 @@
             const dt = e.dataTransfer;
             if (!dt) return;
 
-            // Drops from the Illustrator canvas do not carry usable data in CEP panels.
-            if (!isFileDrop(dt)) {
-                safeToast('Dragging from the Illustrator canvas is not supported. Use the AI button to send the selection as SVG.', 'error');
-                return;
-            }
-
             if (dt.files && dt.files.length) {
                 addAttachments(dt.files);
                 return;
@@ -765,7 +759,15 @@
 
             // Some sources hand over a file path or a URL instead of a File object.
             const text = dt.getData('text/uri-list') || dt.getData('text/plain');
-            if (text) attachFromPathOrUrl(text.trim());
+            if (text) {
+                attachFromPathOrUrl(text.trim());
+                return;
+            }
+
+            // Illustrator canvas drags do not expose a File through CEP. Export
+            // the current selection through the host bridge, matching the AI→SVG
+            // button behavior.
+            attachIllustratorSelection();
         });
     }
 

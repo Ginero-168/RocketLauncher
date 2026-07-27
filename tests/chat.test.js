@@ -7,6 +7,11 @@ const path = require('path');
 
 function loadChat() {
     document.body.innerHTML = `
+        <div id="chat_main">
+            <div id="chat_dropzone">
+                <div class="chat-dropzone-inner"><div></div><div></div></div>
+            </div>
+        </div>
         <div id="chat_messages"></div>
         <span id="chat_room_name"></span>
         <span id="chat_room_badge"></span>
@@ -127,6 +132,28 @@ describe('chat messages', () => {
         expect(fetch).toHaveBeenCalledTimes(3);
         expect(document.querySelectorAll('.chat-msg-image')).toHaveLength(0);
         expect(document.querySelector('.chat-msg-media-error').textContent).toBe('Media unavailable');
+    });
+
+    test('dropping Illustrator canvas data exports the selection as SVG', () => {
+        loadChat();
+        window.TATA.host = { run: jest.fn() };
+        window.require = jest.fn(name => require(name));
+
+        const event = new Event('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'dataTransfer', {
+            value: {
+                types: [],
+                files: [],
+                getData: jest.fn(() => ''),
+            },
+        });
+        document.getElementById('chat_main').dispatchEvent(event);
+
+        expect(window.TATA.host.run).toHaveBeenCalledWith(
+            'saveSelectionAsRichSvg',
+            expect.objectContaining({ path: expect.stringMatching(/tata_chat_\d+\.svg$/) }),
+            expect.any(Function)
+        );
     });
 
     test('keeps private room credentials in headers instead of the poll URL', async () => {
