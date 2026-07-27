@@ -518,13 +518,14 @@ var TATA = {
         if (app.documents.length === 0) return "No Doc";
         var doc = app.activeDocument;
         if (!doc.selection || doc.selection.length === 0) return "No Selection";
+        var tempDoc = null;
 
         try {
             app.copy(); // Copy current selection
 
             // Create Temp Doc matching Source Color Space to prevent Flattening/Expansion on Paste
             var colorSpace = doc.documentColorSpace;
-            var tempDoc = app.documents.add(colorSpace);
+            tempDoc = app.documents.add(colorSpace);
 
             app.paste();
 
@@ -574,10 +575,16 @@ var TATA = {
             tempDoc.exportFile(f, ExportType.SVG, opts);
 
             tempDoc.close(SaveOptions.DONOTSAVECHANGES);
+            tempDoc = null;
+            try { doc.activate(); } catch (activateErr) { }
 
             // Read content is done in JS side? No, better here to verify success, or JS side reads it.
             return "Success";
         } catch (e) {
+            if (tempDoc) {
+                try { tempDoc.close(SaveOptions.DONOTSAVECHANGES); } catch (closeErr) { }
+            }
+            try { doc.activate(); } catch (activateErr2) { }
             return e.toString();
         }
     },

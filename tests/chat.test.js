@@ -151,6 +151,7 @@ describe('chat messages', () => {
     });
 
     test('dropping Illustrator canvas data exports the selection as SVG', () => {
+        jest.useFakeTimers();
         loadChat();
         window.TATA.host = { run: jest.fn() };
         window.require = jest.fn(name => require(name));
@@ -165,11 +166,16 @@ describe('chat messages', () => {
         });
         document.getElementById('chat_main').dispatchEvent(event);
 
+        // Illustrator must finish its native drag transaction before ExtendScript
+        // performs copy/export, otherwise it raises [PARM] or cancels the operation.
+        expect(window.TATA.host.run).not.toHaveBeenCalled();
+        jest.advanceTimersByTime(200);
         expect(window.TATA.host.run).toHaveBeenCalledWith(
             'saveSelectionAsRichSvg',
             expect.objectContaining({ path: expect.stringMatching(/tata_chat_\d+\.svg$/) }),
             expect.any(Function)
         );
+        jest.useRealTimers();
     });
 
     test('keeps private room credentials in headers instead of the poll URL', async () => {

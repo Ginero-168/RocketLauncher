@@ -791,8 +791,10 @@
 
             // Illustrator canvas drags do not expose a File through CEP. Export
             // the current selection through the host bridge, matching the AI→SVG
-            // button behavior.
-            attachIllustratorSelection();
+            // button behavior. Wait for Illustrator to finish its native drag
+            // transaction first; calling app.copy/export inside this event stack
+            // causes [PARM] and "operation was cancelled" on some shapes.
+            setTimeout(attachIllustratorSelection, 150);
         });
     }
 
