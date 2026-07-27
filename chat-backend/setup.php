@@ -2,7 +2,7 @@
 /**
  * TATA Chat - Setup Wizard
  *
- * Run this script ONCE to create config.php and the messages table.
+ * Run this script ONCE to create chat-config.json and the database tables.
  * Visit: https://yourdomain.com/chat-backend/setup.php
  *
  * Delete this file after successful setup for security.
@@ -13,12 +13,10 @@ ini_set('display_errors', '1');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php-errors.log');
 
+require_once __DIR__ . '/lib.php';
+
 function esc($s) {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-}
-
-function q($s) {
-    return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], $s) . "'";
 }
 
 function renderForm($values, $error = '') {
@@ -125,7 +123,7 @@ function renderDone() {
 <body>
     <div class="box">
         <h2 class="ok">Already Configured</h2>
-        <p><code>config.php</code> and the <code>chat_messages</code> table already exist.</p>
+        <p><code>chat-config.json</code> and the <code>chat_messages</code> table already exist.</p>
         <p>Manage storage and retention in <a href="admin.php" style="color:#4e8cff">admin.php</a>.</p>
         <p class="warn"><strong>Security:</strong> Delete <code>setup.php</code> from your server now if you no longer need it.</p>
     </div>
@@ -135,23 +133,17 @@ HTML;
 }
 
 // Check if already configured
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
+if (tata_is_configured()) {
     try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-            DB_USER,
-            DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = tata_pdo();
         $stmt = $pdo->query("SHOW TABLES LIKE 'chat_messages'");
         if ($stmt->rowCount() > 0) {
             renderDone();
             exit;
         }
     } catch (PDOException $e) {
-        // config exists but DB connection failed — show form with error
-        renderForm($_POST ?: [], 'config.php exists but database connection failed. Please check your credentials.');
+        // Config exists but the connection failed — let the user re-enter credentials
+        renderForm($_POST ?: [], 'Config exists but the database connection failed. Please check your credentials.');
         exit;
     }
 }
@@ -189,18 +181,18 @@ try {
     exit;
 }
 
-// Write config.php
-$configContent = "<?php\n" .
-    "define('DB_HOST', " . q($values['db_host']) . ");\n" .
-    "define('DB_NAME', " . q($values['db_name']) . ");\n" .
-    "define('DB_USER', " . q($values['db_user']) . ");\n" .
-    "define('DB_PASS', " . q($values['db_pass']) . ");\n" .
-    "define('DB_CHARSET', 'utf8mb4');\n" .
-    "define('ROOM_PASSWORD', " . q($values['room_password']) . ");\n" .
-    "define('CLEANUP_DAYS', " . $cleanupDays . ");\n";
+// Persist credentials to chat-config.json (see lib.php for why it is not a .php file)
+$written = tata_write_config([
+    'db_host' => $values['db_host'],
+    'db_name' => $values['db_name'],
+    'db_user' => $values['db_user'],
+    'db_pass' => $values['db_pass'],
+    'db_charset' => 'utf8mb4',
+    'room_password' => $values['room_password'],
+]);
 
-if (@file_put_contents(__DIR__ . '/config.php', $configContent) === false) {
-    renderForm($values, 'Failed to write config.php. Check folder permissions.');
+if (!$written) {
+    renderForm($values, 'Failed to write chat-config.json. Check folder permissions.');
     exit;
 }
 
@@ -253,4 +245,4 @@ if (!file_exists($htaccess)) {
     @file_put_contents($htaccess, "# Deny PHP execution in uploads directory\nphp_flag engine off\n\n<FilesMatch \"\\\\.(?i:php)\$\">\n  Require all denied\n</FilesMatch>\n");
 }
 
-renderSuccess("Created <code>config.php</code> and the <code>chat_messages</code> table successfully.");
+renderSuccess("Created <code>chat-config.json</code> and the <code>chat_messages</code> table successfully.");

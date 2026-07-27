@@ -30,18 +30,16 @@ ini_set('error_log', __DIR__ . '/php-errors.log');
 
 require_once __DIR__ . '/lib.php';
 
-if (!file_exists(__DIR__ . '/config.php')) {
+if (!tata_is_configured()) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Server config missing']);
+    echo json_encode(['ok' => false, 'error' => 'Server config missing — run setup.php']);
     exit;
 }
 
-require_once __DIR__ . '/config.php';
-
 // Check room password
-if (ROOM_PASSWORD !== '') {
-    $pass = $_GET['password'] ?? '';
-    if ($pass !== ROOM_PASSWORD) {
+$roomPassword = tata_room_password();
+if ($roomPassword !== '') {
+    if (($_GET['password'] ?? '') !== $roomPassword) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'Wrong room password']);
         exit;

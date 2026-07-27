@@ -46,9 +46,9 @@ jobs:
                       ftp.mkd(part)
                       ftp.cwd(part)
 
-          # Never overwrite config.php or install-config.php if present on the server.
+          # Never touch server-side configuration written by setup.php.
           # setup.php and ping.php are deployed but can be deleted manually after use.
-          SKIP_FILES = {'config.php', 'install-config.php'}
+          SKIP_FILES = {'config.php', 'chat-config.json', 'install-config.php'}
 
           def safe_delete(ftp, name):
               try:

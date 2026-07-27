@@ -2,8 +2,8 @@
 /**
  * TATA Chat - Health Check / Debug Endpoint
  *
- * Use this to verify that the backend files were deployed correctly
- * and that the database connection works.
+ * Verifies that the backend files were deployed correctly, that the
+ * configuration is readable, and that the database connection works.
  *
  * Delete this file after setup for security.
  */
@@ -11,32 +11,43 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
+require_once __DIR__ . '/lib.php';
+
 $checks = [
     'php' => true,
     'php_version' => PHP_VERSION,
-    'config_exists' => file_exists(__DIR__ . '/config.php'),
     'pdo_available' => extension_loaded('pdo_mysql'),
+    'config_exists' => file_exists(__DIR__ . '/chat-config.json'),
+    'legacy_config_exists' => file_exists(__DIR__ . '/config.php'),
+    'uploads_writable' => is_dir(__DIR__ . '/uploads') && is_writable(__DIR__ . '/uploads'),
+    'dir_writable' => is_writable(__DIR__),
 ];
 
-if ($checks['config_exists']) {
-    require_once __DIR__ . '/config.php';
+if (tata_is_configured()) {
     $checks['config_readable'] = true;
-
     try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-            DB_USER,
-            DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
+        $pdo = tata_pdo();
         $checks['db_connected'] = true;
+        $checks['table_exists'] = $pdo->query("SHOW TABLES LIKE 'chat_messages'")->rowCount() > 0;
+        $checks['settings_table_exists'] = $pdo->query("SHOW TABLES LIKE 'chat_settings'")->rowCount() > 0;
 
-        $stmt = $pdo->query("SHOW TABLES LIKE 'chat_messages'");
-        $checks['table_exists'] = $stmt->rowCount() > 0;
-    } catch (PDOException $e) {
+        if ($checks['table_exists']) {
+            $stats = tata_storage_stats($pdo);
+            $checks['storage'] = [
+                'used' => tata_format_bytes($stats['total_bytes']),
+                'quota' => tata_format_bytes($stats['quota_bytes']),
+                'usage_pct' => round($stats['usage_pct'], 1),
+                'messages' => $stats['message_count'],
+                'retention_days' => (int)tata_setting($pdo, 'retention_days'),
+            ];
+        }
+    } catch (Throwable $e) {
         $checks['db_connected'] = false;
         $checks['db_error'] = $e->getMessage();
     }
+} else {
+    $checks['config_readable'] = false;
+    $checks['hint'] = 'Run setup.php to create chat-config.json';
 }
 
 header('Content-Type: application/json; charset=utf-8');

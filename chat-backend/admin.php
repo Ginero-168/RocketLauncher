@@ -83,7 +83,7 @@ try {
     tata_ensure_schema($pdo);
 } catch (Throwable $e) {
     page('TATA Chat Admin', '<div class="card"><h1>Not configured</h1>'
-        . '<p class="sub">Run <code>setup.php</code> first to create <code>config.php</code> and the database tables.</p></div>');
+        . '<p class="sub">Run <code>setup.php</code> first to create <code>chat-config.json</code> and the database tables.</p></div>');
     exit;
 }
 

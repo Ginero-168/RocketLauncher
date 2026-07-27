@@ -21,9 +21,13 @@ https://yourdomain.com/chat-backend/setup.php
 Enter your MySQL credentials and click **Create Config & Table**.
 
 The wizard creates:
-- `config.php` with your database settings
+- `chat-config.json` with your database credentials
 - The `chat_messages` and `chat_settings` tables
 - The `uploads/` directory for image uploads
+
+> Credentials live in `chat-config.json`, not a PHP file. An earlier `config.php` kept
+> disappearing from the Hostinger account between deploys; a plain data file is neither a
+> deploy artifact nor a target for PHP malware scanning. `.htaccess` denies HTTP access to it.
 
 **Delete `setup.php` and `ping.php` after setup is complete for security.**
 
@@ -36,9 +40,8 @@ admin password. Until a password is set, the first visitor to that URL can claim
 
 | File | Purpose |
 |---|---|
-| `config.example.php` | Template config — used by the setup wizard |
-| `config.php` | Your actual config (do NOT commit this) |
-| `lib.php` | Shared helpers: settings, storage stats, retention engine |
+| `chat-config.json` | Your database credentials, written by setup (do NOT commit) |
+| `lib.php` | Shared helpers: config, settings, storage stats, retention engine |
 | `setup.php` | One-time setup wizard — delete after use |
 | `admin.php` | Admin dashboard: storage usage + retention settings |
 | `ping.php` | Health/debug endpoint — delete after use |
@@ -106,8 +109,8 @@ GET /chat-backend/poll.php?since=0&password=
 ```
 
 ## Security notes
-- `config.php` contains your DB password — do NOT commit it to git
-- The `.gitignore` in the parent repo already excludes `config.php`
-- The deploy workflow never overwrites `config.php`
+- `chat-config.json` contains your DB password — do NOT commit it to git
+- The `.gitignore` in the parent repo already excludes it, and `.htaccess` denies HTTP access
+- The deploy workflow never uploads or overwrites it
 - For production, consider enabling `ROOM_PASSWORD`
 - Messages (and their image files) auto-delete after 30 days (configurable in `config.php`)

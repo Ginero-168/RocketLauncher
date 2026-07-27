@@ -34,6 +34,7 @@ Sevret
 js/config.local.json
 *.local.json
 chat-backend/config.php
+chat-backend/chat-config.json
 
 # Generated / runtime artifacts
 package-lock.json

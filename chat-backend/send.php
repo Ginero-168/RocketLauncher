@@ -34,13 +34,11 @@ ini_set('error_log', __DIR__ . '/php-errors.log');
 
 require_once __DIR__ . '/lib.php';
 
-if (!file_exists(__DIR__ . '/config.php')) {
+if (!tata_is_configured()) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Server config missing']);
+    echo json_encode(['ok' => false, 'error' => 'Server config missing — run setup.php']);
     exit;
 }
-
-require_once __DIR__ . '/config.php';
 
 // Parse request body (JSON or multipart)
 $isMultipart = !empty($_FILES);
@@ -54,9 +52,9 @@ if (!$isMultipart && $_SERVER['CONTENT_TYPE'] && strpos($_SERVER['CONTENT_TYPE']
 }
 
 // Check room password
-if (ROOM_PASSWORD !== '') {
-    $pass = $body['password'] ?? '';
-    if ($pass !== ROOM_PASSWORD) {
+$roomPassword = tata_room_password();
+if ($roomPassword !== '') {
+    if (($body['password'] ?? '') !== $roomPassword) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'Wrong room password']);
         exit;
@@ -167,15 +165,7 @@ if ($buttonData !== null) {
 }
 
 try {
-    $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-        DB_USER,
-        DB_PASS,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
-
-    // Ensure file_path column exists (idempotent migration)
-    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
+    $pdo = tata_pdo();
 
     $stmt = $pdo->prepare("
         INSERT INTO chat_messages (username, message_type, content, button_data, file_path)

@@ -31,17 +31,102 @@ const TATA_SETTING_DEFAULTS = [
     'admin_password_hash' => '',
 ];
 
+/**
+ * Primary config store: a JSON file rather than a PHP file.
+ *
+ * An earlier version kept credentials in config.php, but that file repeatedly
+ * disappeared from the Hostinger account between deploys. A non-executable
+ * data file is not a deploy artifact and is not a candidate for PHP malware
+ * scanning, so it survives. HTTP access is denied via .htaccess.
+ */
 function tata_config_path(): string
+{
+    return __DIR__ . '/chat-config.json';
+}
+
+function tata_legacy_config_path(): string
 {
     return __DIR__ . '/config.php';
 }
 
-function tata_require_config(): void
+/**
+ * Load connection settings, migrating from the legacy config.php if needed.
+ * Returns an associative array, or throws if nothing is configured.
+ */
+function tata_config(): array
 {
-    if (!file_exists(tata_config_path())) {
-        throw new RuntimeException('Server config missing');
+    static $config = null;
+    if ($config !== null) {
+        return $config;
     }
-    require_once tata_config_path();
+
+    $path = tata_config_path();
+    if (is_readable($path)) {
+        $decoded = json_decode((string)file_get_contents($path), true);
+        if (is_array($decoded) && !empty($decoded['db_name'])) {
+            $config = $decoded + ['db_host' => 'localhost', 'db_charset' => 'utf8mb4', 'room_password' => ''];
+            return $config;
+        }
+    }
+
+    // Legacy fallback: read config.php constants and migrate them forward.
+    if (is_readable(tata_legacy_config_path())) {
+        require_once tata_legacy_config_path();
+        if (defined('DB_NAME')) {
+            $config = [
+                'db_host' => defined('DB_HOST') ? DB_HOST : 'localhost',
+                'db_name' => DB_NAME,
+                'db_user' => defined('DB_USER') ? DB_USER : '',
+                'db_pass' => defined('DB_PASS') ? DB_PASS : '',
+                'db_charset' => defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4',
+                'room_password' => defined('ROOM_PASSWORD') ? ROOM_PASSWORD : '',
+            ];
+            tata_write_config($config);
+            return $config;
+        }
+    }
+
+    throw new RuntimeException('Server config missing');
+}
+
+function tata_is_configured(): bool
+{
+    try {
+        tata_config();
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Persist connection settings and make sure the file is not web-readable.
+ */
+function tata_write_config(array $config): bool
+{
+    $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if (@file_put_contents(tata_config_path(), $json) === false) {
+        return false;
+    }
+    @chmod(tata_config_path(), 0600);
+    tata_protect_directory();
+    return true;
+}
+
+/**
+ * Block direct HTTP access to the config file and the error log.
+ */
+function tata_protect_directory(): void
+{
+    $htaccess = __DIR__ . '/.htaccess';
+    if (file_exists($htaccess)) {
+        return;
+    }
+    @file_put_contents($htaccess, <<<'CONF'
+<FilesMatch "\.(json|log)$">
+  Require all denied
+</FilesMatch>
+CONF);
 }
 
 function tata_pdo(): PDO
@@ -51,17 +136,22 @@ function tata_pdo(): PDO
         return $pdo;
     }
 
-    tata_require_config();
+    $c = tata_config();
     $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET,
-        DB_USER,
-        DB_PASS,
+        'mysql:host=' . $c['db_host'] . ';dbname=' . $c['db_name'] . ';charset=' . $c['db_charset'],
+        $c['db_user'],
+        $c['db_pass'],
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]
     );
     return $pdo;
+}
+
+function tata_room_password(): string
+{
+    return (string)(tata_config()['room_password'] ?? '');
 }
 
 function tata_ensure_schema(PDO $pdo): void
@@ -91,12 +181,6 @@ function tata_settings(PDO $pdo, bool $refresh = false): array
     }
 
     $cache = array_merge(TATA_SETTING_DEFAULTS, $stored);
-
-    // config.php CLEANUP_DAYS seeds retention_days on first run only.
-    if (!isset($stored['retention_days']) && defined('CLEANUP_DAYS')) {
-        $cache['retention_days'] = (string)(int)CLEANUP_DAYS;
-    }
-
     return $cache;
 }
 
@@ -163,7 +247,7 @@ function tata_db_bytes(PDO $pdo): int
         FROM information_schema.TABLES
         WHERE table_schema = :db AND table_name IN ('chat_messages', 'chat_settings')
     ");
-    $stmt->execute([':db' => DB_NAME]);
+    $stmt->execute([':db' => tata_config()['db_name']]);
     $row = $stmt->fetch();
     return (int)($row['bytes'] ?? 0);
 }

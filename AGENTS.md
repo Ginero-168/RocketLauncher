@@ -25,12 +25,14 @@
 - `chat-backend/` contains PHP + MySQL backend files for the team chat feature (deployed to Hostinger by GitHub Actions).
   - `lib.php` is the shared backend library (settings store, storage stats, adaptive retention).
   - `admin.php` is the password-protected storage/retention dashboard.
-  - `setup.php` is a one-time browser wizard that writes `config.php` and creates the tables.
-  - The deploy workflow never uploads or overwrites `config.php`.
+  - `setup.php` is a one-time browser wizard that writes `chat-config.json` and creates the tables.
+  - Credentials live in `chat-config.json`, not a PHP file: `config.php` repeatedly vanished from
+    the Hostinger account between deploys. `lib.php` still migrates a legacy `config.php` if found.
+  - The deploy workflow never uploads or overwrites the server config.
 
 ## Security Notes
 - Never commit `js/config.local.json`.
-- Never commit `chat-backend/config.php` (contains MySQL credentials).
+- Never commit `chat-backend/chat-config.json` (contains MySQL credentials).
 - User-provided JSX/ExtendScript in grid/scripting is intentionally executed directly; sandboxing would require a separate architectural change.
 
 ## CEP / Node
