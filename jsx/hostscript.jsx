@@ -519,17 +519,46 @@ var TATA = {
         var doc = app.activeDocument;
         if (!doc.selection || doc.selection.length === 0) return "No Selection";
         var tempDoc = null;
+        var stage = "prepare";
 
         try {
-            app.copy(); // Copy current selection
-
             // Create Temp Doc matching Source Color Space to prevent Flattening/Expansion on Paste
             var colorSpace = doc.documentColorSpace;
+            var sourceItems = [];
+            for (var sourceIndex = 0; sourceIndex < doc.selection.length; sourceIndex++) {
+                sourceItems.push(doc.selection[sourceIndex]);
+            }
+
+            stage = "create temporary document";
             tempDoc = app.documents.add(colorSpace);
 
-            app.paste();
+            if (params.useClipboard === false) {
+                // Canvas drops happen inside Illustrator's own drag transaction.
+                // Avoid app.copy/app.paste here because the shared clipboard call
+                // raises [PARM] while Illustrator is settling the drop.
+                stage = "duplicate selection";
+                tempDoc.selection = null;
+                var targetLayer = tempDoc.layers[0];
+                doc.activate();
+                for (var duplicateIndex = 0; duplicateIndex < sourceItems.length; duplicateIndex++) {
+                    var duplicate = sourceItems[duplicateIndex].duplicate(
+                        targetLayer,
+                        ElementPlacement.PLACEATEND
+                    );
+                    try { duplicate.selected = true; } catch (selectDuplicateErr) { }
+                }
+                tempDoc.activate();
+            } else {
+                stage = "copy selection";
+                doc.activate();
+                app.copy();
+                stage = "paste selection";
+                tempDoc.activate();
+                app.paste();
+            }
 
             // Resize Artboard to fit selection (Fixes small preview issue)
+            stage = "fit artboard";
             try {
                 if (tempDoc.selection.length > 0) {
                     var sel = tempDoc.selection;
@@ -572,8 +601,10 @@ var TATA = {
             opts.preserveEditability = true; // This keeps AI data (Appearances)
 
             // Export
+            stage = "export SVG";
             tempDoc.exportFile(f, ExportType.SVG, opts);
 
+            stage = "close temporary document";
             tempDoc.close(SaveOptions.DONOTSAVECHANGES);
             tempDoc = null;
             try { doc.activate(); } catch (activateErr) { }
@@ -585,7 +616,7 @@ var TATA = {
                 try { tempDoc.close(SaveOptions.DONOTSAVECHANGES); } catch (closeErr) { }
             }
             try { doc.activate(); } catch (activateErr2) { }
-            return e.toString();
+            return "Error at " + stage + ": " + e.toString();
         }
     },
 

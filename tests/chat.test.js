@@ -172,7 +172,10 @@ describe('chat messages', () => {
         jest.advanceTimersByTime(200);
         expect(window.TATA.host.run).toHaveBeenCalledWith(
             'saveSelectionAsRichSvg',
-            expect.objectContaining({ path: expect.stringMatching(/tata_chat_\d+\.svg$/) }),
+            expect.objectContaining({
+                path: expect.stringMatching(/tata_chat_\d+\.svg$/),
+                useClipboard: false,
+            }),
             expect.any(Function)
         );
         jest.useRealTimers();

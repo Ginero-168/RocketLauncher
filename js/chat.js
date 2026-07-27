@@ -665,7 +665,7 @@
     // ==========================================
     // Illustrator selection -> SVG attachment
     // ==========================================
-    function attachIllustratorSelection() {
+    function attachIllustratorSelection(options) {
         if (!TATA.host || typeof TATA.host.run !== 'function') {
             safeToast('Illustrator bridge not ready', 'error');
             return;
@@ -685,7 +685,11 @@
 
         const tempPath = path.join(os.tmpdir(), `tata_chat_${Date.now()}.svg`);
 
-        TATA.host.run('saveSelectionAsRichSvg', { path: tempPath }, res => {
+        const params = {
+            path: tempPath,
+            useClipboard: !(options && options.useClipboard === false),
+        };
+        TATA.host.run('saveSelectionAsRichSvg', params, res => {
             const result = String(res || '').replace(/^"|"$/g, '');
 
             if (result === 'No Selection') {
@@ -794,7 +798,7 @@
             // button behavior. Wait for Illustrator to finish its native drag
             // transaction first; calling app.copy/export inside this event stack
             // causes [PARM] and "operation was cancelled" on some shapes.
-            setTimeout(attachIllustratorSelection, 150);
+            setTimeout(() => attachIllustratorSelection({ useClipboard: false }), 150);
         });
     }
 
