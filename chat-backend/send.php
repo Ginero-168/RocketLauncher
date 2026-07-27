@@ -32,6 +32,8 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php-errors.log');
 
+require_once __DIR__ . '/lib.php';
+
 if (!file_exists(__DIR__ . '/config.php')) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Server config missing']);
@@ -107,6 +109,18 @@ if ($messageType === 'image') {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Invalid image type']);
         exit;
+    }
+
+    // Refuse uploads that would push storage past the configured quota
+    try {
+        $stats = tata_storage_stats(tata_pdo());
+        if ($stats['total_bytes'] + $file['size'] > $stats['quota_bytes']) {
+            http_response_code(507);
+            echo json_encode(['ok' => false, 'error' => 'Storage quota full — ask an admin to free up space']);
+            exit;
+        }
+    } catch (Throwable $e) {
+        // Quota check is advisory; never block on internal failure
     }
 
     $ext = match ($mime) {

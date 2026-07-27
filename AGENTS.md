@@ -22,7 +22,11 @@
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
 - `js/config.js` loads public defaults and merges `js/config.local.json` (gitignored) for optional server features.
-- `chat-backend/` contains PHP + MySQL backend files for the team chat feature (upload to Hostinger).
+- `chat-backend/` contains PHP + MySQL backend files for the team chat feature (deployed to Hostinger by GitHub Actions).
+  - `lib.php` is the shared backend library (settings store, storage stats, adaptive retention).
+  - `admin.php` is the password-protected storage/retention dashboard.
+  - `setup.php` is a one-time browser wizard that writes `config.php` and creates the tables.
+  - The deploy workflow never uploads or overwrites `config.php`.
 
 ## Security Notes
 - Never commit `js/config.local.json`.

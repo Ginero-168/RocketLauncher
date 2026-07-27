@@ -100,7 +100,7 @@ function renderSuccess($msg) {
         <h2 class="ok">Setup Complete</h2>
         <p>{$msg}</p>
         <p class="warn"><strong>Security:</strong> Delete <code>setup.php</code> from your server now (via hPanel File Manager) to prevent this form from being accessed again.</p>
-        <p>Next: open the TATA extension, go to the Chat tab, and start chatting.</p>
+        <p>Next: open <a href="admin.php" style="color:#4e8cff">admin.php</a> to set an admin password and tune storage settings, then use the Chat tab in the TATA extension.</p>
     </div>
 </body>
 </html>
@@ -126,6 +126,7 @@ function renderDone() {
     <div class="box">
         <h2 class="ok">Already Configured</h2>
         <p><code>config.php</code> and the <code>chat_messages</code> table already exist.</p>
+        <p>Manage storage and retention in <a href="admin.php" style="color:#4e8cff">admin.php</a>.</p>
         <p class="warn"><strong>Security:</strong> Delete <code>setup.php</code> from your server now if you no longer need it.</p>
     </div>
 </body>
@@ -225,6 +226,22 @@ try {
 } catch (PDOException $e) {
     // Column likely already exists; ignore
 }
+
+// Settings table used by the admin panel and the adaptive retention engine
+$pdo->exec("
+CREATE TABLE IF NOT EXISTS chat_settings (
+    setting_key VARCHAR(50) PRIMARY KEY,
+    setting_value TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
+// Seed the retention window from the value entered in this form
+$seed = $pdo->prepare("
+    INSERT INTO chat_settings (setting_key, setting_value)
+    VALUES ('retention_days', :days)
+    ON DUPLICATE KEY UPDATE setting_value = setting_value
+");
+$seed->execute([':days' => (string)$cleanupDays]);
 
 // Ensure uploads directory exists with protection
 $uploadDir = __DIR__ . '/uploads';

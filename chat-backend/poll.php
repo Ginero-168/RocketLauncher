@@ -28,6 +28,8 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/php-errors.log');
 
+require_once __DIR__ . '/lib.php';
+
 if (!file_exists(__DIR__ . '/config.php')) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Server config missing']);
@@ -49,55 +51,31 @@ if (ROOM_PASSWORD !== '') {
 $since = isset($_GET['since']) ? (int)$_GET['since'] : 0;
 $limit = 100; // max messages per poll
 
-// Auto-cleanup old messages and their image files
-if (CLEANUP_DAYS > 0) {
-    try {
-        $cleanupPdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-            DB_USER,
-            DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-
-        $oldMessages = $cleanupPdo->query(
-            "SELECT file_path FROM chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL " . CLEANUP_DAYS . " DAY)"
-        )->fetchAll();
-
-        foreach ($oldMessages as $msg) {
-            if (!empty($msg['file_path'])) {
-                @unlink(__DIR__ . '/' . $msg['file_path']);
-            }
-        }
-
-        $cleanupPdo->exec(
-            "DELETE FROM chat_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL " . CLEANUP_DAYS . " DAY)"
-        );
-    } catch (PDOException $e) {
-        // cleanup failure is non-fatal
-    }
-}
-
 try {
-    $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
-        DB_USER,
-        DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]
-    );
+    $pdo = tata_pdo();
 
     // Ensure file_path column exists (idempotent migration)
-    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
+    try {
+        $pdo->exec('ALTER TABLE chat_messages ADD COLUMN file_path VARCHAR(255) NULL AFTER button_data');
+    } catch (PDOException $e) {
+        // Column already exists
+    }
 
-    $stmt = $pdo->prepare("
+    // Throttled housekeeping: purge expired messages and retune retention.
+    try {
+        tata_run_maintenance($pdo);
+    } catch (Throwable $e) {
+        // Maintenance failure must never break polling
+        error_log('[TATA Chat] Maintenance failed: ' . $e->getMessage());
+    }
+
+    $stmt = $pdo->prepare('
         SELECT id, username, message_type, content, button_data, file_path, created_at
         FROM chat_messages
         WHERE id > :since
         ORDER BY id ASC
         LIMIT :limit
-    ");
+    ');
 
     $stmt->bindValue(':since', $since, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);

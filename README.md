@@ -32,7 +32,14 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 1. **Create MySQL database** in hPanel → Databases → MySQL Databases
 2. **Push to `main`** to trigger the deploy workflow
 3. **Run the setup wizard**: Visit `https://yourdomain.com/chat-backend/setup.php`, enter your MySQL credentials, and click **Create Config & Table**
-4. **Delete `setup.php` and `ping.php` after setup** for security
+4. **Set the admin password**: Visit `https://yourdomain.com/chat-backend/admin.php` right away and choose a password — the first visitor to an unclaimed panel can set it
+5. **Delete `setup.php` and `ping.php` after setup** for security
+
+### Admin panel
+
+`chat-backend/admin.php` shows storage usage (images + database) against a quota and tunes the
+message retention window automatically to stay near a target fill level. See
+`chat-backend/README.md` for the full settings reference.
 
 ### Manual Backend Setup (without Actions)
 
