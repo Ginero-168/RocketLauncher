@@ -35,6 +35,7 @@ js/config.local.json
 *.local.json
 chat-backend/config.php
 chat-backend/chat-config.json
+chat-backend/tata-env.php
 
 # Generated / runtime artifacts
 package-lock.json

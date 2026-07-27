@@ -75,6 +75,26 @@ function tata_config(): array
         }
     }
 
+    // tata-env.php is the deploy-managed config source. It is base64-encoded JSON
+    // so credentials are not plain text on disk and the file is treated like any
+    // other PHP deploy artifact by Hostinger.
+    $envPath = __DIR__ . '/tata-env.php';
+    if (is_readable($envPath)) {
+        $tataEnv = [];
+        require_once $envPath;
+        if (is_array($tataEnv) && !empty($tataEnv['db_name'])) {
+            $config = $tataEnv + [
+                'db_host' => 'localhost',
+                'db_user' => '',
+                'db_pass' => '',
+                'db_charset' => 'utf8mb4',
+                'room_password' => '',
+            ];
+            tata_write_config($config);
+            return $config;
+        }
+    }
+
     // Legacy fallback: read config.php constants and migrate them forward.
     if (is_readable(tata_legacy_config_path())) {
         require_once tata_legacy_config_path();
