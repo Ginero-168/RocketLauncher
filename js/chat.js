@@ -231,21 +231,46 @@
     // ==========================================
     // Render
     // ==========================================
-    async function copyText(value) {
-        const text = String(value || '');
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(text);
-            return;
-        }
+    function copyTextWithSelection(text) {
         const textarea = document.createElement('textarea');
         textarea.value = text;
+        textarea.setAttribute('readonly', '');
         textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
         document.body.appendChild(textarea);
+        textarea.focus();
         textarea.select();
-        const copied = document.execCommand('copy');
-        textarea.remove();
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } finally {
+            textarea.remove();
+        }
         if (!copied) throw new Error('Clipboard unavailable');
+    }
+
+    async function copyText(value) {
+        const text = String(value || '');
+
+        // Chromium exposes navigator.clipboard inside CEP, but Adobe's embedded
+        // origin commonly rejects writes with "Write permission denied." Use
+        // the selection-based clipboard path synchronously in that environment.
+        if (window.__adobe_cep__) {
+            copyTextWithSelection(text);
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return;
+            } catch (e) {
+                // Fall through for browsers/embedded runtimes that expose the
+                // API without granting clipboard-write permission.
+            }
+        }
+        copyTextWithSelection(text);
     }
 
     async function fetchMessageMedia(msg, roomSlug, roomPassword) {

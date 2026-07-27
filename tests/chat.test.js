@@ -60,6 +60,22 @@ describe('chat messages', () => {
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('hello\nworld');
     });
 
+    test('falls back when CEP denies navigator clipboard permission', async () => {
+        const chat = loadChat();
+        navigator.clipboard.writeText.mockRejectedValueOnce(new Error('Write permission denied.'));
+        document.execCommand = jest.fn(() => true);
+
+        await expect(chat._test.copyMessage({
+            id: 2,
+            username: 'A',
+            message_type: 'text',
+            content: 'copy through fallback',
+            created_at: '2026-07-27 10:00:00',
+        })).resolves.toBe('Message copied');
+
+        expect(document.execCommand).toHaveBeenCalledWith('copy');
+    });
+
     test('renders text, bitmap, SVG, and panel button messages with Copy', async () => {
         const chat = loadChat();
         fetch
