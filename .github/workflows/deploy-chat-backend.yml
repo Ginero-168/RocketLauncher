@@ -135,6 +135,32 @@ jobs:
           print('Deploy complete')
           PYEOF
 
+      - name: Install config.php on server
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+        run: |
+          # Domain is the part after the first dot in the FTP username, e.g. u123.domain.com -> domain.com
+          domain="${FTP_USERNAME#*.}"
+          backend_url="https://${domain}/chat-backend"
+          echo "Backend URL: $backend_url"
+
+          # Wait for the PHP file to become executable through Hostinger's sync layer
+          for i in 1 2 3 4 5; do
+              status=$(curl -s -o /dev/null -w "%{http_code}" "$backend_url/install-config.php")
+              echo "install-config.php HTTP status: $status"
+              if [ "$status" = "200" ] || [ "$status" = "405" ]; then break; fi
+              sleep 10
+          done
+
+          # POST credentials to the installer so it writes chat-config.json on the server filesystem.
+          curl -f -sS -X POST "$backend_url/install-config.php" \
+              -d "token=${{ secrets.DB_PASS }}" \
+              -d "db_host=${{ secrets.DB_HOST }}" \
+              -d "db_name=${{ secrets.DB_NAME }}" \
+              -d "db_user=${{ secrets.DB_USER }}" \
+              -d "db_pass=${{ secrets.DB_PASS }}" \
+              -d "room_password=${{ secrets.CHAT_ROOM_PASSWORD }}"
+
       - name: Post-deploy notes
         run: |
           echo "Deployment finished."
