@@ -75,6 +75,60 @@ describe('chat messages', () => {
         expect(document.querySelectorAll('.chat-btn-card')).toHaveLength(1);
     });
 
+    test('falls back to a validated legacy upload only in the public room', async () => {
+        const chat = loadChat();
+        fetch
+            .mockResolvedValueOnce({ ok: false, status: 404 })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                blob: async () => new Blob(['jpeg'], { type: 'image/jpeg' }),
+            });
+
+        await chat._test.renderMessage({
+            id: 10,
+            username: 'mike',
+            message_type: 'image',
+            content: 'LINE_ALBUM.jpg',
+            file_path: 'uploads/6029bd146041befce1a1bfcec6feb94d.jpg',
+            created_at: '2026-07-27 08:57:16',
+        });
+
+        expect(fetch.mock.calls[0][0]).toBe('https://chat.example.test/media.php?id=10');
+        expect(fetch.mock.calls[1][0]).toBe(
+            'https://chat.example.test/uploads/6029bd146041befce1a1bfcec6feb94d.jpg'
+        );
+        expect(document.querySelectorAll('.chat-msg-image')).toHaveLength(1);
+    });
+
+    test('never falls back to direct uploads for private rooms', async () => {
+        const chat = loadChat();
+        fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ ok: true, room: { slug: 'private-ab12', name: 'Private', is_private: true } }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ ok: true, messages: [] }),
+            })
+            .mockResolvedValueOnce({ ok: false, status: 404 });
+
+        await chat._test.enterRoom('private-ab12', 'secret12');
+        await chat._test.renderMessage({
+            id: 11,
+            username: 'mike',
+            message_type: 'image',
+            content: 'private.jpg',
+            file_path: 'uploads/6029bd146041befce1a1bfcec6feb94d.jpg',
+            created_at: '2026-07-27 08:57:16',
+        });
+
+        expect(fetch).toHaveBeenCalledTimes(3);
+        expect(document.querySelectorAll('.chat-msg-image')).toHaveLength(0);
+        expect(document.querySelector('.chat-msg-media-error').textContent).toBe('Media unavailable');
+    });
+
     test('keeps private room credentials in headers instead of the poll URL', async () => {
         const chat = loadChat();
         fetch

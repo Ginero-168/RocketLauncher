@@ -250,9 +250,19 @@
 
     async function fetchMessageMedia(msg, roomSlug, roomPassword) {
         if (msg._mediaBlob) return msg._mediaBlob;
-        const res = await fetch(`${getBackendUrl()}/media.php?id=${encodeURIComponent(msg.id)}`, {
-            headers: getRoomHeaders(false, roomSlug, roomPassword),
+        const backendUrl = getBackendUrl();
+        const selectedRoom = roomSlug || chatState.room.slug;
+        let res = await fetch(`${backendUrl}/media.php?id=${encodeURIComponent(msg.id)}`, {
+            headers: getRoomHeaders(false, selectedRoom, roomPassword),
         });
+        // Compatibility bridge for the legacy public backend, which stored
+        // uploads directly and did not have media.php. Never bypass room
+        // authorization for private rooms.
+        const legacyPath = String(msg.file_path || '');
+        const safeLegacyPath = /^uploads\/[a-f0-9]{32}\.(?:png|jpe?g|gif|webp|svg)$/i.test(legacyPath);
+        if (res.status === 404 && selectedRoom === 'public' && safeLegacyPath) {
+            res = await fetch(`${backendUrl}/${legacyPath}`);
+        }
         if (!res.ok) throw new Error('Media is unavailable');
         msg._mediaBlob = await res.blob();
         return msg._mediaBlob;
