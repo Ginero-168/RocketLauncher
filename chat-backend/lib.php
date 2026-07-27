@@ -64,7 +64,13 @@ function tata_config(): array
     if (is_readable($path)) {
         $decoded = json_decode((string)file_get_contents($path), true);
         if (is_array($decoded) && !empty($decoded['db_name'])) {
-            $config = $decoded + ['db_host' => 'localhost', 'db_charset' => 'utf8mb4', 'room_password' => ''];
+            $config = $decoded + [
+                'db_host' => 'localhost',
+                'db_user' => '',
+                'db_pass' => '',
+                'db_charset' => 'utf8mb4',
+                'room_password' => '',
+            ];
             return $config;
         }
     }
@@ -104,7 +110,7 @@ function tata_is_configured(): bool
  */
 function tata_write_config(array $config): bool
 {
-    $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if (@file_put_contents(tata_config_path(), $json) === false) {
         return false;
     }
@@ -147,6 +153,11 @@ function tata_pdo(): PDO
         ]
     );
     return $pdo;
+}
+
+function tata_require_pdo(): PDO
+{
+    return tata_pdo();
 }
 
 function tata_room_password(): string

@@ -1,5 +1,11 @@
 # Block direct access to configuration and log files.
 # chat-config.json holds database credentials.
-<FilesMatch "\.(json|log)$">
+<FilesMatch "chat-config\.json$|\.log$">
   Require all denied
+</FilesMatch>
+
+# Ensure SVG files are served with the right MIME type (Hostinger/Litespeed default is sometimes text/plain).
+AddType image/svg+xml svg svgz
+<FilesMatch "\.svgz$">
+  Content-Encoding gzip
 </FilesMatch>

@@ -11,13 +11,19 @@
     const POLL_INTERVAL = 10000; // 10 seconds
     const MAX_MESSAGES = 200;    // keep last N in DOM
 
+    const MAX_ATTACHMENTS = 10;
+    const ACCEPTED_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
+
     let chatState = {
         username: localStorage.getItem('tata_chat_username') || '',
         lastId: 0,
         polling: false,
         pollTimer: null,
         active: false,
-        selectedImage: null,
+        // Files staged for sending. Each entry: { file, url, kind }
+        attachments: [],
+        dragDepth: 0,
+        sending: false,
     };
 
     // ==========================================
@@ -75,9 +81,10 @@
         let body;
         let headers = {};
         if (isImage) {
+            const isSvg = /svg/i.test(imageFile.type) || /\.svg$/i.test(imageFile.name || '');
             body = new FormData();
             body.append('username', chatState.username);
-            body.append('content', content || imageFile.name || 'Image');
+            body.append('content', content || (isSvg ? 'SVG selection' : imageFile.name || 'Image'));
             body.append('message_type', 'image');
             body.append('password', getRoomPassword());
             body.append('image', imageFile);
@@ -195,18 +202,28 @@
 
             wrapper.appendChild(card);
         } else if (msg.message_type === 'image' && msg.file_path) {
-            // Render image message
-            const img = document.createElement('img');
-            img.className = 'chat-msg-image';
-            img.src = `${getBackendUrl()}/${msg.file_path}`;
-            img.alt = msg.content || 'Image';
-            img.style.maxWidth = '200px';
-            img.style.maxHeight = '150px';
-            img.style.borderRadius = '6px';
-            img.style.cursor = 'pointer';
-            img.style.border = '1px solid #3a3a5c';
-            img.onclick = () => window.open(img.src, '_blank');
-            wrapper.appendChild(img);
+            // Render image or SVG message
+            const isSvg = /\.svg$/i.test(msg.file_path);
+            const mediaUrl = `${getBackendUrl()}/${msg.file_path}`;
+
+            if (isSvg) {
+                const img = document.createElement('img');
+                img.className = 'chat-msg-image';
+                img.src = mediaUrl;
+                img.alt = msg.content || 'SVG';
+                img.onerror = () => { img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40"><text y="20">SVG preview unavailable</text></svg>'; };
+                img.onclick = () => {
+                    try { window.open(mediaUrl, '_blank'); } catch (e) { }
+                };
+                wrapper.appendChild(img);
+            } else {
+                const img = document.createElement('img');
+                img.className = 'chat-msg-image';
+                img.src = mediaUrl;
+                img.alt = msg.content || 'Image';
+                img.onclick = () => window.open(img.src, '_blank');
+                wrapper.appendChild(img);
+            }
 
             if (msg.content && msg.content !== msg.file_path.split('/').pop()) {
                 const caption = document.createElement('div');
@@ -336,43 +353,324 @@
     }
 
     // ==========================================
-    // Image upload helpers
+    // Attachments
     // ==========================================
-    function clearImagePreview() {
-        const preview = $('chat_image_preview');
-        const thumb = $('chat_image_thumb');
-        const input = $('chat_image_input');
-        chatState.selectedImage = null;
-        if (preview) preview.style.display = 'none';
-        if (thumb) thumb.src = '';
-        if (input) input.value = '';
+    function isAcceptedFile(file) {
+        if (!file) return false;
+        if (file.type && file.type.startsWith('image/')) return true;
+        // Finder sometimes reports an empty type for .svg; fall back to the extension.
+        return ACCEPTED_EXT.test(file.name || '');
     }
 
-    function showImagePreview(file) {
-        const preview = $('chat_image_preview');
-        const thumb = $('chat_image_thumb');
-        if (!preview || !thumb) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            thumb.src = e.target.result;
-            preview.style.display = 'flex';
-        };
-        reader.readAsDataURL(file);
+    function addAttachments(files) {
+        const incoming = Array.from(files || []).filter(isAcceptedFile);
+        if (!incoming.length) {
+            safeToast('Only images and SVG files can be sent', 'error');
+            return;
+        }
+
+        const room = MAX_ATTACHMENTS - chatState.attachments.length;
+        if (room <= 0) {
+            safeToast(`Attachment limit is ${MAX_ATTACHMENTS}`, 'error');
+            return;
+        }
+        if (incoming.length > room) {
+            safeToast(`Only the first ${room} file(s) were attached`, 'error');
+        }
+
+        for (const file of incoming.slice(0, room)) {
+            chatState.attachments.push({
+                file,
+                url: URL.createObjectURL(file),
+                kind: /svg/i.test(file.type) || /\.svg$/i.test(file.name || '') ? 'SVG' : '',
+            });
+        }
+        renderAttachments();
+    }
+
+    function removeAttachment(index) {
+        const item = chatState.attachments[index];
+        if (item) URL.revokeObjectURL(item.url);
+        chatState.attachments.splice(index, 1);
+        renderAttachments();
+    }
+
+    function clearAttachments() {
+        for (const item of chatState.attachments) URL.revokeObjectURL(item.url);
+        chatState.attachments = [];
+        const input = $('chat_image_input');
+        if (input) input.value = '';
+        renderAttachments();
+    }
+
+    function renderAttachments() {
+        const tray = $('chat_attachments');
+        if (!tray) return;
+
+        tray.textContent = '';
+        if (!chatState.attachments.length) {
+            tray.style.display = 'none';
+            return;
+        }
+        tray.style.display = 'flex';
+
+        chatState.attachments.forEach((item, index) => {
+            const cell = document.createElement('div');
+            cell.className = 'chat-attach';
+
+            const img = document.createElement('img');
+            img.src = item.url;
+            img.alt = item.file.name || 'attachment';
+            cell.appendChild(img);
+
+            if (item.kind) {
+                const badge = document.createElement('span');
+                badge.className = 'chat-attach-badge';
+                badge.textContent = item.kind;
+                cell.appendChild(badge);
+            }
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'chat-attach-remove';
+            remove.textContent = '×';
+            remove.title = `Remove ${item.file.name || 'attachment'}`;
+            remove.onclick = () => removeAttachment(index);
+            cell.appendChild(remove);
+
+            tray.appendChild(cell);
+        });
+    }
+
+    // ==========================================
+    // Illustrator selection -> SVG attachment
+    // ==========================================
+    function attachIllustratorSelection() {
+        if (!TATA.host || typeof TATA.host.run !== 'function') {
+            safeToast('Illustrator bridge not ready', 'error');
+            return;
+        }
+
+        let fs;
+        let path;
+        let os;
+        try {
+            fs = window.require('fs');
+            path = window.require('path');
+            os = window.require('os');
+        } catch (e) {
+            safeToast('File access unavailable in this panel', 'error');
+            return;
+        }
+
+        const tempPath = path.join(os.tmpdir(), `tata_chat_${Date.now()}.svg`);
+
+        TATA.host.run('saveSelectionAsRichSvg', { path: tempPath }, res => {
+            const result = String(res || '').replace(/^"|"$/g, '');
+
+            if (result === 'No Selection') {
+                safeToast('Select artwork in Illustrator first', 'error');
+                return;
+            }
+            if (result === 'No Doc') {
+                safeToast('Open a document in Illustrator first', 'error');
+                return;
+            }
+            if (result !== 'Success') {
+                safeToast(`Export failed: ${result}`, 'error');
+                return;
+            }
+
+            try {
+                const buffer = fs.readFileSync(tempPath);
+                const file = new File(
+                    [new Uint8Array(buffer)],
+                    `selection_${Date.now()}.svg`,
+                    { type: 'image/svg+xml' }
+                );
+                addAttachments([file]);
+                safeToast('Selection attached', 'success');
+            } catch (e) {
+                safeToast(`Could not read exported SVG: ${e.message}`, 'error');
+            } finally {
+                try { fs.unlinkSync(tempPath); } catch (e) { /* temp file cleanup is best-effort */ }
+            }
+        });
+    }
+
+    // ==========================================
+    // Drag & drop / paste
+    // ==========================================
+    function setDropActive(active) {
+        const zone = $('chat_dropzone');
+        if (zone) zone.classList.toggle('active', active);
+    }
+
+    function bindDropTarget(target) {
+        if (!target) return;
+
+        target.addEventListener('dragenter', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            chatState.dragDepth++;
+            setDropActive(true);
+        });
+
+        target.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+        });
+
+        target.addEventListener('dragleave', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            chatState.dragDepth = Math.max(0, chatState.dragDepth - 1);
+            if (chatState.dragDepth === 0) setDropActive(false);
+        });
+
+        target.addEventListener('drop', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            chatState.dragDepth = 0;
+            setDropActive(false);
+
+            const dt = e.dataTransfer;
+            if (!dt) return;
+
+            if (dt.files && dt.files.length) {
+                addAttachments(dt.files);
+                return;
+            }
+
+            // Some sources hand over a file path or a URL instead of a File object.
+            const text = dt.getData('text/uri-list') || dt.getData('text/plain');
+            if (text) attachFromPathOrUrl(text.trim());
+        });
+    }
+
+    function attachFromPathOrUrl(value) {
+        if (!value) return;
+
+        let fs;
+        let path;
+        try {
+            fs = window.require('fs');
+            path = window.require('path');
+        } catch (e) {
+            safeToast('Drop a file instead of a link', 'error');
+            return;
+        }
+
+        const local = value.startsWith('file://')
+            ? decodeURIComponent(value.replace(/^file:\/\//, ''))
+            : value;
+
+        try {
+            if (!fs.existsSync(local)) {
+                safeToast('Could not read the dropped item', 'error');
+                return;
+            }
+            const name = path.basename(local);
+            if (!ACCEPTED_EXT.test(name)) {
+                safeToast('Only images and SVG files can be sent', 'error');
+                return;
+            }
+            const buffer = fs.readFileSync(local);
+            const type = /\.svg$/i.test(name) ? 'image/svg+xml' : '';
+            addAttachments([new File([new Uint8Array(buffer)], name, { type })]);
+        } catch (e) {
+            safeToast(`Could not read the dropped file: ${e.message}`, 'error');
+        }
+    }
+
+    function handlePaste(e) {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+
+        const files = [];
+        for (const item of items) {
+            if (item.kind === 'file') {
+                const file = item.getAsFile();
+                if (file) files.push(file);
+            }
+        }
+        if (files.length) {
+            e.preventDefault();
+            addAttachments(files);
+        }
     }
 
     // ==========================================
     // Init / Activate / Deactivate
     // ==========================================
+    function setUsername(name) {
+        chatState.username = name;
+        localStorage.setItem('tata_chat_username', name);
+        const whoami = $('chat_whoami');
+        if (whoami) whoami.textContent = `Chatting as ${name}`;
+        const rename = $('chat_rename');
+        if (rename) rename.value = name;
+    }
+
+    /**
+     * Send the typed text and every staged attachment.
+     * Attachments go one per message so each renders on its own.
+     */
+    async function submitChat() {
+        if (chatState.sending) return;
+
+        const input = $('chat_input');
+        const text = input ? input.value.trim() : '';
+        const attachments = chatState.attachments.slice();
+
+        if (!text && !attachments.length) return;
+
+        chatState.sending = true;
+        const sendBtn = $('chat_send');
+        if (sendBtn) sendBtn.disabled = true;
+
+        try {
+            let allOk = true;
+
+            if (attachments.length) {
+                // The caption rides along with the first image.
+                for (let i = 0; i < attachments.length; i++) {
+                    const caption = i === 0 ? text : '';
+                    const ok = await sendMessage(caption, 'image', null, attachments[i].file);
+                    if (!ok) {
+                        allOk = false;
+                        break;
+                    }
+                }
+            } else {
+                allOk = await sendMessage(text, 'text', null, null);
+            }
+
+            if (allOk) {
+                if (input) input.value = '';
+                clearAttachments();
+            }
+        } finally {
+            chatState.sending = false;
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    }
+
     function initChat() {
         const input = $('chat_input');
         const sendBtn = $('chat_send');
         const imageBtn = $('chat_image_btn');
         const imageInput = $('chat_image_input');
-        const imageRemove = $('chat_image_remove');
+        const selectionBtn = $('chat_selection_btn');
         const nameInput = $('chat_username');
         const nameBtn = $('chat_join');
         const chatSetup = $('chat_setup');
         const chatMain = $('chat_main');
+        const settingsBtn = $('chat_settings_btn');
+        const settingsPanel = $('chat_settings');
+        const renameInput = $('chat_rename');
+        const renameSave = $('chat_rename_save');
 
         // Restore username
         if (nameInput && chatState.username) {
@@ -383,6 +681,7 @@
         if (chatState.username && chatSetup && chatMain) {
             chatSetup.style.display = 'none';
             chatMain.style.display = 'flex';
+            setUsername(chatState.username);
             activateChat();
         }
 
@@ -394,55 +693,77 @@
                     safeToast('Enter your name', 'error');
                     return;
                 }
-                chatState.username = name;
-                localStorage.setItem('tata_chat_username', name);
+                setUsername(name);
                 if (chatSetup) chatSetup.style.display = 'none';
                 if (chatMain) chatMain.style.display = 'flex';
                 activateChat();
             };
         }
 
-        // Image picker button
-        if (imageBtn && imageInput) {
-            imageBtn.onclick = () => imageInput.click();
-            imageInput.onchange = () => {
-                const file = imageInput.files[0];
-                if (file) {
-                    chatState.selectedImage = file;
-                    showImagePreview(file);
+        // Settings drawer
+        if (settingsBtn && settingsPanel) {
+            settingsBtn.onclick = () => {
+                const open = settingsPanel.style.display !== 'none';
+                settingsPanel.style.display = open ? 'none' : 'block';
+                if (!open && renameInput) {
+                    renameInput.value = chatState.username;
+                    renameInput.focus();
+                    renameInput.select();
                 }
             };
         }
 
-        // Remove selected image
-        if (imageRemove) {
-            imageRemove.onclick = clearImagePreview;
+        if (renameSave && renameInput) {
+            const saveName = () => {
+                const name = renameInput.value.trim();
+                if (!name) {
+                    safeToast('Name cannot be empty', 'error');
+                    return;
+                }
+                if (name === chatState.username) {
+                    if (settingsPanel) settingsPanel.style.display = 'none';
+                    return;
+                }
+                setUsername(name);
+                if (settingsPanel) settingsPanel.style.display = 'none';
+                safeToast(`Now chatting as ${name}`, 'success');
+            };
+
+            renameSave.onclick = saveName;
+            renameInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveName();
+                }
+            });
         }
 
-        // Send button
-        if (sendBtn) {
-            sendBtn.onclick = () => {
-                const text = input ? input.value.trim() : '';
-                const imageFile = chatState.selectedImage || null;
-
-                if (!text && !imageFile) return;
-
-                const type = imageFile ? 'image' : 'text';
-                sendMessage(text, type, null, imageFile).then(ok => {
-                    if (ok) {
-                        if (input) input.value = '';
-                        clearImagePreview();
-                    }
-                });
+        // Attach files
+        if (imageBtn && imageInput) {
+            imageBtn.onclick = () => imageInput.click();
+            imageInput.onchange = () => {
+                addAttachments(imageInput.files);
+                imageInput.value = '';
             };
         }
 
-        // Enter to send
+        // Attach current Illustrator selection as SVG
+        if (selectionBtn) {
+            selectionBtn.onclick = attachIllustratorSelection;
+        }
+
+        // Drag & drop and paste
+        bindDropTarget(chatMain);
+        if (input) input.addEventListener('paste', handlePaste);
+
+        // Send
+        if (sendBtn) sendBtn.onclick = submitChat;
+
         if (input) {
             input.addEventListener('keydown', e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendBtn.click();
+                    submitChat();
                 }
             });
         }

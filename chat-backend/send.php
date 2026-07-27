@@ -16,6 +16,47 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+/**
+ * Remove dangerous constructs from SVG files before serving them from our domain.
+ * We strip script tags, event handlers, foreign objects, and external references.
+ * This is defense-in-depth; the image is also displayed in an <img> tag, which
+ * blocks inline scripts in modern browsers, but sanitizing the file itself
+ * protects older clients and direct downloaders.
+ */
+function sanitize_svg(string $svg): string
+{
+    // Bail out if it doesn't even look like an SVG.
+    if (stripos($svg, '<svg') === false) {
+        throw new RuntimeException('Not an SVG document');
+    }
+
+    $svg = preg_replace(
+        [
+            // Remove <script> elements entirely (including CDATA-wrapped).
+            '#<script[\s\S]*?</script>#i',
+            // Remove <foreignObject>, <iframe>, <object>, <embed>, <use>.
+            '#<(foreignObject|iframe|object|embed|use)[\s\S]*?</\1>#i',
+            '#<(foreignObject|iframe|object|embed|use)\s+[^>]*/?>#i',
+            // Remove event handlers (onload, onclick, ...).
+            '#\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i',
+            // Remove JavaScript URLs.
+            '#(xlink:href|href)\s*=\s*(["\'])javascript:.*?\2#i',
+            // Remove XML entity definitions and DOCTYPE declarations (XXE protection).
+            '#<!ENTITY\s+.*?>#i',
+            '#<!DOCTYPE\s+[\s\S]*?>#i',
+        ],
+        '',
+        $svg
+    );
+
+    // Ensure the XML prologue (if any) still declares UTF-8 and standalone=no.
+    if (stripos($svg, '<?xml') === false) {
+        $svg = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" . ltrim($svg);
+    }
+
+    return $svg;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -102,8 +143,13 @@ if ($messageType === 'image') {
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
-    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!in_array($mime, $allowedMimes, true)) {
+    $rawSvgContent = null;
+
+    // Accept both bitmap images and SVG.
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    $isSvg = in_array($mime, ['image/svg+xml'], true) || preg_match('/\.svg$/i', (string)$file['name']);
+
+    if (!$isSvg && !in_array($mime, $allowedMimes, true)) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Invalid image type']);
         exit;
@@ -111,7 +157,7 @@ if ($messageType === 'image') {
 
     // Refuse uploads that would push storage past the configured quota
     try {
-        $stats = tata_storage_stats(tata_pdo());
+        $stats = tata_storage_stats(tata_require_pdo());
         if ($stats['total_bytes'] + $file['size'] > $stats['quota_bytes']) {
             http_response_code(507);
             echo json_encode(['ok' => false, 'error' => 'Storage quota full — ask an admin to free up space']);
@@ -121,7 +167,17 @@ if ($messageType === 'image') {
         // Quota check is advisory; never block on internal failure
     }
 
-    $ext = match ($mime) {
+    // Read SVG content once for sanitization before moving it.
+    if ($isSvg) {
+        $rawSvgContent = @file_get_contents($file['tmp_name']);
+        if ($rawSvgContent === false) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Failed to read SVG']);
+            exit;
+        }
+    }
+
+    $ext = $isSvg ? 'svg' : match ($mime) {
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
         'image/gif' => 'gif',
@@ -131,15 +187,27 @@ if ($messageType === 'image') {
 
     $filename = bin2hex(random_bytes(16)) . '.' . $ext;
     $destination = $uploadDir . '/' . $filename;
-    if (!@move_uploaded_file($file['tmp_name'], $destination)) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Failed to save image']);
-        exit;
+
+    if ($isSvg) {
+        // SVG may arrive via Illustrator export as application/octet-stream or with a
+        // non-standard extension; the live file must be sanitized and written.
+        $clean = sanitize_svg($rawSvgContent);
+        if (@file_put_contents($destination, $clean) === false) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Failed to save SVG']);
+            exit;
+        }
+    } else {
+        if (!@move_uploaded_file($file['tmp_name'], $destination)) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Failed to save image']);
+            exit;
+        }
     }
 
     $filePath = 'uploads/' . $filename;
     if ($content === '') {
-        $content = $filename;
+        $content = $isSvg ? 'SVG selection' : $filename;
     }
 } else {
     // Text / button_config messages require content
@@ -165,7 +233,10 @@ if ($buttonData !== null) {
 }
 
 try {
-    $pdo = tata_pdo();
+    $pdo = tata_require_pdo();
+
+    // Ensure the schema is up to date (file_path column, etc.)
+    $pdo->exec("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS file_path VARCHAR(255) NULL AFTER button_data");
 
     $stmt = $pdo->prepare("
         INSERT INTO chat_messages (username, message_type, content, button_data, file_path)
@@ -182,7 +253,8 @@ try {
 
     echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Database error']);
+    error_log('[TATA Chat send.php] ' . $e->getMessage());
+    echo json_encode(['ok' => false, 'error' => 'Server error']);
 }
