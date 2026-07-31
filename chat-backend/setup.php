@@ -196,7 +196,7 @@ if (!$written) {
     exit;
 }
 
-// Create table (and file_path column if missing)
+// Create the chat table
 $pdo = new PDO($testDsn, $values['db_user'], $values['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
 $pdo->exec("
@@ -207,7 +207,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     message_type VARCHAR(20) NOT NULL DEFAULT 'text',
     content TEXT NOT NULL,
     button_data JSON NULL,
-    file_path VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_created (created_at),
     INDEX idx_room_id (room_id, id)

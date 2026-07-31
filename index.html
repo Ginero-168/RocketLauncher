@@ -613,102 +613,6 @@
 			margin-top: 6px;
 		}
 
-		/* Chat: drop overlay */
-		#chat_dropzone {
-			display: none;
-			position: absolute;
-			inset: 0;
-			z-index: 20;
-			background: rgba(15, 15, 26, 0.92);
-			border: 2px dashed #6366f1;
-			border-radius: 8px;
-			align-items: center;
-			justify-content: center;
-			pointer-events: none;
-		}
-		#chat_dropzone.active {
-			display: flex;
-		}
-		#tab_chat .chat-dropzone-inner {
-			text-align: center;
-			color: #a5b4fc;
-			font-size: 13px;
-			font-weight: 600;
-		}
-		#tab_chat .chat-dropzone-icon {
-			font-size: 30px;
-			margin-bottom: 6px;
-		}
-
-		/* Chat: attachment tray */
-		#chat_attachments {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 6px;
-		}
-		#tab_chat .chat-attach {
-			position: relative;
-			width: 56px;
-			height: 56px;
-			border-radius: 5px;
-			border: 1px solid #3a3a5c;
-			background: #0d0d1a;
-			overflow: hidden;
-			flex-shrink: 0;
-		}
-		#tab_chat .chat-attach img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-			display: block;
-		}
-		#tab_chat .chat-attach-badge {
-			position: absolute;
-			left: 0;
-			bottom: 0;
-			background: rgba(99, 102, 241, 0.85);
-			color: #fff;
-			font-size: 9px;
-			font-weight: 700;
-			padding: 1px 4px;
-			border-top-right-radius: 4px;
-			letter-spacing: .03em;
-		}
-		#tab_chat .chat-attach-remove {
-			position: absolute;
-			top: 1px;
-			right: 1px;
-			width: 16px;
-			height: 16px;
-			border: 0;
-			border-radius: 50%;
-			background: rgba(0, 0, 0, .72);
-			color: #fff;
-			font-size: 11px;
-			line-height: 16px;
-			padding: 0;
-			cursor: pointer;
-		}
-		#tab_chat .chat-attach-remove:hover {
-			background: #ef4444;
-		}
-
-		/* Chat: image message */
-		#tab_chat .chat-msg-image {
-			max-width: 200px;
-			max-height: 150px;
-			border-radius: 6px;
-			border: 1px solid #3a3a5c;
-			cursor: pointer;
-			display: block;
-			background: #fff;
-		}
-		#tab_chat .chat-msg-caption {
-			font-size: 11px;
-			color: #aaa;
-			margin-top: 4px;
-		}
-
 		/* AI Helper tab styles */
 		#tab_ai .chat-area {
 			flex: 1;
@@ -1296,13 +1200,6 @@
 		<!-- Main Chat -->
 		<div id="chat_main" style="display: none; flex: 1; flex-direction: column; height: 100%; overflow: hidden; position: relative;">
 			<!-- Drop overlay (shown while dragging files over the panel) -->
-			<div id="chat_dropzone">
-				<div class="chat-dropzone-inner">
-					<div class="chat-dropzone-icon">⬇</div>
-					<div>Drop images or SVG to send</div>
-				</div>
-			</div>
-
 				<!-- Header bar -->
 				<div id="chat_bar">
 					<button id="chat_room_toggle" type="button" title="Switch or create a room">
@@ -1361,16 +1258,10 @@
 			</div>
 
 			<!-- Input -->
-			<div id="chat_input_area" style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 1px solid #333;">
-				<div id="chat_attachments" style="display: none;"></div>
-					<div class="chat-compose-row" style="display: flex; gap: 6px; align-items: flex-end;">
-					<textarea id="chat_input" placeholder="Type a message, paste or drop an image… (Shift+Enter for new line)"
-						style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
-					<input type="file" id="chat_image_input" accept="image/*,.svg" multiple style="display: none;">
-					<button id="chat_selection_btn" type="button" class="secondary" style="width: auto; padding: 8px 10px;" title="Send current Illustrator selection as SVG">AI→SVG</button>
-					<button id="chat_image_btn" type="button" class="secondary" style="width: auto; padding: 8px 12px;" title="Attach image or SVG">🖼</button>
-					<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
-				</div>
+			<div id="chat_input_area" style="display: flex; gap: 6px; padding: 8px; border-top: 1px solid #333;">
+				<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"
+					style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
+				<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
 			</div>
 		</div>
 	</div>

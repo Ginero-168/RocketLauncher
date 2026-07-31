@@ -4,7 +4,7 @@
  * GET endpoint: poll.php?since=ID
  *
  * Response (JSON):
- *   { ok: true, messages: [ { id, username, message_type, content, button_data, file_path, created_at } ] }
+ *   { ok: true, messages: [ { id, username, message_type, content, button_data, created_at } ] }
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -52,7 +52,7 @@ try {
     }
 
     $stmt = $pdo->prepare('
-        SELECT id, username, message_type, content, button_data, file_path, created_at
+        SELECT id, username, message_type, content, button_data, created_at
         FROM chat_messages
         WHERE room_id = :room_id AND id > :since
         ORDER BY id ASC
@@ -72,7 +72,6 @@ try {
             'message_type' => $row['message_type'],
             'content' => $row['content'],
             'button_data' => $row['button_data'] ? json_decode($row['button_data'], true) : null,
-            'file_path' => $row['file_path'],
             'created_at' => $row['created_at'],
         ];
     }

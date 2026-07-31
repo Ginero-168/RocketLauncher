@@ -40,36 +40,8 @@ configuration after the password is created.
 | `admin.php` | Admin dashboard: storage usage + retention settings |
 | `ping.php` | Health/debug endpoint — delete after use |
 | `rooms.php` | Create or join public/private rooms |
-| `send.php` | Send text, image, SVG, or panel-button messages |
+| `send.php` | Send text or panel-button messages |
 | `poll.php` | Fetch new messages from the selected room |
-| `media.php` | Serve uploaded media after room authorization |
-
-## Storage management
-
-The admin panel tracks total usage (uploaded images + database tables) against a configurable
-quota and tunes the retention window to keep usage near a target fill level.
-
-| Setting | Meaning |
-|---|---|
-| `retention_days` | Messages older than this are deleted. Auto-adjusted when adaptive mode is on. |
-| `retention_min_days` / `retention_max_days` | Bounds the adaptive engine never crosses. |
-| `storage_quota_mb` | Budget for uploads + database. |
-| `storage_target_pct` | Fill level the adaptive engine aims for (default 75%). |
-| `maintenance_hours` | Minimum interval between maintenance runs. |
-| `adaptive_enabled` | Turn auto-tuning on/off. |
-
-### How adaptive retention works
-
-Maintenance runs at most once per `maintenance_hours`, triggered by normal chat polling:
-
-1. Delete messages older than `retention_days` (and their image files).
-2. Measure usage as a percentage of the quota.
-3. Scale retention by `target_pct / usage_pct`, so 150% of target roughly two-thirds the window.
-   Growth is damped to 1.5x per run so a quiet week does not immediately jump to the maximum.
-4. Clamp the result to `[retention_min_days, retention_max_days]`.
-5. If usage still exceeds the quota, delete the oldest messages until it fits.
-
-Uploads are rejected with HTTP 507 when they would push usage past the quota.
 
 ## API
 
@@ -84,17 +56,6 @@ Content-Type: application/json
   "message_type": "text",
   "button_data": null
 }
-```
-
-### Send image
-```
-POST /chat-backend/send.php
-Content-Type: multipart/form-data
-
-username=John
-message_type=image
-content=Optional caption
-image=<binary image file>
 ```
 
 ### Poll messages
@@ -127,5 +88,4 @@ Content-Type: application/json
 - The `.gitignore` in the parent repo already excludes it, and `.htaccess` denies HTTP access
 - The deploy workflow never uploads or overwrites it
 - Public Lounge is always open; private rooms use per-room password hashes
-- Private media is served only through `media.php` after room authorization
-- Messages (and their image files) auto-delete after 30 days by default, configurable in `admin.php`
+- Messages auto-delete after the configured retention period

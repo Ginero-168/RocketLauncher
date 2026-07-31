@@ -5,7 +5,6 @@
  *
  * Supports:
  * - JSON body: { username, content, message_type, button_data }
- * - Multipart form: username, content, message_type, image (file)
  * - Room selection: X-Chat-Room + optional Authorization: Bearer <password>
  *
  * Response (JSON):
@@ -103,15 +102,13 @@ if (!tata_is_configured()) {
     exit;
 }
 
-// Parse request body (JSON or multipart)
-$isMultipart = !empty($_FILES);
-$body = $_POST;
-if (!$isMultipart && !empty($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
-    $raw = file_get_contents('php://input');
-    $parsed = json_decode($raw, true);
-    if ($parsed) {
-        $body = $parsed;
-    }
+// Parse JSON request body
+$raw = file_get_contents('php://input');
+$body = json_decode($raw, true);
+if (!is_array($body)) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Invalid JSON']);
+    exit;
 }
 
 try {
@@ -152,7 +149,12 @@ if ($username === '' || mb_strlen($username) > 50) {
     exit;
 }
 
-$allowedTypes = ['text', 'button_config', 'image'];
+$allowedTypes = ['text', 'button_config'];
+if ($messageType === 'image') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Only text and button messages are supported']);
+    exit;
+}
 if (!in_array($messageType, $allowedTypes, true)) {
     $messageType = 'text';
 }
@@ -164,118 +166,17 @@ if (mb_strlen($content) > 10000) {
 
 try {
     tata_enforce_rate_limit($pdo, 'send-room-' . $room['id'], 60, 60);
-    if ($messageType === 'image') {
-        tata_enforce_rate_limit($pdo, 'upload-room-' . $room['id'], 15, 60);
-    }
 } catch (OverflowException $e) {
     http_response_code(429);
     echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
     exit;
 }
 
-// Handle image upload
-if ($messageType === 'image') {
-    if (empty($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Image upload failed']);
-        exit;
-    }
-
-    $file = $_FILES['image'];
-    $uploadDir = __DIR__ . '/uploads';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0755, true);
-    }
-
-    $maxSize = 5 * 1024 * 1024; // 5 MB
-    if ($file['size'] > $maxSize) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Image too large (max 5 MB)']);
-        exit;
-    }
-
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->file($file['tmp_name']);
-    $rawSvgContent = null;
-
-    // Accept both bitmap images and SVG.
-    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    $isSvg = in_array($mime, ['image/svg+xml'], true) || preg_match('/\.svg$/i', (string)$file['name']);
-
-    if (!$isSvg && !in_array($mime, $allowedMimes, true)) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Invalid image type']);
-        exit;
-    }
-
-    // Refuse uploads that would push storage past the configured quota
-    try {
-        $stats = tata_storage_stats($pdo);
-        if ($stats['total_bytes'] + $file['size'] > $stats['quota_bytes']) {
-            http_response_code(507);
-            echo json_encode(['ok' => false, 'error' => 'Storage quota full — ask an admin to free up space']);
-            exit;
-        }
-    } catch (Throwable $e) {
-        // Quota check is advisory; never block on internal failure
-    }
-
-    // Read SVG content once for sanitization before moving it.
-    if ($isSvg) {
-        $rawSvgContent = @file_get_contents($file['tmp_name']);
-        if ($rawSvgContent === false) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'Failed to read SVG']);
-            exit;
-        }
-    }
-
-    $ext = $isSvg ? 'svg' : match ($mime) {
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/gif' => 'gif',
-        'image/webp' => 'webp',
-        default => 'bin',
-    };
-
-    $filename = bin2hex(random_bytes(16)) . '.' . $ext;
-    $destination = $uploadDir . '/' . $filename;
-
-    if ($isSvg) {
-        // SVG may arrive via Illustrator export as application/octet-stream or with a
-        // non-standard extension; the live file must be sanitized and written.
-        try {
-            $clean = sanitize_svg($rawSvgContent);
-        } catch (Throwable $e) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => 'Unsafe or invalid SVG']);
-            exit;
-        }
-        if (@file_put_contents($destination, $clean) === false) {
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'error' => 'Failed to save SVG']);
-            exit;
-        }
-    } else {
-        if (!@move_uploaded_file($file['tmp_name'], $destination)) {
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'error' => 'Failed to save image']);
-            exit;
-        }
-    }
-
-    $filePath = 'uploads/' . $filename;
-    if ($content === '') {
-        $content = $isSvg ? 'SVG selection' : $filename;
-    }
-} else {
-    // Text / button_config messages require content
-    if ($content === '') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Content required']);
-        exit;
-    }
-
+// Text and button messages require content.
+if ($content === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Content required']);
+    exit;
 }
 
 // Sanitize button_data (must be valid JSON object or null)
@@ -317,8 +218,8 @@ if ($messageType === 'button_config') {
 
 try {
     $stmt = $pdo->prepare("
-        INSERT INTO chat_messages (room_id, username, message_type, content, button_data, file_path)
-        VALUES (:room_id, :username, :message_type, :content, :button_data, :file_path)
+        INSERT INTO chat_messages (room_id, username, message_type, content, button_data)
+        VALUES (:room_id, :username, :message_type, :content, :button_data)
     ");
 
     $stmt->execute([
@@ -327,15 +228,11 @@ try {
         ':message_type' => $messageType,
         ':content' => $content,
         ':button_data' => $buttonData ? json_encode($buttonData) : null,
-        ':file_path' => $filePath,
     ]);
 
     echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
 
 } catch (Throwable $e) {
-    if ($filePath !== null && isset($destination) && is_file($destination)) {
-        @unlink($destination);
-    }
     http_response_code(500);
     error_log('[TATA Chat send.php] ' . $e->getMessage());
     echo json_encode(['ok' => false, 'error' => 'Server error']);

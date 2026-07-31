@@ -1,6 +1,6 @@
 /**
  * TATA Panel - Chat Module
- * Public and password-protected chat rooms with media/button sharing.
+ * Public and password-protected text chat with button sharing.
  * Polls every 10 seconds (non-real-time).
  */
 (() => {
@@ -11,22 +11,15 @@
     const POLL_INTERVAL = 10000; // 10 seconds
     const MAX_MESSAGES = 200;    // keep last N in DOM
 
-    const MAX_ATTACHMENTS = 10;
-    const ACCEPTED_EXT = /\.(png|jpe?g|gif|webp|svg)$/i;
-
     let chatState = {
         username: localStorage.getItem('tata_chat_username') || '',
         lastId: 0,
         polling: false,
         pollTimer: null,
         active: false,
-        // Files staged for sending. Each entry: { file, url, kind }
-        attachments: [],
-        dragDepth: 0,
         sending: false,
         room: { slug: 'public', name: 'Public Lounge', is_private: false },
         roomPassword: '',
-        mediaUrls: new Set(),
     };
 
     // ==========================================
@@ -84,8 +77,6 @@
     function clearRenderedMessages() {
         const container = $('chat_messages');
         if (container) container.textContent = '';
-        for (const url of chatState.mediaUrls) URL.revokeObjectURL(url);
-        chatState.mediaUrls.clear();
         chatState.lastId = 0;
     }
 
@@ -141,46 +132,29 @@
         return room;
     }
 
-    async function sendMessage(content, messageType, buttonData, imageFile) {
+    async function sendMessage(content, messageType, buttonData) {
         const url = getBackendUrl();
         if (!url) {
             safeToast('Chat backend not configured', 'error');
             return false;
         }
 
-        const type = messageType || 'text';
-        const isImage = type === 'image' && imageFile;
-
-        let body;
-        let headers = getRoomHeaders(!isImage);
-        if (isImage) {
-            const isSvg = /svg/i.test(imageFile.type) || /\.svg$/i.test(imageFile.name || '');
-            body = new FormData();
-            body.append('username', chatState.username);
-            body.append('content', content || (isSvg ? 'SVG selection' : imageFile.name || 'Image'));
-            body.append('message_type', 'image');
-            body.append('image', imageFile);
-        } else {
-            body = JSON.stringify({
-                username: chatState.username,
-                content,
-                message_type: type,
-                button_data: buttonData || null,
-            });
-        }
-
         try {
             const res = await fetch(`${url}/send.php`, {
                 method: 'POST',
-                headers,
-                body,
+                headers: getRoomHeaders(true),
+                body: JSON.stringify({
+                    username: chatState.username,
+                    content,
+                    message_type: messageType || 'text',
+                    button_data: buttonData || null,
+                }),
             });
             const data = await res.json();
             if (!data.ok) {
                 safeToast(`Chat error: ${data.error}`, 'error');
                 return false;
             }
-            // Immediately poll for new messages after sending
             pollMessages();
             return true;
         } catch (e) {
@@ -273,47 +247,10 @@
         copyTextWithSelection(text);
     }
 
-    async function fetchMessageMedia(msg, roomSlug, roomPassword) {
-        if (msg._mediaBlob) return msg._mediaBlob;
-        const backendUrl = getBackendUrl();
-        const selectedRoom = roomSlug || chatState.room.slug;
-        let res = await fetch(`${backendUrl}/media.php?id=${encodeURIComponent(msg.id)}`, {
-            headers: getRoomHeaders(false, selectedRoom, roomPassword),
-        });
-        // Compatibility bridge for the legacy public backend, which stored
-        // uploads directly and did not have media.php. Never bypass room
-        // authorization for private rooms.
-        const legacyPath = String(msg.file_path || '');
-        const safeLegacyPath = /^uploads\/[a-f0-9]{32}\.(?:png|jpe?g|gif|webp|svg)$/i.test(legacyPath);
-        if (res.status === 404 && selectedRoom === 'public' && safeLegacyPath) {
-            res = await fetch(`${backendUrl}/${legacyPath}`);
-        }
-        if (!res.ok) throw new Error('Media is unavailable');
-        msg._mediaBlob = await res.blob();
-        return msg._mediaBlob;
-    }
-
     async function copyMessage(msg) {
         if (msg.message_type === 'button_config' && msg.button_data) {
             await copyText(JSON.stringify(msg.button_data, null, 2));
             return 'Button configuration copied';
-        }
-        if (msg.message_type === 'image' && msg.file_path) {
-            const blob = await fetchMessageMedia(msg);
-            if (/svg/i.test(blob.type) || /\.svg$/i.test(msg.file_path)) {
-                await copyText(await blob.text());
-                return 'SVG source copied';
-            }
-            if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
-                try {
-                    await navigator.clipboard.write([new window.ClipboardItem({ [blob.type]: blob })]);
-                    return 'Image copied';
-                } catch (e) {
-                    // Older CEP builds only allow text clipboard writes.
-                }
-            }
-            await copyText(msg.content || `Image message #${msg.id}`);
-            return 'Image caption copied';
         }
         await copyText(msg.content || '');
         return 'Message copied';
@@ -323,8 +260,6 @@
         const container = $('chat_messages');
         if (!container) return;
         const roomSlug = expectedRoomSlug || chatState.room.slug;
-        const roomPassword = chatState.roomPassword;
-        let createdMediaUrl = '';
 
         const wrapper = document.createElement('div');
         wrapper.className = 'chat-msg';
@@ -376,7 +311,7 @@
             const meta = document.createElement('div');
             meta.className = 'chat-btn-card-meta';
             const bd = msg.button_data;
-            const iconLabel = /^\s*<svg[\s>]/i.test(bd.icon || '') ? 'SVG icon' : (bd.icon || '★');
+            const iconLabel = bd.icon || '★';
             meta.textContent = `${iconLabel} · ${bd.color || 'default'}`;
             card.appendChild(meta);
 
@@ -400,48 +335,6 @@
             }
 
             wrapper.appendChild(card);
-        } else if (msg.message_type === 'image' && msg.file_path) {
-            // Render image or SVG message
-            const isSvg = /\.svg$/i.test(msg.file_path);
-            try {
-                const blob = await fetchMessageMedia(msg, roomSlug, roomPassword);
-                createdMediaUrl = URL.createObjectURL(blob);
-                chatState.mediaUrls.add(createdMediaUrl);
-            } catch (e) {
-                const unavailable = document.createElement('div');
-                unavailable.className = 'chat-msg-media-error';
-                unavailable.textContent = 'Media unavailable';
-                wrapper.appendChild(unavailable);
-            }
-
-            if (createdMediaUrl && isSvg) {
-                const img = document.createElement('img');
-                img.className = 'chat-msg-image';
-                img.src = createdMediaUrl;
-                img.alt = msg.content || 'SVG';
-                img.onerror = () => { img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40"><text y="20">SVG preview unavailable</text></svg>'; };
-                img.onclick = () => {
-                    try { window.open(createdMediaUrl, '_blank'); } catch (e) { }
-                };
-                wrapper.appendChild(img);
-            } else if (createdMediaUrl) {
-                const img = document.createElement('img');
-                img.className = 'chat-msg-image';
-                img.src = createdMediaUrl;
-                img.alt = msg.content || 'Image';
-                img.onclick = () => window.open(img.src, '_blank');
-                wrapper.appendChild(img);
-            }
-
-            if (msg.content && msg.content !== msg.file_path.split('/').pop()) {
-                const caption = document.createElement('div');
-                caption.className = 'chat-msg-caption';
-                caption.textContent = msg.content;
-                caption.style.fontSize = '11px';
-                caption.style.color = '#aaa';
-                caption.style.marginTop = '4px';
-                wrapper.appendChild(caption);
-            }
         } else {
             // Regular text message
             const body = document.createElement('div');
@@ -471,13 +364,7 @@
             wrapper.appendChild(body);
         }
 
-        if (chatState.room.slug !== roomSlug) {
-            if (createdMediaUrl) {
-                URL.revokeObjectURL(createdMediaUrl);
-                chatState.mediaUrls.delete(createdMediaUrl);
-            }
-            return;
-        }
+        if (chatState.room.slug !== roomSlug) return;
         container.appendChild(wrapper);
     }
 
@@ -572,336 +459,6 @@
         }
     }
 
-    // ==========================================
-    // Attachments
-    // ==========================================
-    function isAcceptedFile(file) {
-        if (!file) return false;
-        if (file.type && file.type.startsWith('image/')) return true;
-        // Finder sometimes reports an empty type for .svg; fall back to the extension.
-        return ACCEPTED_EXT.test(file.name || '');
-    }
-
-    function addAttachments(files) {
-        const incoming = Array.from(files || []).filter(isAcceptedFile);
-        if (!incoming.length) {
-            safeToast('Only images and SVG files can be sent', 'error');
-            return;
-        }
-
-        const room = MAX_ATTACHMENTS - chatState.attachments.length;
-        if (room <= 0) {
-            safeToast(`Attachment limit is ${MAX_ATTACHMENTS}`, 'error');
-            return;
-        }
-        if (incoming.length > room) {
-            safeToast(`Only the first ${room} file(s) were attached`, 'error');
-        }
-
-        for (const file of incoming.slice(0, room)) {
-            chatState.attachments.push({
-                file,
-                url: URL.createObjectURL(file),
-                kind: /svg/i.test(file.type) || /\.svg$/i.test(file.name || '') ? 'SVG' : '',
-            });
-        }
-        renderAttachments();
-    }
-
-    function removeAttachment(index) {
-        const item = chatState.attachments[index];
-        if (item) URL.revokeObjectURL(item.url);
-        chatState.attachments.splice(index, 1);
-        renderAttachments();
-    }
-
-    function clearAttachments() {
-        for (const item of chatState.attachments) URL.revokeObjectURL(item.url);
-        chatState.attachments = [];
-        const input = $('chat_image_input');
-        if (input) input.value = '';
-        renderAttachments();
-    }
-
-    function renderAttachments() {
-        const tray = $('chat_attachments');
-        if (!tray) return;
-
-        tray.textContent = '';
-        if (!chatState.attachments.length) {
-            tray.style.display = 'none';
-            return;
-        }
-        tray.style.display = 'flex';
-
-        chatState.attachments.forEach((item, index) => {
-            const cell = document.createElement('div');
-            cell.className = 'chat-attach';
-
-            const img = document.createElement('img');
-            img.src = item.url;
-            img.alt = item.file.name || 'attachment';
-            cell.appendChild(img);
-
-            if (item.kind) {
-                const badge = document.createElement('span');
-                badge.className = 'chat-attach-badge';
-                badge.textContent = item.kind;
-                cell.appendChild(badge);
-            }
-
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'chat-attach-remove';
-            remove.textContent = '×';
-            remove.title = `Remove ${item.file.name || 'attachment'}`;
-            remove.onclick = () => removeAttachment(index);
-            cell.appendChild(remove);
-
-            tray.appendChild(cell);
-        });
-    }
-
-    // ==========================================
-    // Illustrator selection -> SVG attachment
-    // ==========================================
-    function attachIllustratorSelection(options) {
-        if (!TATA.host || typeof TATA.host.run !== 'function') {
-            safeToast('Illustrator bridge not ready', 'error');
-            return;
-        }
-
-        let fs;
-        let path;
-        let os;
-        try {
-            fs = window.require('fs');
-            path = window.require('path');
-            os = window.require('os');
-        } catch (e) {
-            safeToast('File access unavailable in this panel', 'error');
-            return;
-        }
-
-        const tempPath = path.join(os.tmpdir(), `tata_chat_${Date.now()}.svg`);
-
-        const params = {
-            path: tempPath,
-            useClipboard: !(options && options.useClipboard === false),
-        };
-        TATA.host.run('saveSelectionAsRichSvg', params, res => {
-            const result = String(res || '').replace(/^"|"$/g, '');
-
-            if (result === 'No Selection') {
-                safeToast('Select artwork in Illustrator first', 'error');
-                return;
-            }
-            if (result === 'No Doc') {
-                safeToast('Open a document in Illustrator first', 'error');
-                return;
-            }
-            if (result !== 'Success') {
-                safeToast(`Export failed: ${result}`, 'error');
-                return;
-            }
-
-            try {
-                const buffer = fs.readFileSync(tempPath);
-                const file = new File(
-                    [new Uint8Array(buffer)],
-                    `selection_${Date.now()}.svg`,
-                    { type: 'image/svg+xml' }
-                );
-                addAttachments([file]);
-                safeToast('Selection attached', 'success');
-            } catch (e) {
-                safeToast(`Could not read exported SVG: ${e.message}`, 'error');
-            } finally {
-                try { fs.unlinkSync(tempPath); } catch (e) { /* temp file cleanup is best-effort */ }
-            }
-        });
-    }
-
-    // ==========================================
-    // Drag & drop / paste
-    // ==========================================
-    function setDropActive(active, message) {
-        const zone = $('chat_dropzone');
-        if (!zone) return;
-        zone.classList.toggle('active', active);
-        if (message) {
-            const text = zone.querySelector('.chat-dropzone-inner div:last-child');
-            if (text) text.textContent = message;
-        }
-    }
-
-    function isFileDrop(dt) {
-        if (!dt) return false;
-        // Native files or a file path passed as text.
-        if (dt.types && Array.from(dt.types).some(t => t === 'Files')) return true;
-        if (dt.files && dt.files.length) return true;
-        return false;
-    }
-
-    function bindDropTarget(target) {
-        if (!target) return;
-
-        target.addEventListener('dragenter', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            chatState.dragDepth++;
-
-            const dt = e.dataTransfer;
-            if (isFileDrop(dt)) {
-                setDropActive(true, 'Drop images or SVG files to send');
-            } else {
-                setDropActive(true, 'Drop to attach the Illustrator selection as SVG');
-            }
-        });
-
-        target.addEventListener('dragover', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-        });
-
-        target.addEventListener('dragleave', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            chatState.dragDepth = Math.max(0, chatState.dragDepth - 1);
-            if (chatState.dragDepth === 0) setDropActive(false);
-        });
-
-        target.addEventListener('drop', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            chatState.dragDepth = 0;
-            setDropActive(false);
-
-            const dt = e.dataTransfer;
-            if (!dt) return;
-
-            if (dt.files && dt.files.length) {
-                addAttachments(dt.files);
-                return;
-            }
-
-            // Some sources hand over a file path or a URL instead of a File object.
-            const text = dt.getData('text/uri-list') || dt.getData('text/plain');
-            if (text) {
-                attachFromPathOrUrl(text.trim());
-                return;
-            }
-
-            // Illustrator canvas drags do not expose a File through CEP. Export
-            // the current selection through the host bridge, matching the AI→SVG
-            // button behavior. Wait for Illustrator to finish its native drag
-            // transaction first; calling app.copy/export inside this event stack
-            // causes [PARM] and "operation was cancelled" on some shapes.
-            setTimeout(() => attachIllustratorSelection({ useClipboard: false }), 150);
-        });
-    }
-
-    function attachFromPathOrUrl(value) {
-        if (!value) return;
-
-        let fs;
-        let path;
-        try {
-            fs = window.require('fs');
-            path = window.require('path');
-        } catch (e) {
-            safeToast('Drop a file instead of a link', 'error');
-            return;
-        }
-
-        const local = value.startsWith('file://')
-            ? decodeURIComponent(value.replace(/^file:\/\//, ''))
-            : value;
-
-        try {
-            if (!fs.existsSync(local)) {
-                safeToast('Could not read the dropped item', 'error');
-                return;
-            }
-            const name = path.basename(local);
-            if (!ACCEPTED_EXT.test(name)) {
-                safeToast('Only images and SVG files can be sent', 'error');
-                return;
-            }
-            const buffer = fs.readFileSync(local);
-            const type = /\.svg$/i.test(name) ? 'image/svg+xml' : '';
-            addAttachments([new File([new Uint8Array(buffer)], name, { type })]);
-        } catch (e) {
-            safeToast(`Could not read the dropped file: ${e.message}`, 'error');
-        }
-    }
-
-    function handlePaste(e) {
-        const cd = e.clipboardData;
-        const items = cd && cd.items;
-        if (!items) return;
-
-        // Prefer SVG if Illustrator put it on the clipboard.
-        for (const item of items) {
-            if (item.kind === 'file' && item.type === 'image/svg+xml') {
-                const file = item.getAsFile();
-                if (file) {
-                    e.preventDefault();
-                    addAttachments([file]);
-                    return;
-                }
-            }
-        }
-
-        // If the only pasted image is a generic PNG, it is almost certainly the
-        // bitmap preview Illustrator places on the clipboard. Export the current
-        // selection as real SVG instead, but only when something is selected.
-        const pastedImages = [];
-        for (const item of items) {
-            if (item.kind === 'file') {
-                const file = item.getAsFile();
-                if (file) pastedImages.push(file);
-            }
-        }
-
-        if (pastedImages.length === 1 && pastedImages[0].type === 'image/png') {
-            e.preventDefault();
-            attachIllustratorSelectionAsSvgFallback(pastedImages[0]);
-            return;
-        }
-
-        if (pastedImages.length) {
-            e.preventDefault();
-            addAttachments(pastedImages);
-        }
-    }
-
-    /**
-     * When the user pastes a PNG from Illustrator, try to export the current
-     * selection as SVG. If Illustrator has no selection, fall back to the PNG.
-     */
-    function attachIllustratorSelectionAsSvgFallback(fallbackPng) {
-        if (!TATA.host || typeof TATA.host.run !== 'function') {
-            addAttachments([fallbackPng]);
-            return;
-        }
-
-        TATA.host.run('hasSelection', {}, res => {
-            let data;
-            try {
-                data = JSON.parse(String(res || '').replace(/^"|"$/g, ''));
-            } catch (e) {
-                data = { hasSelection: false };
-            }
-
-            if (data && data.hasSelection) {
-                attachIllustratorSelection();
-            } else {
-                addAttachments([fallbackPng]);
-            }
-        });
-    }
 
     // ==========================================
     // Init / Activate / Deactivate
@@ -973,44 +530,17 @@
         }
     }
 
-    /**
-     * Send the typed text and every staged attachment.
-     * Attachments go one per message so each renders on its own.
-     */
     async function submitChat() {
         if (chatState.sending) return;
-
         const input = $('chat_input');
         const text = input ? input.value.trim() : '';
-        const attachments = chatState.attachments.slice();
-
-        if (!text && !attachments.length) return;
+        if (!text) return;
 
         chatState.sending = true;
         const sendBtn = $('chat_send');
         if (sendBtn) sendBtn.disabled = true;
-
         try {
-            let allOk = true;
-
-            if (attachments.length) {
-                // The caption rides along with the first image.
-                for (let i = 0; i < attachments.length; i++) {
-                    const caption = i === 0 ? text : '';
-                    const ok = await sendMessage(caption, 'image', null, attachments[i].file);
-                    if (!ok) {
-                        allOk = false;
-                        break;
-                    }
-                }
-            } else {
-                allOk = await sendMessage(text, 'text', null, null);
-            }
-
-            if (allOk) {
-                if (input) input.value = '';
-                clearAttachments();
-            }
+            if (await sendMessage(text, 'text', null) && input) input.value = '';
         } finally {
             chatState.sending = false;
             if (sendBtn) sendBtn.disabled = false;
@@ -1020,9 +550,6 @@
     function initChat() {
         const input = $('chat_input');
         const sendBtn = $('chat_send');
-        const imageBtn = $('chat_image_btn');
-        const imageInput = $('chat_image_input');
-        const selectionBtn = $('chat_selection_btn');
         const nameInput = $('chat_username');
         const nameBtn = $('chat_join');
         const chatSetup = $('chat_setup');
@@ -1155,24 +682,6 @@
                 }
             });
         }
-
-        // Attach files
-        if (imageBtn && imageInput) {
-            imageBtn.onclick = () => imageInput.click();
-            imageInput.onchange = () => {
-                addAttachments(imageInput.files);
-                imageInput.value = '';
-            };
-        }
-
-        // Attach current Illustrator selection as SVG
-        if (selectionBtn) {
-            selectionBtn.onclick = attachIllustratorSelection;
-        }
-
-        // Drag & drop and paste
-        bindDropTarget(chatMain);
-        if (input) input.addEventListener('paste', handlePaste);
 
         // Send
         if (sendBtn) sendBtn.onclick = submitChat;
