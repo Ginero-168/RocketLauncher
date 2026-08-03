@@ -16,8 +16,8 @@
     const config = {
         DEBUG: false,
 
-        // Chat backend URL (set in config.local.json)
-        CHAT_BACKEND_URL: '',
+        // Public chat backend URL. Local config can override this for development.
+        CHAT_BACKEND_URL: 'https://rocket.kirita.me/chat-backend',
 
         log(...args) {
             if (this.DEBUG) {

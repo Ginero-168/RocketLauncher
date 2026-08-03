@@ -54,16 +54,16 @@ it never overwrites its own files automatically.
 To publish a release:
 
 ```bash
-git tag v2.3.0
-git push origin v2.3.0
+git tag v2.3.1
+git push origin v2.3.1
 ```
 
 GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, and creates:
 
-- `RocketLauncher-v2.3.0-macos.zxp`
-- `RocketLauncher-v2.3.0-macos.sha256`
-- `RocketLauncher-v2.3.0-windows.zxp`
-- `RocketLauncher-v2.3.0-windows.sha256`
+- `RocketLauncher-v2.3.1-macos.zxp`
+- `RocketLauncher-v2.3.1-macos.sha256`
+- `RocketLauncher-v2.3.1-windows.zxp`
+- `RocketLauncher-v2.3.1-windows.sha256`
 
 The ZXP is signed with the team's self-signed certificate. The certificate file and password are
 kept in GitHub Secrets and are never included in the release.
@@ -94,8 +94,10 @@ To install manually:
 3. Install it with a ZXP installer/ExManCmd compatible with Adobe CEP.
 4. Restart Illustrator and confirm the version in Settings.
 
-The package intentionally excludes local credentials such as `js/config.local.json` and server
-runtime configuration. Keep those files backed up separately when updating an existing installation.
+The release package excludes local development overrides such as `js/config.local.json`. The
+production Chat backend URL is included as a public default in `js/config.js`, so users do not
+need to create a local config file for normal Chat usage. Server credentials remain on Hostinger
+and are never included in the extension.
 
 ## Local Development
 
