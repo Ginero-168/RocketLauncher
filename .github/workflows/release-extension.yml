@@ -1,4 +1,4 @@
-name: Package Extension Release
+name: Package Signed ZXP Release
 
 on:
   push:
@@ -9,14 +9,16 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  validate:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Validate tag matches manifest version
+        id: version
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
           manifest_version=$(python3 - <<'PY'
@@ -33,6 +35,7 @@ jobs:
             echo "Tag $tag_version does not match manifest $manifest_version"
             exit 1
           fi
+          echo "version=$tag_version" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -45,16 +48,46 @@ jobs:
       - name: Run tests
         run: npm test -- --runInBand
 
-      - name: Build manual ZIP and checksum
+  package-macos:
+    needs: validate
+    runs-on: macos-13
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ZXPSignCmd
+        run: |
+          curl -fsSL \
+            https://raw.githubusercontent.com/Adobe-CEP/CEP-Resources/master/ZXPSignCMD/4.1.3/macOS/ZXPSignCmd \
+            -o ZXPSignCmd
+          chmod +x ZXPSignCmd
+          ./ZXPSignCmd -h || true
+
+      - name: Decode signing certificate
         env:
-          VERSION: ${{ github.ref_name }}
+          ZXP_CERT_P12_B64: ${{ secrets.ZXP_CERT_P12_B64 }}
+        run: |
+          test -n "$ZXP_CERT_P12_B64" || (echo 'Missing ZXP_CERT_P12_B64 secret' && exit 1)
+          echo "$ZXP_CERT_P12_B64" | base64 --decode > signing-certificate.p12
+
+      - name: Build and sign macOS ZXP
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          ZXP_CERT_PASSWORD: ${{ secrets.ZXP_CERT_PASSWORD }}
         run: |
           set -euo pipefail
+          test -n "$ZXP_CERT_PASSWORD" || (echo 'Missing ZXP_CERT_PASSWORD secret' && exit 1)
           rm -rf release-build
           mkdir -p release-build/TATA
           rsync -a ./ release-build/TATA/ \
             --exclude '.git/' \
+            --exclude '.github/' \
             --exclude 'node_modules/' \
+            --exclude 'package*.json' \
+            --exclude 'README*' \
+            --exclude 'AGENTS.md' \
+            --exclude '.gitignore' \
+            --exclude 'CHANGELOG.md' \
             --exclude 'tests/' \
             --exclude 'playwright-report/' \
             --exclude 'test-results/' \
@@ -62,17 +95,84 @@ jobs:
             --exclude 'chat-backend/chat-config.json' \
             --exclude 'chat-backend/config.php' \
             --exclude 'chat-backend/tata-env.php' \
-            --exclude 'release-build/'
-          zip_name="rocket-launcher-${VERSION}.zip"
-          (cd release-build && zip -qr "../${zip_name}" TATA)
-          sha256sum "${zip_name}" > "${zip_name%.zip}.sha256"
-          echo "Built ${zip_name}"
-          cat "${zip_name%.zip}.sha256"
+            --exclude 'release-build/' \
+            --exclude 'ZXPSignCmd' \
+            --exclude 'signing-certificate.p12'
+          ./ZXPSignCmd -sign release-build/TATA "RocketLauncher-v${VERSION}-macos.zxp" signing-certificate.p12 "$ZXP_CERT_PASSWORD"
+          shasum -a 256 "RocketLauncher-v${VERSION}-macos.zxp" > "RocketLauncher-v${VERSION}-macos.sha256"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zxp-macos
+          path: |
+            RocketLauncher-v${{ needs.validate.outputs.version }}-macos.zxp
+            RocketLauncher-v${{ needs.validate.outputs.version }}-macos.sha256
+
+  package-windows:
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ZXPSignCmd
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/Adobe-CEP/CEP-Resources/master/ZXPSignCMD/4.1.3/x64/ZXPSignCmd.exe" `
+            -OutFile ZXPSignCmd.exe
+
+      - name: Decode signing certificate
+        shell: pwsh
+        env:
+          ZXP_CERT_P12_B64: ${{ secrets.ZXP_CERT_P12_B64 }}
+        run: |
+          if (-not $env:ZXP_CERT_P12_B64) { throw 'Missing ZXP_CERT_P12_B64 secret' }
+          [IO.File]::WriteAllBytes('signing-certificate.p12', [Convert]::FromBase64String($env:ZXP_CERT_P12_B64))
+
+      - name: Build and sign Windows ZXP
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          ZXP_CERT_PASSWORD: ${{ secrets.ZXP_CERT_PASSWORD }}
+        run: |
+          if (-not $env:ZXP_CERT_PASSWORD) { throw 'Missing ZXP_CERT_PASSWORD secret' }
+          New-Item -ItemType Directory -Force -Path release-build/TATA | Out-Null
+          robocopy . release-build/TATA /E /XD .git .github node_modules tests playwright-report test-results release-build /XF config.local.json chat-config.json config.php tata-env.php ZXPSignCmd.exe signing-certificate.p12 package.json package-lock.json README.md AGENTS.md .gitignore CHANGELOG.md *.zxp *.sha256
+          if ($LASTEXITCODE -gt 7) { exit $LASTEXITCODE }
+          & .\ZXPSignCmd.exe -sign release-build/TATA "RocketLauncher-v$env:VERSION-windows.zxp" signing-certificate.p12 $env:ZXP_CERT_PASSWORD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          (Get-FileHash "RocketLauncher-v$env:VERSION-windows.zxp" -Algorithm SHA256).Hash.ToLower() + "  RocketLauncher-v$env:VERSION-windows.zxp" | Out-File "RocketLauncher-v$env:VERSION-windows.sha256" -Encoding ascii
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zxp-windows
+          path: |
+            RocketLauncher-v${{ needs.validate.outputs.version }}-windows.zxp
+            RocketLauncher-v${{ needs.validate.outputs.version }}-windows.sha256
+
+  publish:
+    needs: [validate, package-macos, package-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zxp-macos
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zxp-windows
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            rocket-launcher-${{ github.ref_name }}.zip
-            rocket-launcher-${{ github.ref_name }}.sha256
+            RocketLauncher-v${{ needs.validate.outputs.version }}-macos.zxp
+            RocketLauncher-v${{ needs.validate.outputs.version }}-macos.sha256
+            RocketLauncher-v${{ needs.validate.outputs.version }}-windows.zxp
+            RocketLauncher-v${{ needs.validate.outputs.version }}-windows.sha256

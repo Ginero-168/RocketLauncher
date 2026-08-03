@@ -664,11 +664,12 @@
 				if (!res.ok) throw new Error(`GitHub returned HTTP ${res.status}`);
 				const release = await res.json();
 				const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
+				const platform = /win/i.test(navigator.platform) ? 'windows' : 'macos';
 				const asset = (release.assets || []).find(item =>
-					item.name === `rocket-launcher-v${latestVersion}.zip`
+					item.name === `RocketLauncher-v${latestVersion}-${platform}.zxp`
 				);
 				const checksum = (release.assets || []).find(item =>
-					item.name === `rocket-launcher-v${latestVersion}.sha256`
+					item.name === `RocketLauncher-v${latestVersion}-${platform}.sha256`
 				);
 				if (!latestVersion || !asset) throw new Error('Release ZIP is missing');
 

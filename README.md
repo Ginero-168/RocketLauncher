@@ -47,9 +47,9 @@ See `chat-backend/README.md` for manual upload instructions.
 
 ## Manual Updates
 
-Releases are distributed as ZIP files through GitHub Releases. The extension checks the latest
-release and shows a **Download ZIP** link in **Settings → Extension Updates**; it never overwrites
-its own files automatically.
+Releases are distributed as signed ZXP files through GitHub Releases. The extension detects
+macOS/Windows and shows the matching **Download ZXP** link in **Settings → Extension Updates**;
+it never overwrites its own files automatically.
 
 To publish a release:
 
@@ -58,21 +58,44 @@ git tag v2.3.0
 git push origin v2.3.0
 ```
 
-GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, creates:
+GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, and creates:
 
-- `rocket-launcher-v2.3.0.zip`
-- `rocket-launcher-v2.3.0.sha256`
+- `RocketLauncher-v2.3.0-macos.zxp`
+- `RocketLauncher-v2.3.0-macos.sha256`
+- `RocketLauncher-v2.3.0-windows.zxp`
+- `RocketLauncher-v2.3.0-windows.sha256`
+
+The ZXP is signed with the team's self-signed certificate. The certificate file and password are
+kept in GitHub Secrets and are never included in the release.
+
+### Configure signing once
+
+Create a self-signed certificate with Adobe's `ZXPSignCmd`:
+
+```bash
+ZXPSignCmd -selfSignedCert US NY RocketLauncher RocketLauncher \
+  'choose-a-strong-password' RocketLauncher.p12
+```
+
+Base64-encode `RocketLauncher.p12` and add these GitHub Actions secrets:
+
+```text
+ZXP_CERT_P12_B64
+ZXP_CERT_PASSWORD
+```
+
+Keep the `.p12` file and password backed up securely. The same certificate must be reused for
+future releases so existing installations recognize the publisher.
 
 To install manually:
 
-1. Check the SHA-256 checksum before installing.
-2. Close Illustrator completely.
-3. Back up the current `TATA` extension folder.
-4. Extract the ZIP so the `TATA` folder replaces the existing extension folder.
-5. Restart Illustrator and confirm the version in Settings.
+1. Download the ZXP matching the user's operating system.
+2. Verify the SHA-256 checksum.
+3. Install it with a ZXP installer/ExManCmd compatible with Adobe CEP.
+4. Restart Illustrator and confirm the version in Settings.
 
-The ZIP intentionally excludes local credentials such as `js/config.local.json` and server runtime
-configuration. Keep those files backed up separately when updating an existing installation.
+The package intentionally excludes local credentials such as `js/config.local.json` and server
+runtime configuration. Keep those files backed up separately when updating an existing installation.
 
 ## Local Development
 
