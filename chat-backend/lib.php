@@ -605,6 +605,23 @@ function tata_purge_older_than(PDO $pdo, int $days): int
 }
 
 /**
+ * Public Lounge has a short fixed retention window independent of private-room settings.
+ */
+function tata_purge_public_messages(PDO $pdo, int $roomId, int $hours = 6): int
+{
+    $hours = max(1, $hours);
+    $stmt = $pdo->prepare('
+        DELETE FROM chat_messages
+        WHERE room_id = :room_id
+          AND created_at < DATE_SUB(NOW(), INTERVAL :hours HOUR)
+    ');
+    $stmt->bindValue(':room_id', $roomId, PDO::PARAM_INT);
+    $stmt->bindValue(':hours', $hours, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->rowCount();
+}
+
+/**
  * Delete oldest messages until usage falls under the quota.
  * Safety net for when even the minimum retention window is too generous.
  */

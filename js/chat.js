@@ -18,6 +18,7 @@
         pollTimer: null,
         active: false,
         sending: false,
+        chatColor: localStorage.getItem('tata_chat_color') || '#6366f1',
         room: { slug: 'public', name: 'Public Lounge', is_private: false },
         roomPassword: '',
     };
@@ -266,7 +267,10 @@
         wrapper.dataset.id = msg.id;
 
         const isMe = msg.username === chatState.username;
-        if (isMe) wrapper.classList.add('chat-msg-me');
+        if (isMe) {
+            wrapper.classList.add('chat-msg-me');
+            wrapper.style.setProperty('--chat-accent', chatState.chatColor);
+        }
 
         const header = document.createElement('div');
         header.className = 'chat-msg-header';
@@ -472,6 +476,20 @@
         if (rename) rename.value = name;
     }
 
+    function isValidColor(value) {
+        return /^#[0-9a-f]{6}$/i.test(value || '');
+    }
+
+    function setChatColor(value) {
+        const color = isValidColor(value) ? value.toLowerCase() : '#6366f1';
+        chatState.chatColor = color;
+        localStorage.setItem('tata_chat_color', color);
+        const input = $('chat_color');
+        const label = $('chat_color_value');
+        if (input) input.value = color;
+        if (label) label.textContent = color;
+    }
+
     function getRecentRooms() {
         try {
             const parsed = JSON.parse(localStorage.getItem('tata_chat_recent_rooms') || '[]');
@@ -558,6 +576,8 @@
         const settingsPanel = $('chat_settings');
         const renameInput = $('chat_rename');
         const renameSave = $('chat_rename_save');
+        const colorInput = $('chat_color');
+        const colorReset = $('chat_color_reset');
         const roomToggle = $('chat_room_toggle');
         const roomsPanel = $('chat_rooms_panel');
         const roomsClose = $('chat_rooms_close');
@@ -571,6 +591,7 @@
         }
         updateRoomUi();
         renderRecentRooms();
+        setChatColor(chatState.chatColor);
 
         // If already has username, show chat
         if (chatState.username && chatSetup && chatMain) {
@@ -606,6 +627,13 @@
                     renameInput.select();
                 }
             };
+        }
+
+        if (colorInput) {
+            colorInput.oninput = () => setChatColor(colorInput.value);
+        }
+        if (colorReset) {
+            colorReset.onclick = () => setChatColor('#6366f1');
         }
 
         if (renameSave && renameInput) {

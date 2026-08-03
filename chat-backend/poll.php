@@ -43,6 +43,11 @@ try {
     $pdo = tata_pdo();
     $room = tata_require_room($pdo);
 
+    // Public Lounge messages are intentionally short-lived: six hours.
+    if ($room['slug'] === 'public') {
+        tata_purge_public_messages($pdo, (int)$room['id'], 6);
+    }
+
     // Throttled housekeeping: purge expired messages and retune retention.
     try {
         tata_run_maintenance($pdo);

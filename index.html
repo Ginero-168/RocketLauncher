@@ -430,8 +430,11 @@
 		}
 		#tab_chat .chat-msg-me {
 			align-self: flex-end;
-			background: rgba(99, 102, 241, 0.15);
-			border-color: rgba(99, 102, 241, 0.3);
+			background: color-mix(in srgb, var(--chat-accent, #6366f1) 15%, transparent);
+			border-color: color-mix(in srgb, var(--chat-accent, #6366f1) 65%, #2a2a4a);
+		}
+		#tab_chat .chat-msg-me .chat-msg-user {
+			color: var(--chat-accent, #a78bfa);
 		}
 			#tab_chat .chat-msg-header {
 				display: flex;
@@ -611,6 +614,27 @@
 			font-size: 10px;
 			color: #666;
 			margin-top: 6px;
+		}
+		#tab_chat .chat-settings-color-row {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-top: 5px;
+		}
+		#chat_color {
+			width: 32px;
+			height: 24px;
+			padding: 0;
+			border: 1px solid #3a3a5c;
+			border-radius: 5px;
+			background: transparent;
+			cursor: pointer;
+		}
+		#chat_color_value {
+			font-family: monospace;
+			font-size: 11px;
+			color: #aaa;
+			flex: 1;
 		}
 
 		/* AI Helper tab styles */
@@ -1250,7 +1274,13 @@
 					<input type="text" id="chat_rename" maxlength="50" placeholder="Your name">
 					<button id="chat_rename_save" type="button" class="primary">Save</button>
 				</div>
-				<div class="chat-settings-hint">Only affects messages you send from now on.</div>
+				<label for="chat_color">Message color</label>
+				<div class="chat-settings-color-row">
+					<input type="color" id="chat_color" value="#6366f1" title="Choose your message border color">
+					<span id="chat_color_value">#6366f1</span>
+					<button id="chat_color_reset" type="button" class="chat-icon-btn" title="Reset color">↺</button>
+				</div>
+				<div class="chat-settings-hint">Your color is saved on this computer and applies to your messages.</div>
 			</div>
 
 			<!-- Messages -->

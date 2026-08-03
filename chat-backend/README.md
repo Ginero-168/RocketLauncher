@@ -88,4 +88,5 @@ Content-Type: application/json
 - The `.gitignore` in the parent repo already excludes it, and `.htaccess` denies HTTP access
 - The deploy workflow never uploads or overwrites it
 - Public Lounge is always open; private rooms use per-room password hashes
-- Messages auto-delete after the configured retention period
+- Public Lounge messages are automatically deleted after 6 hours
+- Private-room messages use the configured retention period
