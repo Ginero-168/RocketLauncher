@@ -144,7 +144,7 @@ jobs:
         run: |
           if (-not $env:ZXP_CERT_P12_B64) { throw 'Missing ZXP_CERT_P12_B64 secret' }
           $cleanBase64 = $env:ZXP_CERT_P12_B64.Trim() -replace '\s', ''
-          $cleanBase64 = $cleanBase64.Trim([char]34, [char]39)
+          $cleanBase64 = $cleanBase64.Trim([char[]]@([char]34, [char]39))
           Write-Host "Certificate Base64 length: $($cleanBase64.Length)"
           if (($cleanBase64.Length % 4) -ne 0) { throw 'ZXP_CERT_P12_B64 length is not divisible by 4' }
           try {
