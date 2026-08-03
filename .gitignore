@@ -38,6 +38,8 @@ chat-backend/chat-config.json
 chat-backend/tata-env.php
 RocketLauncher.p12
 .zxp-cert-*
+.zxp-cert.*
+ZXPSignCmd
 
 # Generated / runtime artifacts
 package-lock.json
