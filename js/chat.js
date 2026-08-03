@@ -494,10 +494,11 @@
         const color = isValidColor(value) ? value.toLowerCase() : '#6366f1';
         chatState.chatColor = color;
         localStorage.setItem('tata_chat_color', color);
-        const input = $('chat_color');
         const label = $('chat_color_value');
-        if (input) input.value = color;
         if (label) label.textContent = color;
+        document.querySelectorAll('#chat_color_presets .chat-color-preset').forEach(preset => {
+            preset.classList.toggle('active', preset.dataset.color.toLowerCase() === color);
+        });
         document.querySelectorAll('#chat_messages .chat-msg-me').forEach(message => {
             message.style.setProperty('--chat-accent', color);
             message.style.borderColor = color;
@@ -591,8 +592,7 @@
         const settingsPanel = $('chat_settings');
         const renameInput = $('chat_rename');
         const renameSave = $('chat_rename_save');
-        const colorInput = $('chat_color');
-        const colorReset = $('chat_color_reset');
+        const colorPresets = document.querySelectorAll('#chat_color_presets .chat-color-preset');
         const roomToggle = $('chat_room_toggle');
         const roomsPanel = $('chat_rooms_panel');
         const roomsClose = $('chat_rooms_close');
@@ -644,12 +644,9 @@
             };
         }
 
-        if (colorInput) {
-            colorInput.oninput = () => setChatColor(colorInput.value);
-        }
-        if (colorReset) {
-            colorReset.onclick = () => setChatColor('#6366f1');
-        }
+        colorPresets.forEach(preset => {
+            preset.onclick = () => setChatColor(preset.dataset.color);
+        });
 
         if (renameSave && renameInput) {
             const saveName = () => {

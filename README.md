@@ -54,16 +54,16 @@ it never overwrites its own files automatically.
 To publish a release:
 
 ```bash
-git tag v2.4.1
-git push origin v2.4.1
+git tag v2.4.2
+git push origin v2.4.2
 ```
 
 GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, and creates:
 
-- `RocketLauncher-v2.4.1-macos.zxp`
-- `RocketLauncher-v2.4.1-macos.sha256`
-- `RocketLauncher-v2.4.1-windows.zxp`
-- `RocketLauncher-v2.4.1-windows.sha256`
+- `RocketLauncher-v2.4.2-macos.zxp`
+- `RocketLauncher-v2.4.2-macos.sha256`
+- `RocketLauncher-v2.4.2-windows.zxp`
+- `RocketLauncher-v2.4.2-windows.sha256`
 
 The ZXP is signed with the team's self-signed certificate. The certificate file and password are
 kept in GitHub Secrets and are never included in the release.
