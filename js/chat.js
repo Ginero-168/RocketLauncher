@@ -270,6 +270,8 @@
         if (isMe) {
             wrapper.classList.add('chat-msg-me');
             wrapper.style.setProperty('--chat-accent', chatState.chatColor);
+            wrapper.style.borderColor = chatState.chatColor;
+            wrapper.style.backgroundColor = hexToRgba(chatState.chatColor, 0.15);
         }
 
         const header = document.createElement('div');
@@ -480,6 +482,14 @@
         return /^#[0-9a-f]{6}$/i.test(value || '');
     }
 
+    function hexToRgba(hex, alpha) {
+        const value = hex.replace('#', '');
+        const red = parseInt(value.slice(0, 2), 16);
+        const green = parseInt(value.slice(2, 4), 16);
+        const blue = parseInt(value.slice(4, 6), 16);
+        return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    }
+
     function setChatColor(value) {
         const color = isValidColor(value) ? value.toLowerCase() : '#6366f1';
         chatState.chatColor = color;
@@ -488,6 +498,11 @@
         const label = $('chat_color_value');
         if (input) input.value = color;
         if (label) label.textContent = color;
+        document.querySelectorAll('#chat_messages .chat-msg-me').forEach(message => {
+            message.style.setProperty('--chat-accent', color);
+            message.style.borderColor = color;
+            message.style.backgroundColor = hexToRgba(color, 0.15);
+        });
     }
 
     function getRecentRooms() {

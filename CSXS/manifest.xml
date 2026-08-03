@@ -2,14 +2,14 @@
 <ExtensionManifest
 	Version="11.0"
 	ExtensionBundleId="com.tata.pro"
-	ExtensionBundleVersion="2.4.0"
+	ExtensionBundleVersion="2.4.1"
 	ExtensionBundleName="Rocket Launcher"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<ExtensionList>
-		<Extension Id="com.tata.pro.panel" Version="2.4.0" />
-		<Extension Id="com.tata.pro.colors" Version="2.4.0" />
-		<Extension Id="com.tata.pro.keep" Version="2.4.0" />
+		<Extension Id="com.tata.pro.panel" Version="2.4.1" />
+		<Extension Id="com.tata.pro.colors" Version="2.4.1" />
+		<Extension Id="com.tata.pro.keep" Version="2.4.1" />
 	</ExtensionList>
 
 	<ExecutionEnvironment>
