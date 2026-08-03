@@ -249,6 +249,8 @@ $pdo->exec("
     VALUES ('public', 'Public Lounge', NULL, 'system')
     ON DUPLICATE KEY UPDATE name = VALUES(name)
 ");
+// Upgrade legacy chat_messages tables before assigning existing messages to a room.
+tata_ensure_chat_schema($pdo);
 $publicId = (int)$pdo->query("SELECT id FROM chat_rooms WHERE slug = 'public' LIMIT 1")->fetchColumn();
 $assignPublic = $pdo->prepare("UPDATE chat_messages SET room_id = :room_id WHERE room_id IS NULL");
 $assignPublic->execute([':room_id' => $publicId]);
