@@ -1342,6 +1342,24 @@
 
 			<hr class="modal-divider">
 
+			<!-- Manual Update Section -->
+			<div class="control-group">
+				<label>Extension Updates</label>
+				<div style="font-size: 11px; color: #888; margin: 4px 0 8px;">
+					Installed version: <strong id="current_version">v2.3.0</strong>
+				</div>
+				<button id="btn_check_update" class="secondary" style="width: 100%;">Check for Updates</button>
+				<div id="update_status" style="font-size: 11px; color: #888; margin-top: 6px;"></div>
+				<div id="update_available" style="display: none; margin-top: 8px; padding: 8px; background: #18233a; border: 1px solid #34527d; border-radius: 5px;">
+					<div style="font-size: 12px; color: #bcd5ff;">New version: <strong id="new_version"></strong></div>
+					<div id="update_notes" style="font-size: 11px; color: #aaa; margin: 5px 0 8px; white-space: pre-wrap;"></div>
+					<a id="download_link" class="primary" href="#" target="_blank" rel="noopener" style="display: block; text-align: center; padding: 6px; text-decoration: none;">Download ZIP</a>
+					<div id="update_checksum" style="font-size: 10px; color: #777; margin-top: 6px; word-break: break-all;"></div>
+				</div>
+			</div>
+
+			<hr class="modal-divider">
+
 			<!-- Reset Section -->
 			<div class="control-group">
 				<label>Factory Reset</label>

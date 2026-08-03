@@ -1,0 +1,78 @@
+name: Package Extension Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches manifest version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          manifest_version=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('CSXS/manifest.xml').read_text()
+          match = re.search(r'ExtensionBundleVersion="([^"]+)"', text)
+          if not match:
+              raise SystemExit('ExtensionBundleVersion not found')
+          print(match.group(1))
+          PY
+          )
+          if [ "$tag_version" != "$manifest_version" ]; then
+            echo "Tag $tag_version does not match manifest $manifest_version"
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install test dependencies
+        run: npm install --ignore-scripts
+
+      - name: Run tests
+        run: npm test -- --runInBand
+
+      - name: Build manual ZIP and checksum
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          rm -rf release-build
+          mkdir -p release-build/TATA
+          rsync -a ./ release-build/TATA/ \
+            --exclude '.git/' \
+            --exclude 'node_modules/' \
+            --exclude 'tests/' \
+            --exclude 'playwright-report/' \
+            --exclude 'test-results/' \
+            --exclude 'js/config.local.json' \
+            --exclude 'chat-backend/chat-config.json' \
+            --exclude 'chat-backend/config.php' \
+            --exclude 'chat-backend/tata-env.php' \
+            --exclude 'release-build/'
+          zip_name="rocket-launcher-${VERSION}.zip"
+          (cd release-build && zip -qr "../${zip_name}" TATA)
+          sha256sum "${zip_name}" > "${zip_name%.zip}.sha256"
+          echo "Built ${zip_name}"
+          cat "${zip_name%.zip}.sha256"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            rocket-launcher-${{ github.ref_name }}.zip
+            rocket-launcher-${{ github.ref_name }}.sha256

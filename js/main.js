@@ -643,52 +643,60 @@
 		// ==========================================
 		// VERSION CHECK SYSTEM
 		// ==========================================
-		const CURRENT_VERSION = '6.0.0';
-		const SUPABASE_URL = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_URL : '';
-		const SUPABASE_KEY = window.TATA_CONFIG ? window.TATA_CONFIG.SUPABASE_KEY : '';
+		const CURRENT_VERSION = '2.3.0';
+		const RELEASES_API_URL = 'https://api.github.com/repos/Ginero-168/RocketLauncher/releases/latest';
 
-		function checkForUpdates() {
+		async function checkForUpdates() {
 			const btnCheck = document.getElementById('btn_check_update');
+			const status = document.getElementById('update_status');
+			const available = document.getElementById('update_available');
 			if (btnCheck) {
 				btnCheck.textContent = 'Checking...';
 				btnCheck.disabled = true;
 			}
+			if (status) status.textContent = 'Checking GitHub Releases...';
 
-			fetch(`${SUPABASE_URL}/rest/v1/app_version?id=eq.1`, {
-				headers: {
-					'apikey': SUPABASE_KEY,
-					'Authorization': `Bearer ${SUPABASE_KEY}`
-				}
-			})
-				.then(res => { return res.json(); })
-				.then(data => {
-					if (data && data[0]) {
-						const latestVersion = data[0].version;
-						const downloadUrl = data[0].download_url;
-
-						// Compare versions
-						if (compareVersions(latestVersion, CURRENT_VERSION) > 0) {
-							// New version available
-							document.getElementById('new_version').textContent = `v${latestVersion}`;
-							document.getElementById('download_link').href = downloadUrl;
-							document.getElementById('update_available').style.display = 'block';
-							showToast(`🆕 Update available: v${latestVersion}`);
-						} else {
-							showToast('✅ You have the latest version!');
-							document.getElementById('update_available').style.display = 'none';
-						}
-					}
-				})
-				.catch(err => {
-					showToast('❌ Failed to check updates');
-					console.error(err);
-				})
-				.finally(() => {
-					if (btnCheck) {
-						btnCheck.textContent = 'Check Update';
-						btnCheck.disabled = false;
-					}
+			try {
+				const res = await fetch(RELEASES_API_URL, {
+					headers: { Accept: 'application/vnd.github+json' },
+					cache: 'no-store',
 				});
+				if (!res.ok) throw new Error(`GitHub returned HTTP ${res.status}`);
+				const release = await res.json();
+				const latestVersion = String(release.tag_name || '').replace(/^v/i, '');
+				const asset = (release.assets || []).find(item =>
+					item.name === `rocket-launcher-v${latestVersion}.zip`
+				);
+				const checksum = (release.assets || []).find(item =>
+					item.name === `rocket-launcher-v${latestVersion}.sha256`
+				);
+				if (!latestVersion || !asset) throw new Error('Release ZIP is missing');
+
+				if (compareVersions(latestVersion, CURRENT_VERSION) > 0) {
+					document.getElementById('new_version').textContent = `v${latestVersion}`;
+					document.getElementById('download_link').href = asset.browser_download_url;
+					document.getElementById('update_notes').textContent = release.body || 'Release notes are not available.';
+					document.getElementById('update_checksum').textContent = checksum
+						? `Checksum: download ${checksum.name} and verify SHA-256 before installing.`
+						: 'Checksum file is not available for this release.';
+					available.style.display = 'block';
+					if (status) status.textContent = `Update available: v${latestVersion}`;
+					showToast(`Update available: v${latestVersion}`);
+				} else {
+					available.style.display = 'none';
+					if (status) status.textContent = `You have the latest version (v${CURRENT_VERSION}).`;
+					showToast('You have the latest version!');
+				}
+			} catch (err) {
+				if (status) status.textContent = `Update check failed: ${err.message}`;
+				console.error('[Updates]', err);
+				showToast('Could not check for updates', 'error');
+			} finally {
+				if (btnCheck) {
+					btnCheck.textContent = 'Check for Updates';
+					btnCheck.disabled = false;
+				}
+			}
 		}
 
 		function compareVersions(v1, v2) {
@@ -711,19 +719,8 @@
 			btnCheckUpdate.addEventListener('click', checkForUpdates);
 		}
 
-		// Auto-check on startup (after 3 seconds)
-		setTimeout(() => {
-			fetch(`${SUPABASE_URL}/rest/v1/app_version?id=eq.1`, {
-				headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-			})
-				.then(res => { return res.json(); })
-				.then(data => {
-					if (data && data[0] && compareVersions(data[0].version, CURRENT_VERSION) > 0) {
-						showToast('🆕 Update available! Check Settings.');
-					}
-				})
-				.catch(() => { });
-		}, 3000);
+		// Auto-check once after startup; installation remains manual.
+		setTimeout(() => { checkForUpdates(); }, 3000);
 
 		// ==================
 		// 2. Add Script Logic

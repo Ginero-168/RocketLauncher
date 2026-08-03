@@ -45,6 +45,35 @@ message retention window automatically to stay near a target fill level. See
 
 See `chat-backend/README.md` for manual upload instructions.
 
+## Manual Updates
+
+Releases are distributed as ZIP files through GitHub Releases. The extension checks the latest
+release and shows a **Download ZIP** link in **Settings → Extension Updates**; it never overwrites
+its own files automatically.
+
+To publish a release:
+
+```bash
+git tag v2.3.0
+git push origin v2.3.0
+```
+
+GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, creates:
+
+- `rocket-launcher-v2.3.0.zip`
+- `rocket-launcher-v2.3.0.sha256`
+
+To install manually:
+
+1. Check the SHA-256 checksum before installing.
+2. Close Illustrator completely.
+3. Back up the current `TATA` extension folder.
+4. Extract the ZIP so the `TATA` folder replaces the existing extension folder.
+5. Restart Illustrator and confirm the version in Settings.
+
+The ZIP intentionally excludes local credentials such as `js/config.local.json` and server runtime
+configuration. Keep those files backed up separately when updating an existing installation.
+
 ## Local Development
 
 ```bash
