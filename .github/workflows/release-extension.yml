@@ -129,7 +129,12 @@ jobs:
           ZXP_CERT_P12_B64: ${{ secrets.ZXP_CERT_P12_B64 }}
         run: |
           if (-not $env:ZXP_CERT_P12_B64) { throw 'Missing ZXP_CERT_P12_B64 secret' }
-          [IO.File]::WriteAllBytes('signing-certificate.p12', [Convert]::FromBase64String($env:ZXP_CERT_P12_B64))
+          $cleanBase64 = $env:ZXP_CERT_P12_B64 -replace '\s', ''
+          try {
+            [IO.File]::WriteAllBytes('signing-certificate.p12', [Convert]::FromBase64String($cleanBase64))
+          } catch {
+            throw 'ZXP_CERT_P12_B64 is not valid Base64. Re-copy the single-line contents of .zxp-cert-p12.b64.'
+          }
 
       - name: Build and sign Windows ZXP
         shell: pwsh
