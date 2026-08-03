@@ -47,7 +47,7 @@ jobs:
                       ftp.cwd(part)
 
           # Runtime-only files are created/managed on the server and must never be overwritten.
-          excluded_runtime_files = {'setup.php', 'ping.php', 'install-config.php', 'tata-env.php', 'chat-config.json', 'config.php'}
+          excluded_runtime_files = {'ping.php', 'install-config.php', 'tata-env.php', 'chat-config.json', 'config.php'}
 
           def upload_dir(ftp, local, remote_prefix):
               for root, dirs, files in os.walk(local):
