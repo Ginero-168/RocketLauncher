@@ -60,7 +60,7 @@
                 slot.classList.add('filled');
                 if (data.color) {
                     slot.style.background = data.color;
-                    slot.style.borderColor = data.color;
+                    slot.style.borderColor = '#171717';
                     slot.style.boxShadow = 'none';
                     slot.style.color = getHotkeyTextColor(data.color);
                 } else {
@@ -77,16 +77,16 @@
                     iconEl.innerHTML = data.icon;
                     const svg = iconEl.querySelector('svg');
                     if (svg) {
-                        svg.setAttribute('width', '14');
-                        svg.setAttribute('height', '14');
-                        svg.style.width = '14px';
-                        svg.style.height = '14px';
-                        svg.style.minWidth = '14px';
+                        svg.setAttribute('width', '20');
+                        svg.setAttribute('height', '20');
+                        svg.style.width = '20px';
+                        svg.style.height = '20px';
+                        svg.style.minWidth = '20px';
                         svg.style.display = 'block';
                     }
                 } else {
                     iconEl.textContent = data.label.substring(0, 2);
-                    iconEl.style.fontSize = '11px';
+                    iconEl.style.fontSize = '12px';
                     iconEl.style.fontWeight = '700';
                     iconEl.style.lineHeight = '1';
                 }

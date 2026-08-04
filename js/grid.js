@@ -173,13 +173,13 @@
     // ==========================================
     function getButtonTextColor(color) {
         const match = String(color || '').replace('#', '').match(/^[0-9a-f]{6}$/i);
-        if (!match) return '#f2f0ea';
+        if (!match) return '#f5f2e9';
 
         const hex = match[0];
         const r = parseInt(hex.slice(0, 2), 16);
         const g = parseInt(hex.slice(2, 4), 16);
         const b = parseInt(hex.slice(4, 6), 16);
-        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#111315' : '#f2f0ea';
+        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#171717' : '#f5f2e9';
     }
 
     function createGridButton(item, tabName, index) {
@@ -196,7 +196,7 @@
         // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
         if (item.color) {
             btn.classList.add('has-custom-color');
-            btn.style.borderColor = item.color;
+            btn.style.borderColor = '#171717';
             btn.style.backgroundColor = item.color;
             btn.style.color = getButtonTextColor(item.color);
             btn.style.setProperty('--btn-color', item.color);

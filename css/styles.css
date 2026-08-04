@@ -727,7 +727,7 @@ body.dragging-mode .tab-btn {
     gap: 4px;
     background: var(--bg-color);
     border-bottom: 1px solid var(--white-4);
-    min-height: 40px;
+    min-height: 46px;
     /* Base height */
     height: auto;
     transition: height 0.2s;
@@ -745,7 +745,7 @@ body.dragging-mode .tab-btn {
     box-sizing: border-box;
     /* Include padding/border in width */
 
-    height: 32px;
+    height: 38px;
     background: var(--input-bg);
     border: 1px dashed var(--border-color);
     border-radius: 4px;
@@ -791,15 +791,15 @@ body.dragging-mode .tab-btn {
 }
 
 .hotkey-label {
-    font-size: 7px;
-    font-weight: 500;
+    font-size: 9px;
+    font-weight: 700;
     line-height: 1;
-    opacity: 0.7;
+    opacity: 1;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
     pointer-events: none;
 }
 
@@ -814,9 +814,9 @@ body.dragging-mode .tab-btn {
     text-align: center;
     font-size: 12px;
     font-weight: bold;
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom-left-radius: 4px;
+    color: #171717;
+    background: rgba(23, 23, 23, 0.12);
+    border-bottom-left-radius: 0;
     cursor: pointer;
     display: none;
     transition: background 0.2s;
@@ -827,8 +827,8 @@ body.dragging-mode .tab-btn {
 }
 
 .hotkey-remove:hover {
-    background: rgba(255, 0, 0, 0.8);
-    color: white;
+    background: #e61919;
+    color: #f5f2e9;
 }
 
 /* Hotkey Colors */
@@ -2643,7 +2643,7 @@ select {
 
 .hotkey-slot.filled .hotkey-label {
     color: currentColor;
-    opacity: 0.85;
+    opacity: 1;
     font-weight: 700;
     letter-spacing: 0.04em;
 }
