@@ -2670,3 +2670,44 @@ select {
 .modal-divider {
     border-top-color: rgba(23, 23, 23, 0.28);
 }
+
+/* Brutalist overrides for base form elements */
+button {
+    background: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+button:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+    border-color: #171717;
+    box-shadow: none;
+    transform: none;
+}
+
+button:active {
+    background: #ded9cc;
+    transform: none;
+    box-shadow: none;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    background: var(--surface-color);
+    border-color: var(--accent-color);
+    box-shadow: none;
+}
