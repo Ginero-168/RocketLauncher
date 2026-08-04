@@ -7,9 +7,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<ExtensionList>
-		<Extension Id="com.tata.pro.panel" Version="3.0.0" />
-		<Extension Id="com.tata.pro.colors" Version="3.0.0" />
-		<Extension Id="com.tata.pro.keep" Version="3.0.0" />
+		<Extension Id="com.tata.pro.panel" Version="3.0.1" />
+		<Extension Id="com.tata.pro.colors" Version="3.0.1" />
+		<Extension Id="com.tata.pro.keep" Version="3.0.1" />
 	</ExtensionList>
 
 	<ExecutionEnvironment>

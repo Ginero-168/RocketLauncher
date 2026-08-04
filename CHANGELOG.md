@@ -12,6 +12,16 @@ All notable changes to the Rocket Launcher extension will be documented in this 
   - Color presets unified to the standard bright palette across script modal, color tools, context menu, chat, and custom color slots.
 - **Version Bump**: `package.json`, `CSXS/manifest.xml`, `js/main.js`, `README.md`, and `AGENTS.md` aligned to v3.0.0.
 
+## [3.0.1] - 2026-08-04
+
+### Added
+- **Button Color Presets**: Added purple (`#9d95ff`) and sakura pink (`#ff9ecd`) to all color pickers.
+- **Missing Assets**: Added untracked `Logo2.png` and `Rocket_GIF.gif` so they are included in the signed ZXP.
+
+### Changed
+- Color swatch rows now wrap when they exceed available width.
+- `CSXS/manifest.xml`, `package.json`, `js/main.js`, `README.md`, `AGENTS.md`, and release workflow default aligned to v3.0.1.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
