@@ -60,13 +60,10 @@
                 slot.classList.add('filled');
                 if (data.color) {
                     slot.style.background = data.color;
-                    slot.style.borderColor = '#171717';
-                    slot.style.boxShadow = 'none';
                     slot.style.color = getHotkeyTextColor(data.color);
                 } else {
                     slot.style.background = '';
-                    slot.style.borderColor = '';
-                    slot.style.boxShadow = '';
+                    slot.style.color = '';
                 }
 
                 // Icon element

@@ -723,11 +723,11 @@ body.dragging-mode .tab-btn {
 
 /* Hotkey Bar */
 #hotkey-bar {
-    padding: 4px;
-    gap: 4px;
+    padding: 0;
+    gap: 0;
     background: var(--bg-color);
-    border-bottom: 1px solid var(--white-4);
-    min-height: 46px;
+    border-bottom: 2px solid #171717;
+    min-height: 38px;
     /* Base height */
     height: auto;
     transition: height 0.2s;
@@ -746,14 +746,15 @@ body.dragging-mode .tab-btn {
     /* Include padding/border in width */
 
     height: 38px;
-    background: var(--input-bg);
-    border: 1px dashed var(--border-color);
-    border-radius: 4px;
+    background: #ded9cc;
+    outline: 2px dashed rgba(23, 23, 23, 0.28);
+    border: none;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 10px;
-    color: var(--text-secondary);
+    color: #171717;
     cursor: pointer;
     transition: all 0.2s;
     overflow: hidden;
@@ -765,18 +766,18 @@ body.dragging-mode .tab-btn {
 }
 
 .hotkey-slot:hover {
-    border-color: var(--text-color);
+    outline-color: #171717;
 }
 
 .hotkey-slot.drag-over {
-    border-color: var(--accent-color);
+    outline-color: var(--accent-color);
     background: var(--surface-color);
 }
 
 .hotkey-slot.filled {
-    border-style: solid;
-    color: white;
-    font-weight: 500;
+    outline: 2px solid #171717;
+    color: #171717;
+    font-weight: 700;
     flex-direction: column;
     gap: 1px;
     padding: 2px 4px;
@@ -834,12 +835,12 @@ body.dragging-mode .tab-btn {
 /* Hotkey Colors */
 .hotkey-slot.swift {
     background: var(--swift-color);
-    border-color: var(--swift-color);
+    outline-color: var(--swift-color);
 }
 
 .hotkey-slot.creative {
     background: var(--creative-color);
-    border-color: var(--creative-color);
+    outline-color: var(--creative-color);
     color: #1e1e1e;
     /* Dark text for yellow */
 }
@@ -851,7 +852,7 @@ body.dragging-mode .tab-btn {
 
 .hotkey-slot.other {
     background: var(--other-color);
-    border-color: var(--other-color);
+    outline-color: var(--other-color);
 }
 
 .hotkey-slot svg {
@@ -864,7 +865,7 @@ body.dragging-mode .tab-btn {
 
 .hotkey-slot.dimension {
     background: var(--accent-color);
-    border-color: var(--accent-color);
+    outline-color: var(--accent-color);
 }
 
 /* Tab Actions Bar (New/Import/Export) — Floating bottom center */
@@ -2634,8 +2635,8 @@ select {
 
 .hotkey-slot,
 .hotkey-slot.filled {
+    border: none;
     border-radius: 0;
-    border-width: 2px;
     box-shadow: none !important;
 }
 
