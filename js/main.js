@@ -789,7 +789,7 @@
 			btnOpenAI.addEventListener('click', () => {
 				const apiKey = localStorage.getItem('tata_gemini_api_key');
 				if (!apiKey) {
-					alert("Please set your Gemini API Key in Settings (⚙️) first.");
+					alert("Please set your Gemini API Key in Settings first.");
 					return;
 				}
 				inpPrompt.value = "";
