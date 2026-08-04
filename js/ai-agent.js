@@ -44,17 +44,17 @@
         msg.className = `agent-msg ${role}`;
 
         if (role === 'user') {
-            msg.style.cssText = 'align-self:flex-end;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:8px 12px;border-radius:12px 12px 4px 12px;font-size:11px;max-width:80%;line-height:1.4;';
+            msg.style.cssText = 'align-self:flex-end;background:#b8f55f;color:#171717;padding:8px 12px;border-radius:12px 12px 4px 12px;font-size:11px;max-width:80%;line-height:1.4;';
         } else if (role === 'assistant') {
-            msg.style.cssText = 'align-self:flex-start;background:#1e1e3a;border:1px solid #2a2a4a;color:#d1d5db;padding:8px 12px;border-radius:12px 12px 12px 4px;font-size:11px;max-width:85%;line-height:1.5;white-space:pre-wrap;word-break:break-word;';
+            msg.style.cssText = 'align-self:flex-start;background:#f5f2e9;border:1px solid #171717;color:#171717;padding:8px 12px;border-radius:12px 12px 12px 4px;font-size:11px;max-width:85%;line-height:1.5;white-space:pre-wrap;word-break:break-word;';
         } else if (role === 'system') {
-            msg.style.cssText = 'padding:6px 10px;background:#0a0a1a;border-radius:6px;font-size:10px;color:#666;text-align:center;';
+            msg.style.cssText = 'padding:6px 10px;background:#ded9cc;border-radius:6px;font-size:10px;color:#171717;text-align:center;';
         }
 
         // Handle special content types
         if (type === 'code') {
             const codeBlock = document.createElement('pre');
-            codeBlock.style.cssText = 'background:#0d0d1a;border:1px solid #2a2a4a;border-radius:6px;padding:8px;margin:6px 0;font-family:monospace;font-size:10px;overflow-x:auto;color:#a5b4fc;';
+            codeBlock.style.cssText = 'background:#1e1e1e;border:1px solid #3f4546;border-radius:6px;padding:8px;margin:6px 0;font-family:monospace;font-size:10px;overflow-x:auto;color:#f5f2e9';
             codeBlock.textContent = content;
 
             const wrapper = document.createElement('div');
@@ -64,8 +64,8 @@
             actionRow.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;';
 
             const useBtn = document.createElement('button');
-            useBtn.textContent = '📋 Use Code';
-            useBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#6366f130;border:1px solid #6366f150;border-radius:4px;color:#a5b4fc;cursor:pointer;';
+            useBtn.textContent = 'Use Code';
+            useBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#171717;border:1px solid #171717;border-radius:4px;color:#f5f2e9;cursor:pointer;';
             useBtn.onclick = () => {
                 const codeEl = document.getElementById('script_code');
                 if (codeEl) {
@@ -78,14 +78,14 @@
             actionRow.appendChild(useBtn);
 
             const saveBtn = document.createElement('button');
-            saveBtn.textContent = '💾 Save as Button';
-            saveBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#10b98130;border:1px solid #10b98150;border-radius:4px;color:#6ee7b7;cursor:pointer;';
+            saveBtn.textContent = 'Save as Button';
+            saveBtn.style.cssText = 'padding:2px 8px;font-size:9px;background:#b8f55f;border:1px solid #171717;border-radius:4px;color:#171717;cursor:pointer;';
             saveBtn.onclick = () => {
                 if (typeof TATA.saveUserScript === 'function') {
                     const scriptName = `AI Script ${Math.floor(Math.random() * 1000)}`;
-                    TATA.saveUserScript(scriptName, '🤖', content, 'purple', false, null, false);
-                    TATA.showToast && TATA.showToast(`✅ Saved as button: ${scriptName}`, 'success');
-                    saveBtn.textContent = '✅ Saved!';
+                    TATA.saveUserScript(scriptName, 'AI', content, '#b8f55f', false, null, false);
+                    TATA.showToast && TATA.showToast(`Saved as button: ${scriptName}`, 'success');
+                    saveBtn.textContent = 'Saved!';
                     saveBtn.disabled = true;
                 } else {
                     TATA.showToast && TATA.showToast('saveUserScript not available', 'error');
@@ -96,7 +96,7 @@
             wrapper.appendChild(actionRow);
             msg.appendChild(wrapper);
         } else if (type === 'plan') {
-            msg.innerHTML = `<div style="margin-bottom:4px;">📝 <b>Plan:</b></div><div style="font-size:10px;white-space:pre-wrap;color:#c4b5fd;line-height:1.5;">${escapeHtml(content)}</div>`;
+            msg.innerHTML = `<div style="margin-bottom:4px;"><b>Plan:</b></div><div style="font-size:10px;white-space:pre-wrap;color:#171717;line-height:1.5;">${escapeHtml(content)}</div>`;
         } else {
             msg.textContent = content;
         }
@@ -114,7 +114,7 @@
         const container = document.getElementById('chat_history');
         if (container) {
             container.innerHTML = '';
-            addMessage('system', '💬 Chat cleared. Ready for new conversation.');
+            addMessage('system', 'Chat cleared. Ready for new conversation.');
         }
         chatHistory = [];
     }
@@ -196,7 +196,7 @@
             parseAndDisplayResponse(responseText);
 
         } catch (e) {
-            addMessage('system', `❌ Error: ${e.message}`);
+            addMessage('system', `Error: ${e.message}`);
         } finally {
             isProcessing = false;
             setTyping(false);

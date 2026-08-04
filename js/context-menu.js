@@ -13,7 +13,7 @@
     let currentContextScriptId = null;
 
     // Quick Color Palette
-    const COLORS = ['', '#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4', '#ec4899'];
+    const COLORS = ['', '#b8f55f', '#ff8709', '#e61919', '#00bae2', '#171717', '#f5f2e9', '#ded9cc', '#687174'];
 
     // ==========================================
     // Start Context Menu
@@ -30,11 +30,11 @@
             COLORS.forEach(c => {
                 const sw = document.createElement('div');
                 if (c === '') {
-                    sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: transparent; cursor: pointer; border: 1px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.1s;';
-                    sw.innerHTML = '<span style="color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1;">×</span>';
+                    sw.style.cssText = 'width: 20px; height: 20px; border-radius: 50%; background: transparent; cursor: pointer; border: 1px dashed rgba(23,23,23,0.28); display: flex; align-items: center; justify-content: center; transition: transform 0.1s;';
+                    sw.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;"><path d="M6 6l12 12M18 6 6 18"/></svg>';
                     sw.title = "No Color";
                 } else {
-                    sw.style.cssText = `width: 20px; height: 20px; border-radius: 50%; background: ${c}; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s;`;
+                    sw.style.cssText = `width: 20px; height: 20px; border-radius: 50%; background: ${c}; cursor: pointer; border: 1px solid rgba(23,23,23,0.28); transition: transform 0.1s;`;
                 }
 
                 sw.onmouseover = function () { this.style.transform = 'scale(1.2)'; };
@@ -100,7 +100,7 @@
                 const newName = `${namePrefix} (Copy)`;
                 const newId = `copy_${Date.now()}`;
                 const newIcon = originalScript.icon || "★";
-                const newColor = originalScript.color || "#60a5fa";
+                const newColor = originalScript.color || "#b8f55f";
                 let newCode = isDefault ? (originalScript.code || "") : (originalScript.code || "");
 
                 // If it's a default script with a .jsx file, read the actual file content

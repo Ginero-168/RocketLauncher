@@ -18,7 +18,7 @@
         pollTimer: null,
         active: false,
         sending: false,
-        chatColor: localStorage.getItem('tata_chat_color') || '#6366f1',
+        chatColor: localStorage.getItem('tata_chat_color') || '#b8f55f',
         room: { slug: 'public', name: 'Public Lounge', is_private: false },
         roomPassword: '',
     };
@@ -100,6 +100,10 @@
         if (badge) {
             badge.textContent = chatState.room.is_private ? 'PRIVATE' : 'PUBLIC';
             badge.classList.toggle('private', !!chatState.room.is_private);
+            badge.style.cssText = 'padding:1px 4px;border-radius:3px;font:700 8px/1.4 "SF Mono",Monaco,monospace;letter-spacing:.05em;' +
+                (chatState.room.is_private
+                    ? 'background:#ff8709;color:#171717;'
+                    : 'background:#b8f55f;color:#171717;');
         }
     }
 
@@ -270,8 +274,13 @@
         if (isMe) {
             wrapper.classList.add('chat-msg-me');
             wrapper.style.setProperty('--chat-accent', chatState.chatColor);
-            wrapper.style.borderColor = chatState.chatColor;
-            wrapper.style.backgroundColor = hexToRgba(chatState.chatColor, 0.15);
+            wrapper.style.border = '1px solid #171717';
+            wrapper.style.backgroundColor = chatState.chatColor;
+            wrapper.style.color = '#171717';
+        } else {
+            wrapper.style.backgroundColor = '#f5f2e9';
+            wrapper.style.border = '1px solid #171717';
+            wrapper.style.color = '#171717';
         }
 
         const header = document.createElement('div');
@@ -287,6 +296,11 @@
         copyBtn.className = 'chat-msg-copy';
         copyBtn.textContent = 'Copy';
         copyBtn.title = 'Copy this message';
+        copyBtn.style.color = '#3f4546';
+
+        user.style.color = '#171717';
+        time.style.color = '#687174';
+
         copyBtn.onclick = async () => {
             copyBtn.disabled = true;
             try {
@@ -308,10 +322,13 @@
             // Render button config card
             const card = document.createElement('div');
             card.className = 'chat-btn-card';
+            card.style.backgroundColor = '#171717';
+            card.style.border = '1px solid #3f4546';
 
             const label = document.createElement('div');
             label.className = 'chat-btn-card-label';
             label.textContent = msg.content || 'Shared Button';
+            label.style.color = '#f5f2e9';
             card.appendChild(label);
 
             const meta = document.createElement('div');
@@ -319,11 +336,13 @@
             const bd = msg.button_data;
             const iconLabel = bd.icon || '★';
             meta.textContent = `${iconLabel} · ${bd.color || 'default'}`;
+            meta.style.color = '#687174';
             card.appendChild(meta);
 
             const importBtn = document.createElement('button');
             importBtn.className = 'chat-btn-import';
             importBtn.textContent = 'Import to Panel';
+            importBtn.style.cssText = 'background:#b8f55f;color:#171717;border:1px solid #171717;border-radius:4px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:500;';
             importBtn.onclick = () => importButtonConfig(msg.button_data);
             card.appendChild(importBtn);
 
@@ -336,6 +355,7 @@
                 codePreview.appendChild(summary);
                 const pre = document.createElement('pre');
                 pre.textContent = bd.code;
+                pre.style.cssText = 'background:#1e1e1e;color:#f5f2e9;border:1px solid #3f4546;border-radius:4px;padding:8px;margin-top:4px;font-size:11px;overflow:auto;white-space:pre-wrap;word-break:break-all;';
                 codePreview.appendChild(pre);
                 card.appendChild(codePreview);
             }
@@ -345,6 +365,7 @@
             // Regular text message
             const body = document.createElement('div');
             body.className = 'chat-msg-body';
+            body.style.color = '#171717';
 
             // Detect code blocks (triple backticks)
             const text = msg.content;
@@ -361,6 +382,7 @@
                         const pre = document.createElement('pre');
                         pre.className = 'chat-code-block';
                         pre.textContent = parts[i].trim();
+                        pre.style.cssText = 'background:#1e1e1e;color:#f5f2e9;border:1px solid #3f4546;border-radius:4px;padding:8px;margin:4px 0;font-family:"SF Mono",Monaco,monospace;font-size:11px;overflow-x:auto;max-height:200px;overflow-y:auto;';
                         body.appendChild(pre);
                     }
                 }
@@ -491,7 +513,7 @@
     }
 
     function setChatColor(value) {
-        const color = isValidColor(value) ? value.toLowerCase() : '#6366f1';
+        const color = isValidColor(value) ? value.toLowerCase() : '#b8f55f';
         chatState.chatColor = color;
         localStorage.setItem('tata_chat_color', color);
         const label = $('chat_color_value');
@@ -501,8 +523,9 @@
         });
         document.querySelectorAll('#chat_messages .chat-msg-me').forEach(message => {
             message.style.setProperty('--chat-accent', color);
-            message.style.borderColor = color;
-            message.style.backgroundColor = hexToRgba(color, 0.15);
+            message.style.borderColor = '#171717';
+            message.style.backgroundColor = color;
+            message.style.color = '#171717';
         });
     }
 
@@ -734,6 +757,75 @@
                 }
             });
         }
+
+        applyChatChrome();
+    }
+
+    function applyChatChrome() {
+        const bar = $('chat_bar');
+        if (bar) {
+            bar.style.backgroundColor = '#f5f2e9';
+            bar.style.borderBottom = '1px solid rgba(23,23,23,0.28)';
+        }
+
+        const whoami = $('chat_whoami');
+        if (whoami) whoami.style.color = '#171717';
+
+        const roomToggle = $('chat_room_toggle');
+        if (roomToggle) {
+            roomToggle.style.backgroundColor = '#e9e6dc';
+            roomToggle.style.border = '1px solid rgba(23,23,23,0.28)';
+            roomToggle.style.color = '#171717';
+        }
+
+        const roomName = $('chat_room_name');
+        if (roomName) roomName.style.color = '#171717';
+
+        const settingsBtn = $('chat_settings_btn');
+        if (settingsBtn) {
+            settingsBtn.style.backgroundColor = '#e9e6dc';
+            settingsBtn.style.border = '1px solid rgba(23,23,23,0.28)';
+            settingsBtn.style.color = '#3f4546';
+        }
+
+        const roomsPanel = $('chat_rooms_panel');
+        if (roomsPanel) {
+            roomsPanel.style.backgroundColor = '#f5f2e9';
+            roomsPanel.style.borderBottom = '1px solid rgba(23,23,23,0.28)';
+        }
+
+        const roomsClose = $('chat_rooms_close');
+        if (roomsClose) {
+            roomsClose.style.backgroundColor = '#e9e6dc';
+            roomsClose.style.border = '1px solid rgba(23,23,23,0.28)';
+            roomsClose.style.color = '#3f4546';
+        }
+
+        const settingsPanel = $('chat_settings');
+        if (settingsPanel) {
+            settingsPanel.style.backgroundColor = '#f5f2e9';
+            settingsPanel.style.borderBottom = '1px solid rgba(23,23,23,0.28)';
+        }
+
+        const renameInput = $('chat_rename');
+        if (renameInput) {
+            renameInput.style.backgroundColor = '#f5f2e9';
+            renameInput.style.border = '1px solid #171717';
+            renameInput.style.color = '#171717';
+        }
+
+        const colorValue = $('chat_color_value');
+        if (colorValue) colorValue.style.color = '#687174';
+
+        // Override hardcoded color presets to the new standard palette
+        const colorPresets = document.querySelectorAll('#chat_color_presets .chat-color-preset');
+        const standardPalette = ['#b8f55f', '#ff8709', '#e61919', '#00bae2', '#171717', '#687174'];
+        colorPresets.forEach((preset, index) => {
+            const c = standardPalette[index] || '#687174';
+            preset.dataset.color = c;
+            preset.style.backgroundColor = c;
+            preset.title = c;
+        });
     }
 
     function activateChat() {

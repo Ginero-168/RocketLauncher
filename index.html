@@ -49,61 +49,32 @@
 			display: none !important;
 		}
 
-		/* Uniform Button Style — Reference Glass Card (Miniature Horizontal) */
+		/* Grid button layout — colors handled by css/styles.css */
 		.grid-btn {
-			background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
-			border: 1px solid rgba(255, 255, 255, 0.05);
-			border-radius: 8px;
-			/* compact */
-			color: rgba(255, 255, 255, 0.7);
 			display: flex;
 			flex-direction: row;
-			/* Horizontal like reference */
 			align-items: center;
 			justify-content: flex-start;
 			cursor: pointer;
 			font-size: 9.5px;
-			font-weight: 500;
+			font-weight: 600;
 			text-align: left;
 			padding: 4px 6px;
 			gap: 6px;
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			width: 100%;
 			height: 100%;
-			box-sizing: border-box;
 			position: relative;
 			overflow: hidden;
-		}
-
-		.grid-btn:hover {
-			background: rgba(255, 255, 255, 0.06);
-			border-color: rgba(99, 102, 241, 0.4);
-			color: #fff;
-			transform: translateY(-1px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-		}
-
-		.grid-btn:active {
-			transform: translateY(0);
 		}
 
 		.grid-btn svg {
 			width: 13px;
 			height: 13px;
-			fill: #a78bfa;
-			background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-			border-radius: 4px;
+			border-radius: 0;
 			padding: 4px;
 			margin-bottom: 0;
 			box-sizing: content-box;
 			flex-shrink: 0;
-			transition: all 0.3s ease;
-		}
-
-		.grid-btn:hover svg {
-			fill: #fff;
-			background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-			box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 		}
 
 		.grid-btn span {
@@ -134,20 +105,18 @@
 			width: 7px;
 			height: 7px;
 			border-radius: 50%;
-			background: var(--editor-color);
-			box-shadow: 0 0 6px var(--editor-color);
+			background: var(--editor-color, #00bae2);
 			flex-shrink: 0;
 		}
 
 		#tab_editor .editor-status-dot.editing {
-			background: #f97316;
-			box-shadow: 0 0 6px #f97316;
+			background: #ff8709;
 		}
 
 		#tab_editor .editor-status-text {
 			font-size: 11px;
-			color: var(--text-secondary);
-			font-weight: 500;
+			color: #171717;
+			font-weight: 600;
 		}
 
 		#tab_editor .editor-header-actions {
@@ -161,15 +130,22 @@
 			align-items: center;
 			gap: 4px;
 			padding: 5px 10px;
-			border: none;
-			border-radius: 6px;
+			border: 2px solid #171717;
+			border-radius: 0;
 			font-size: 10px;
-			font-weight: 600;
+			font-weight: 700;
 			cursor: pointer;
-			transition: all 0.2s ease;
-			color: #fff;
-			letter-spacing: 0.2px;
+			transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+			color: #171717;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
 			white-space: nowrap;
+			background: #f5f2e9;
+		}
+
+		#tab_editor .editor-action-btn:hover {
+			background: #171717;
+			color: #f5f2e9;
 		}
 
 		#tab_editor .editor-action-btn svg {
@@ -177,37 +153,37 @@
 		}
 
 		#tab_editor .editor-btn-run {
-			background: rgba(16, 185, 129, 0.15);
-			color: #34d399;
-			border: 1px solid rgba(16, 185, 129, 0.25);
+			background: #0ae448;
+			color: #171717;
+			border: 2px solid #171717;
 		}
 
 		#tab_editor .editor-btn-run:hover {
-			background: rgba(16, 185, 129, 0.3);
-			box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+			background: #171717;
+			color: #f5f2e9;
 		}
 
 		#tab_editor .editor-btn-save {
-			background: rgba(99, 102, 241, 0.15);
-			color: #818cf8;
-			border: 1px solid rgba(99, 102, 241, 0.25);
+			background: #b8f55f;
+			color: #171717;
+			border: 2px solid #171717;
 		}
 
 		#tab_editor .editor-btn-save:hover {
-			background: rgba(99, 102, 241, 0.3);
-			box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+			background: #171717;
+			color: #f5f2e9;
 		}
 
 		#tab_editor .editor-btn-upload {
-			background: rgba(139, 92, 246, 0.15);
-			color: #a78bfa;
-			border: 1px solid rgba(139, 92, 246, 0.25);
+			background: #f5f2e9;
+			color: #171717;
+			border: 2px solid #171717;
 			padding: 5px 7px;
 		}
 
 		#tab_editor .editor-btn-upload:hover {
-			background: rgba(139, 92, 246, 0.3);
-			box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+			background: #171717;
+			color: #f5f2e9;
 		}
 
 		/* Meta row — script name + icon/color pickers */
@@ -220,24 +196,24 @@
 
 		#tab_editor .editor-name-input {
 			flex: 1;
-			background: var(--input-bg);
-			border: 1px solid var(--border-color);
-			color: var(--text-color);
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			color: #171717;
 			padding: 7px 12px;
 			font-size: 12px;
-			font-weight: 500;
-			border-radius: 8px;
+			font-weight: 600;
+			border-radius: 4px;
 			outline: none;
-			transition: border-color 0.2s, box-shadow 0.2s;
+			transition: border-color 150ms ease, background 150ms ease;
 		}
 
 		#tab_editor .editor-name-input:focus {
-			border-color: var(--accent-color);
-			box-shadow: 0 0 0 2px var(--accent-glow);
+			background: #fff;
+			border-color: #00bae2;
 		}
 
 		#tab_editor .editor-name-input::placeholder {
-			color: rgba(255, 255, 255, 0.2);
+			color: #687174;
 		}
 
 		#tab_editor .editor-meta-pickers {
@@ -254,18 +230,19 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			background: var(--surface-color);
-			border: 1px solid var(--border-color);
-			border-radius: 8px;
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			border-radius: 4px;
 			cursor: pointer;
-			color: var(--text-color);
+			color: #171717;
 			font-size: 14px;
-			transition: all 0.2s;
+			transition: background 150ms ease, border-color 150ms ease;
 		}
 
 		#tab_editor .editor-picker-btn:hover {
-			background: var(--surface-hover);
-			border-color: var(--accent-color);
+			background: #171717;
+			border-color: #171717;
+			color: #f5f2e9;
 		}
 
 		#tab_editor .editor-picker-btn svg {
@@ -276,16 +253,15 @@
 		#tab_editor .editor-color-swatch {
 			width: 32px;
 			height: 32px;
-			border-radius: 8px;
-			border: 1px solid rgba(255, 255, 255, 0.12);
+			border-radius: 4px;
+			border: 2px solid #171717;
 			cursor: pointer;
-			transition: all 0.2s;
+			transition: transform 150ms ease;
 			position: relative;
 		}
 
 		#tab_editor .editor-color-swatch:hover {
-			transform: scale(1.08);
-			box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+			transform: scale(1.05);
 		}
 
 		/* Icon Popover */
@@ -295,11 +271,10 @@
 			top: 0;
 			right: 10px;
 			width: 220px;
-			background: var(--surface-color);
-			border: 1px solid var(--border-color);
+			background: #f5f2e9;
+			border: 2px solid #171717;
 			padding: 8px;
-			border-radius: 10px;
-			box-shadow: var(--shadow-md);
+			border-radius: 4px;
 			z-index: 100;
 			grid-template-columns: repeat(5, 1fr);
 			gap: 4px;
@@ -313,10 +288,9 @@
 			left: 50%;
 			transform: translate(-50%, -50%);
 			width: 220px;
-			background: var(--surface-color);
-			border: 1px solid var(--border-color);
-			border-radius: 12px;
-			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			border-radius: 4px;
 			padding: 16px;
 			z-index: 2000;
 			flex-direction: column;
@@ -326,10 +300,10 @@
 
 		.editor-color-modal-title {
 			font-size: 11px;
-			font-weight: 600;
-			color: var(--text-secondary);
+			font-weight: 700;
+			color: #171717;
 			text-transform: uppercase;
-			letter-spacing: 0.5px;
+			letter-spacing: 0.05em;
 			text-align: center;
 			margin-bottom: 4px;
 		}
@@ -344,7 +318,7 @@
 			display: flex;
 			gap: 5px;
 			align-items: center;
-			border-top: 1px solid var(--border-color);
+			border-top: 1px solid rgba(23, 23, 23, 0.28);
 			padding-top: 12px;
 			margin-top: 4px;
 		}
@@ -352,19 +326,19 @@
 		.editor-color-preview {
 			width: 24px;
 			height: 24px;
-			border-radius: 6px;
-			border: 1px solid rgba(255, 255, 255, 0.1);
+			border-radius: 4px;
+			border: 2px solid #171717;
 		}
 
 		.editor-color-hex-input {
 			flex: 1;
-			background: var(--input-bg);
-			border: 1px solid var(--border-color);
-			color: var(--text-color);
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			color: #171717;
 			padding: 4px 8px;
 			font-size: 11px;
 			text-transform: uppercase;
-			border-radius: 6px;
+			border-radius: 4px;
 			text-align: center;
 			font-family: 'Fira Code', monospace;
 		}
@@ -376,9 +350,8 @@
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background: rgba(0, 0, 0, 0.5);
+			background: rgba(23, 23, 23, 0.45);
 			z-index: 1999;
-			backdrop-filter: blur(2px);
 		}
 
 		/* Code editor container */
@@ -388,9 +361,9 @@
 			flex-direction: column;
 			min-height: 0;
 			overflow: hidden;
-			border-radius: 8px;
-			border: 1px solid var(--border-color);
-			background: var(--input-bg);
+			border-radius: 4px;
+			border: 2px solid #171717;
+			background: #1e1e1e;
 		}
 
 		#tab_editor .CodeMirror {
@@ -421,20 +394,20 @@
 		#tab_chat .chat-msg {
 			max-width: 85%;
 			padding: 6px 10px;
-			border-radius: 8px;
-			background: #1e1e36;
-			border: 1px solid #2a2a4a;
+			border-radius: 4px;
+			background: #f5f2e9;
+			border: 2px solid #171717;
 			font-size: 12px;
 			line-height: 1.5;
 			word-wrap: break-word;
 		}
 		#tab_chat .chat-msg-me {
 			align-self: flex-end;
-			background: color-mix(in srgb, var(--chat-accent, #6366f1) 15%, transparent);
-			border-color: color-mix(in srgb, var(--chat-accent, #6366f1) 65%, #2a2a4a);
+			background: var(--chat-accent, #b8f55f);
+			border-color: #171717;
 		}
 		#tab_chat .chat-msg-me .chat-msg-user {
-			color: var(--chat-accent, #a78bfa);
+			color: #171717;
 		}
 			#tab_chat .chat-msg-header {
 				display: flex;
@@ -443,16 +416,16 @@
 				margin-bottom: 3px;
 			}
 		#tab_chat .chat-msg-user {
-			font-weight: 600;
-			color: #818cf8;
+			font-weight: 700;
+			color: #171717;
 			font-size: 11px;
 		}
 		#tab_chat .chat-msg-me .chat-msg-user {
-			color: #a78bfa;
+			color: #171717;
 		}
 			#tab_chat .chat-msg-time {
 				font-size: 10px;
-				color: #666;
+				color: #687174;
 				margin-left: auto;
 			}
 			#tab_chat .chat-msg-copy {
@@ -460,65 +433,66 @@
 				margin: -2px -4px -2px 0;
 				padding: 2px 6px;
 				border: 0;
-				border-radius: 4px;
+				border-radius: 0;
 				background: transparent;
-				color: #777;
+				color: #171717;
 				font-size: 9px;
 				font-family: inherit;
 				cursor: pointer;
 			}
 			#tab_chat .chat-msg-copy:hover,
 			#tab_chat .chat-msg-copy:focus-visible {
-				background: rgba(129, 140, 248, .14);
-				color: #c7d2fe;
+				background: #b8f55f;
+				color: #171717;
 				outline: none;
 			}
 		#tab_chat .chat-msg-body {
-			color: #ddd;
+			color: #171717;
 			white-space: pre-wrap;
 		}
 		#tab_chat .chat-code-block {
-			background: #0d0d1a;
-			border: 1px solid #2a2a4a;
+			background: #1e1e1e;
+			border: 2px solid #171717;
 			border-radius: 4px;
 			padding: 8px;
 			margin: 4px 0;
 			font-family: 'SF Mono', Monaco, monospace;
 			font-size: 11px;
 			overflow-x: auto;
-			color: #4ec9b0;
+			color: #f5f2e9;
 			max-height: 200px;
 			overflow-y: auto;
 		}
 		#tab_chat .chat-btn-card {
-			background: #0d0d1a;
-			border: 1px solid #3a3a5c;
-			border-radius: 6px;
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			border-radius: 4px;
 			padding: 10px;
 			margin: 4px 0;
 		}
 		#tab_chat .chat-btn-card-label {
-			font-weight: 600;
-			color: #fff;
+			font-weight: 700;
+			color: #171717;
 			margin-bottom: 4px;
 		}
 		#tab_chat .chat-btn-card-meta {
 			font-size: 11px;
-			color: #888;
+			color: #687174;
 			margin-bottom: 8px;
 		}
 		#tab_chat .chat-btn-import {
-			background: rgba(16, 185, 129, 0.2);
-			color: #34d399;
-			border: 1px solid rgba(16, 185, 129, 0.4);
-			border-radius: 4px;
+			background: #0ae448;
+			color: #171717;
+			border: 2px solid #171717;
+			border-radius: 0;
 			padding: 6px 14px;
 			cursor: pointer;
 			font-size: 12px;
-			font-weight: 500;
+			font-weight: 700;
 		}
 		#tab_chat .chat-btn-import:hover {
-			background: rgba(16, 185, 129, 0.35);
+			background: #171717;
+			color: #f5f2e9;
 		}
 		#tab_chat .chat-btn-code {
 			margin-top: 8px;
@@ -526,17 +500,17 @@
 		#tab_chat .chat-btn-code summary {
 			cursor: pointer;
 			font-size: 11px;
-			color: #888;
+			color: #687174;
 			padding: 4px 0;
 		}
 		#tab_chat .chat-btn-code pre {
-			background: #0d0d1a;
-			border: 1px solid #2a2a4a;
+			background: #1e1e1e;
+			border: 2px solid #171717;
 			border-radius: 4px;
 			padding: 8px;
 			margin-top: 4px;
 			font-size: 11px;
-			color: #4ec9b0;
+			color: #f5f2e9;
 			max-height: 150px;
 			overflow: auto;
 			white-space: pre-wrap;
@@ -550,23 +524,23 @@
 			justify-content: space-between;
 			gap: 8px;
 			padding: 6px 10px;
-			border-bottom: 1px solid #2a2a4a;
+			border-bottom: 2px solid #171717;
 			flex-shrink: 0;
 		}
 			#chat_whoami {
 				font-size: 11px;
-				color: #818cf8;
+				color: #171717;
 				font-weight: 600;
 				max-width: 34%;
 				overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
 		#tab_chat .chat-icon-btn {
-			background: transparent;
-			border: 1px solid #2a2a4a;
-			color: #9a9ab8;
-			border-radius: 5px;
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			color: #171717;
+			border-radius: 0;
 			width: 24px;
 			height: 22px;
 			line-height: 1;
@@ -576,19 +550,19 @@
 			flex-shrink: 0;
 		}
 			#tab_chat .chat-icon-btn:hover {
-			background: #23233d;
-			color: #fff;
+			background: #171717;
+			color: #f5f2e9;
 		}
 		#chat_settings {
 			padding: 10px;
-			border-bottom: 1px solid #2a2a4a;
-			background: #14142a;
+			border-bottom: 2px solid #171717;
+			background: #ded9cc;
 			flex-shrink: 0;
 		}
 		#chat_settings label {
 			display: block;
 			font-size: 11px;
-			color: #9a9ab8;
+			color: #171717;
 			margin-bottom: 5px;
 		}
 		#tab_chat .chat-settings-row {
@@ -598,10 +572,10 @@
 		#chat_rename {
 			flex: 1;
 			padding: 6px 9px;
-			background: #1a1a2e;
-			border: 1px solid #3a3a5c;
-			color: #fff;
-			border-radius: 5px;
+			background: #f5f2e9;
+			border: 2px solid #171717;
+			color: #171717;
+			border-radius: 4px;
 			font-size: 12px;
 			font-family: inherit;
 		}
@@ -612,7 +586,7 @@
 		}
 		#tab_chat .chat-settings-hint {
 			font-size: 10px;
-			color: #666;
+			color: #687174;
 			margin-top: 6px;
 		}
 		#tab_chat .chat-settings-color-row {
@@ -626,84 +600,71 @@
 			width: 22px;
 			height: 22px;
 			padding: 0;
-			border: 2px solid transparent;
+			border: 2px solid #171717;
 			border-radius: 50%;
 			cursor: pointer;
-			box-shadow: inset 0 0 0 1px rgba(255,255,255,.28);
+			box-shadow: none;
 		}
 		#tab_chat .chat-color-preset:hover,
 		#tab_chat .chat-color-preset.active {
-			border-color: #fff;
-			outline: 1px solid #777;
+			border-color: #171717;
+			outline: 2px solid #171717;
+			outline-offset: 2px;
 		}
 		#chat_color_value {
 			font-family: monospace;
 			font-size: 11px;
-			color: #aaa;
+			color: #171717;
 			margin-left: 3px;
 		}
 
 		/* AI Helper tab styles */
 		#tab_ai .chat-area {
 			flex: 1;
-			background: var(--bg-color);
-			border: 1px solid var(--border-color);
-			border-radius: 8px;
+			background: #e9e6dc;
+			border: 2px solid #171717;
+			border-radius: 4px;
 			padding: 12px;
 			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
 			gap: 12px;
-			box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 		}
 
 		.chat-bubble {
 			padding: 10px 14px;
-			border-radius: 12px;
+			border-radius: 4px;
 			max-width: 85%;
 			font-size: 12px;
 			line-height: 1.5;
-			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 		}
 
 		.chat-bubble.ai {
-			background: var(--surface-color);
-			border: 1px solid var(--border-color);
+			background: #f5f2e9;
+			border: 2px solid #171717;
 			align-self: flex-start;
-			border-bottom-left-radius: 2px;
-			color: var(--text-color);
+			color: #171717;
 		}
 
 		.chat-bubble.user {
-			background: var(--accent-color);
-			color: #fff;
+			background: #b8f55f;
+			border: 2px solid #171717;
+			color: #171717;
 			align-self: flex-end;
-			border-bottom-right-radius: 2px;
 		}
 
-		/* Gemini-style animated gradient border */
-		@property --rotation {
-			syntax: '<angle>';
-			inherits: false;
-			initial-value: 0deg;
-		}
-
-			@keyframes gemini-rotate {
-				to {
-					--rotation: 360deg;
-				}
-			}
-				#chat_room_toggle {
+		/* Chat prompt border */
+			#chat_room_toggle {
 				display: flex;
 				align-items: center;
 				gap: 6px;
 				min-width: 0;
 				flex: 1;
 				padding: 4px 7px;
-				border: 1px solid #303050;
-				border-radius: 6px;
-				background: #17172b;
-				color: #e5e7eb;
+				border: 2px solid #171717;
+				border-radius: 4px;
+				background: #f5f2e9;
+				color: #171717;
 				cursor: pointer;
 				font-family: inherit;
 			}
@@ -716,15 +677,17 @@
 			}
 			#chat_room_badge {
 				padding: 1px 4px;
-				border-radius: 3px;
-				background: rgba(16, 185, 129, .16);
-				color: #6ee7b7;
+				border: 1px solid #171717;
+				border-radius: 2px;
+				background: #0ae448;
+				color: #171717;
 				font: 700 8px/1.4 'SF Mono', Monaco, monospace;
 				letter-spacing: .05em;
+				text-transform: uppercase;
 			}
 			#chat_room_badge.private {
-				background: rgba(139, 92, 246, .18);
-				color: #c4b5fd;
+				background: #ff8709;
+				color: #171717;
 			}
 			#chat_rooms_panel {
 				display: flex;
@@ -733,8 +696,8 @@
 				max-height: 72%;
 				overflow-y: auto;
 				padding: 10px;
-				border-bottom: 1px solid #34345a;
-				background: #111122;
+				border-bottom: 2px solid #171717;
+				background: #ded9cc;
 				flex-shrink: 0;
 			}
 			#tab_chat .chat-room-panel-head {
@@ -743,18 +706,18 @@
 				justify-content: space-between;
 			}
 			#tab_chat .chat-room-panel-head strong {
-				color: #eef2ff;
+				color: #171717;
 				font-size: 12px;
 			}
 			#tab_chat .chat-room-card {
 				padding: 9px;
-				border: 1px solid #2e2e50;
-				border-radius: 7px;
-				background: #17172c;
+				border: 2px solid #171717;
+				border-radius: 4px;
+				background: #f5f2e9;
 			}
 			#tab_chat .chat-room-card-title {
 				margin-bottom: 6px;
-				color: #a5b4fc;
+				color: #171717;
 				font-size: 10px;
 				font-weight: 700;
 				letter-spacing: .05em;
@@ -771,10 +734,10 @@
 			#tab_chat .chat-room-fields input {
 				min-width: 0;
 				padding: 6px 7px;
-				border: 1px solid #38385d;
-				border-radius: 5px;
-				background: #0d0d1c;
-				color: #fff;
+				border: 2px solid #171717;
+				border-radius: 4px;
+				background: #ded9cc;
+				color: #171717;
 				font-family: inherit;
 				font-size: 11px;
 			}
@@ -783,13 +746,13 @@
 				width: auto;
 				margin: 0;
 				padding: 6px 9px;
-				border: 1px solid #4f46e5;
-				border-radius: 5px;
-				background: rgba(79, 70, 229, .2);
-				color: #c7d2fe;
+				border: 2px solid #171717;
+				border-radius: 0;
+				background: #b8f55f;
+				color: #171717;
 				font-family: inherit;
 				font-size: 10px;
-				font-weight: 600;
+				font-weight: 700;
 				cursor: pointer;
 			}
 			#chat_recent_rooms {
@@ -804,27 +767,28 @@
 				gap: 6px;
 				width: 100%;
 				padding: 5px 7px;
-				border: 1px solid transparent;
-				border-radius: 5px;
+				border: 2px solid transparent;
+				border-radius: 4px;
 				background: transparent;
-				color: #c4b5fd;
+				color: #171717;
 				text-align: left;
 				cursor: pointer;
 			}
 			#tab_chat .chat-room-recent:hover {
-				border-color: #37375b;
-				background: #1b1b32;
+				border-color: #171717;
+				background: #ded9cc;
 			}
 			#tab_chat .chat-room-recent code,
 			#tab_chat .chat-room-empty {
-				color: #666681;
+				color: #687174;
 				font-size: 9px;
 			}
 			#tab_chat .chat-msg-media-error {
 				padding: 12px;
-				border: 1px dashed #5b3342;
-				border-radius: 5px;
-				color: #fda4af;
+				border: 2px dashed #e61919;
+				border-radius: 4px;
+				background: #f5f2e9;
+				color: #e61919;
 				font-size: 10px;
 			}
 				@media (max-width: 420px) {
@@ -850,83 +814,38 @@
 			flex-shrink: 0;
 			position: relative;
 			padding: 3px;
-			border-radius: 24px;
-			background: rgba(255, 255, 255, 0.08);
+			background: #ded9cc;
+			border: 2px solid #171717;
+			border-radius: 4px;
 			overflow: hidden;
 		}
 
-		/* Animated gradient border overlay */
-		.prompt-box::before {
-			content: "";
-			position: absolute;
-			inset: 0;
-			border-radius: 24px;
-			padding: 2px;
-			background: conic-gradient(from var(--rotation),
-					#6366f1 0%,
-					#f59e0b 20%,
-					#10b981 35%,
-					#8b5cf6 50%,
-					#6366f1 65%,
-					#ec4899 80%,
-					#6366f1 100%);
-			-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-			-webkit-mask-composite: xor;
-			mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-			mask-composite: exclude;
-			animation: gemini-rotate 4s linear infinite;
-			z-index: 0;
-		}
-
-		/* Blurred glow behind (reference ::after) */
-		.prompt-box::after {
-			content: "";
-			position: absolute;
-			inset: -4px;
-			border-radius: 28px;
-			background: conic-gradient(from var(--rotation),
-					#6366f1 0%,
-					#f59e0b 20%,
-					#10b981 35%,
-					#8b5cf6 50%,
-					#6366f1 65%,
-					#ec4899 80%,
-					#6366f1 100%);
-			filter: blur(12px);
-			opacity: 0.25;
-			animation: gemini-rotate 4s linear infinite;
-			z-index: -1;
-		}
-
-		/* Thinking state — fast spin with ease */
-		.prompt-box.thinking::before,
-		.prompt-box.thinking::after {
-			animation: gemini-rotate 1s ease-in-out infinite;
-		}
-
-		.prompt-box.thinking::after {
-			opacity: 0.45;
-			filter: blur(16px);
+		.prompt-box.thinking {
+			background: #caff78;
 		}
 
 		.prompt-box textarea {
 			flex: 1;
-			background: var(--bg-color);
+			background: transparent;
 			border: none;
-			color: var(--text-color);
+			color: #171717;
 			padding: 10px 14px;
-			border-radius: 20px;
+			border-radius: 0;
 			resize: none;
 			height: 40px;
 			font-family: inherit;
 			line-height: 1.4;
-			transition: all 0.2s ease;
+			transition: background 150ms ease;
 			position: relative;
 			z-index: 1;
 		}
 
+		.prompt-box textarea::placeholder {
+			color: #687174;
+		}
+
 		.prompt-box textarea:focus {
-			background: #0c0c18;
+			background: #f5f2e9;
 			outline: none;
 		}
 
@@ -934,36 +853,35 @@
 			width: 36px !important;
 			height: 36px;
 			padding: 0;
-			border-radius: 50%;
+			border-radius: 0 !important;
 			flex-shrink: 0;
 			margin: 1px;
-			background: transparent !important;
-			border: none !important;
-			color: rgba(255, 255, 255, 0.7) !important;
+			background: #b8f55f !important;
+			border: 2px solid #171717 !important;
+			color: #171717 !important;
 			font-size: 16px;
 			display: flex !important;
 			align-items: center;
 			justify-content: center;
 			cursor: pointer;
-			transition: all 0.3s;
+			transition: background 150ms ease, color 150ms ease;
 			position: relative;
 			z-index: 1;
 		}
 
 		.prompt-box button:hover {
-			color: #fff !important;
-			background: rgba(99, 102, 241, 0.2) !important;
-			transform: scale(1.1);
+			color: #b8f55f !important;
+			background: #171717 !important;
 		}
 
-		/* Holographic Glitch — AI Thinking Text */
+		/* AI Thinking Text */
 		.loading-dots {
 			display: inline-block;
 			position: relative;
 			font-weight: 700;
 			font-size: 12px;
 			letter-spacing: 0.08em;
-			color: #fff;
+			color: #171717;
 		}
 
 		.loading-dots::before,
@@ -971,20 +889,20 @@
 			content: attr(data-text);
 			position: absolute;
 			inset: 0;
-			opacity: 0.8;
+			opacity: 0.5;
 		}
 
 		.loading-dots::before {
-			color: #38bdf8;
+			color: #b8f55f;
 			transform: translate(2px, -1px);
-			mix-blend-mode: screen;
+			mix-blend-mode: normal;
 			animation: glitch-text 2s infinite alternate;
 		}
 
 		.loading-dots::after {
-			color: #a855f7;
+			color: #00bae2;
 			transform: translate(-2px, 1px);
-			mix-blend-mode: screen;
+			mix-blend-mode: normal;
 			animation: glitch-text 1.5s infinite alternate-reverse;
 		}
 
@@ -1022,14 +940,6 @@
 		<div class="hotkey-slot" data-slot="5"></div>
 	</div>
 
-	<!-- TABS NAVIGATION -->
-	<div class="tabs">
-		<button class="tab-btn active" data-tab="tab_button">Button</button>
-		<button class="tab-btn" data-tab="tab_editor">Editor</button>
-		<button class="tab-btn" data-tab="tab_ai">AI Helper</button>
-		<button class="tab-btn" data-tab="tab_chat">Chat</button>
-	</div>
-
 	<!-- Tab Actions (New/Import/Export) -->
 	<div class="tab-actions">
 		<button id="btn_add_script" class="toolbar-btn primary">New</button>
@@ -1053,13 +963,13 @@
 			<div class="editor-header-actions">
 				<button id="btn_test" class="editor-action-btn editor-btn-run" title="Test Run (Ctrl+Enter)">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M8 5v14l11-7z" />
+<path d="M8 5v14l11-7z" />
 					</svg>
 					<span>Run</span>
 				</button>
 				<button id="btn_editor_import" class="editor-action-btn editor-btn-save" title="Save to Button Grid">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+<path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
 					</svg>
 					<span>Import</span>
 				</button>
@@ -1102,7 +1012,7 @@
 				<span class="recent-code-label">RECENT CODE</span>
 				<button id="btn_clear_recent" class="recent-code-clear" title="Clear history">
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
 					</svg>
 				</button>
 			</div>
@@ -1115,29 +1025,28 @@
 	<!-- TAB 3: AI Helper -->
 	<div id="tab_ai" class="tab-content">
 		<div id="chat_header"
-			style="display: flex; gap: 8px; padding: 4px 0 8px 0; margin-bottom: 8px; border-bottom: 1px solid #333; align-items: center;">
+			style="display: flex; gap: 8px; padding: 4px 0 8px 0; margin-bottom: 8px; border-bottom: 2px solid #171717; align-items: center;">
 			<div class="agent-pill-container" style="display: flex; gap: 6px; flex: 1;">
 				<div id="agent_mode_code" class="agent-mode-pill active" data-mode="freeform"
-					style="flex: 1; padding: 4px 0; font-size: 11px; text-align: center; border-radius: 4px; border: 1px solid #444; cursor: pointer; background: rgba(99, 102, 241, 0.2); color: #fff; border-color: #6366f1;">
+					style="flex: 1; padding: 4px 0; font-size: 11px; font-weight: 700; text-align: center; border-radius: 0; border: 2px solid #171717; cursor: pointer; background: #b8f55f; color: #171717; text-transform: uppercase; letter-spacing: 0.04em;">
 					Code</div>
 			</div>
 			<span id="ai_model_name"
-				style="font-size: 10px; color: var(--accent-color); font-weight: normal; opacity: 0.8; white-space: nowrap;"></span>
+				style="font-size: 10px; color: #171717; font-weight: 600; opacity: 1; white-space: nowrap; letter-spacing: 0.02em;"></span>
 			<button id="btn_clear_chat" title="Clear Chat & Context"
-				style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #333; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; font-size: 14px; margin: 0; flex: 0 0 24px;">🗑️</button>
+				style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; background: #f5f2e9; border: 2px solid #171717; border-radius: 0; color: #171717; cursor: pointer; font-size: 16px; line-height: 1; margin: 0; flex: 0 0 24px;">×</button>
 		</div>
 
 		<!-- Inline API Key -->
 		<div id="api_key_section"
-			style="display: none; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; background: rgba(249, 115, 22, 0.05); border-radius: 8px; border: 1px solid rgba(249, 115, 22, 0.15);">
-			<span style="font-size: 10px; color: #f97316; white-space: nowrap;">🔑</span>
+			style="display: none; gap: 8px; align-items: center; padding: 8px 10px; margin-bottom: 4px; background: #f5f2e9; border: 2px solid #171717; border-radius: 4px;">
+			<span style="font-size: 10px; color: #171717; white-space: nowrap; font-weight: 700;">Key</span>
 			<input id="api_key_inline_input" type="password" placeholder="Paste your Gemini API Key..."
-				style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(249, 115, 22, 0.3); color: #e0e0e0; padding: 6px 10px; font-size: 11px; border-radius: 6px; min-width: 0; outline: none;">
+				style="flex: 1; background: #ded9cc; border: 2px solid #171717; color: #171717; padding: 6px 10px; font-size: 11px; border-radius: 4px; min-width: 0; outline: none;">
 			<button id="btn_paste_api_key"
-				style="padding: 6px 12px; background: #666; border: none; border-radius: 6px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; margin: 0; width: auto; transition: all 0.2s;">📋
-				Paste</button>
+				style="padding: 6px 12px; background: #f5f2e9; border: 2px solid #171717; border-radius: 0; color: #171717; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; margin: 0; width: auto; text-transform: uppercase; letter-spacing: 0.04em;">Paste</button>
 			<button id="btn_save_api_key"
-				style="padding: 6px 12px; background: #f97316; border: none; border-radius: 6px; color: #fff; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; margin: 0; width: auto;">Save</button>
+				style="padding: 6px 12px; background: #ff8709; border: 2px solid #171717; border-radius: 0; color: #171717; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; margin: 0; width: auto; text-transform: uppercase; letter-spacing: 0.04em;">Save</button>
 		</div>
 		<script>
 			(function () {
@@ -1149,37 +1058,37 @@
 				function updatePasteBtn() {
 					// Hide paste button if input has text
 					if (apiInput.value.trim().length > 0) {
-						pasteBtn.style.display = 'none';
-						return;
+pasteBtn.style.display = 'none';
+return;
 					}
 					pasteBtn.style.display = '';
 					// Check clipboard
 					if (navigator.clipboard && navigator.clipboard.readText) {
-						navigator.clipboard.readText().then(function (text) {
-							if (text && text.trim().length > 0) {
-								pasteBtn.style.background = '#f97316';
-							} else {
-								pasteBtn.style.background = '#666';
-							}
-						}).catch(function () {
-							pasteBtn.style.background = '#666';
-						});
+navigator.clipboard.readText().then(function (text) {
+	if (text && text.trim().length > 0) {
+		pasteBtn.style.background = '#f97316';
+	} else {
+		pasteBtn.style.background = '#666';
+	}
+}).catch(function () {
+	pasteBtn.style.background = '#666';
+});
 					} else {
-						pasteBtn.style.background = '#666';
+pasteBtn.style.background = '#666';
 					}
 				}
 
 				// Click to paste
 				pasteBtn.addEventListener('click', function () {
 					if (navigator.clipboard && navigator.clipboard.readText) {
-						navigator.clipboard.readText().then(function (text) {
-							if (text && text.trim().length > 0) {
-								apiInput.value = text.trim();
-								apiInput.type = 'text';
-								updatePasteBtn();
-								setTimeout(function () { apiInput.type = 'password'; }, 1500);
-							}
-						}).catch(function () { });
+navigator.clipboard.readText().then(function (text) {
+	if (text && text.trim().length > 0) {
+		apiInput.value = text.trim();
+		apiInput.type = 'text';
+		updatePasteBtn();
+		setTimeout(function () { apiInput.type = 'password'; }, 1500);
+	}
+}).catch(function () { });
 					}
 				});
 
@@ -1190,7 +1099,7 @@
 				setInterval(function () {
 					var section = document.getElementById('api_key_section');
 					if (section && section.style.display !== 'none') {
-						updatePasteBtn();
+updatePasteBtn();
 					}
 				}, 2000);
 
@@ -1200,17 +1109,17 @@
 		</script>
 
 		<!-- Chat -->
-		<div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative;">
+		<div class="chat-area" id="chat_history" style="flex: 1; overflow-y: auto; position: relative; background: #e9e6dc;">
 			<div class="chat-bubble ai">Hello! I'm your AI assistant. Try: "Create a circle of 50px"</div>
 		</div>
 
 		<div class="prompt-box" style="margin-top: 5px;">
 			<textarea id="prompt_input" placeholder="Ask AI to create or edit script..."></textarea>
 			<button id="btn_send_prompt" class="primary"><span class="icon"><svg width="16" height="16"
-						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-						stroke-linejoin="round">
-						<line x1="22" y1="2" x2="11" y2="13"></line>
-						<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+stroke-linejoin="round">
+<line x1="22" y1="2" x2="11" y2="13"></line>
+<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
 					</svg></span></button>
 		</div>
 	</div>
@@ -1219,11 +1128,11 @@
 	<div id="tab_chat" class="tab-content">
 		<!-- Setup: Enter name -->
 		<div id="chat_setup" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px;">
-			<div style="font-size: 14px; color: #aaa; text-align: center;">
+			<div style="font-size: 14px; color: #171717; text-align: center; font-weight: 600;">
 				Enter your name to join the team chat
 			</div>
 			<input type="text" id="chat_username" placeholder="Your name" maxlength="50"
-				style="width: 200px; padding: 8px 12px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; text-align: center; font-size: 13px;">
+				style="width: 200px; padding: 8px 12px; background: #f5f2e9; border: 2px solid #171717; color: #171717; border-radius: 4px; text-align: center; font-size: 13px;">
 			<button id="chat_join" class="primary" style="width: auto; padding: 8px 24px;">Join Chat</button>
 		</div>
 
@@ -1233,9 +1142,9 @@
 				<!-- Header bar -->
 				<div id="chat_bar">
 					<button id="chat_room_toggle" type="button" title="Switch or create a room">
-						<span id="chat_room_badge">PUBLIC</span>
-						<span id="chat_room_name">Public Lounge</span>
-						<span aria-hidden="true" style="margin-left:auto;color:#666;">▾</span>
+<span id="chat_room_badge">PUBLIC</span>
+<span id="chat_room_name">Public Lounge</span>
+<span aria-hidden="true" style="margin-left:auto;color:#666;">▾</span>
 					</button>
 					<span id="chat_whoami" title="You are chatting as this name"></span>
 					<button id="chat_settings_btn" type="button" class="chat-icon-btn" title="Chat settings">⚙</button>
@@ -1244,32 +1153,32 @@
 				<!-- Public/private room switcher -->
 				<div id="chat_rooms_panel" style="display: none;">
 					<div class="chat-room-panel-head">
-						<strong>Rooms</strong>
-						<button id="chat_rooms_close" type="button" class="chat-icon-btn" title="Close rooms">×</button>
+<strong>Rooms</strong>
+<button id="chat_rooms_close" type="button" class="chat-icon-btn" title="Close rooms">×</button>
 					</div>
 					<div class="chat-room-card">
-						<div class="chat-room-card-title">Open room</div>
-						<button id="chat_public_join" type="button">🌐 Join Public Lounge</button>
+<div class="chat-room-card-title">Open room</div>
+<button id="chat_public_join" type="button">🌐 Join Public Lounge</button>
 					</div>
 					<div class="chat-room-card">
-						<div class="chat-room-card-title">Join private room</div>
-						<div class="chat-room-fields">
-							<input id="chat_join_code" type="text" placeholder="Invite code" maxlength="80">
-							<input id="chat_join_password" type="password" placeholder="Password" maxlength="128">
-							<button id="chat_private_join" type="button">Join</button>
-						</div>
+<div class="chat-room-card-title">Join private room</div>
+<div class="chat-room-fields">
+	<input id="chat_join_code" type="text" placeholder="Invite code" maxlength="80">
+	<input id="chat_join_password" type="password" placeholder="Password" maxlength="128">
+	<button id="chat_private_join" type="button">Join</button>
+</div>
 					</div>
 					<div class="chat-room-card">
-						<div class="chat-room-card-title">Create private room</div>
-						<div class="chat-room-fields create">
-							<input id="chat_create_name" type="text" placeholder="Room name" maxlength="80">
-							<input id="chat_create_password" type="password" placeholder="6+ character password" maxlength="128">
-							<button id="chat_private_create" type="button">Create</button>
-						</div>
+<div class="chat-room-card-title">Create private room</div>
+<div class="chat-room-fields create">
+	<input id="chat_create_name" type="text" placeholder="Room name" maxlength="80">
+	<input id="chat_create_password" type="password" placeholder="6+ character password" maxlength="128">
+	<button id="chat_private_create" type="button">Create</button>
+</div>
 					</div>
 					<div class="chat-room-card">
-						<div class="chat-room-card-title">Recent private rooms</div>
-						<div id="chat_recent_rooms"></div>
+<div class="chat-room-card-title">Recent private rooms</div>
+<div id="chat_recent_rooms"></div>
 					</div>
 				</div>
 
@@ -1282,28 +1191,40 @@
 				</div>
 				<label>Message color preset</label>
 				<div id="chat_color_presets" class="chat-settings-color-row">
-					<button type="button" class="chat-color-preset" data-color="#6366f1" style="background:#6366f1" title="Indigo"></button>
-					<button type="button" class="chat-color-preset" data-color="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
-					<button type="button" class="chat-color-preset" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
-					<button type="button" class="chat-color-preset" data-color="#14b8a6" style="background:#14b8a6" title="Teal"></button>
-					<button type="button" class="chat-color-preset" data-color="#f59e0b" style="background:#f59e0b" title="Amber"></button>
-					<button type="button" class="chat-color-preset" data-color="#f43f5e" style="background:#f43f5e" title="Rose"></button>
+					<button type="button" class="chat-color-preset" data-color="#b8f55f" style="background:#b8f55f" title="Lime"></button>
+					<button type="button" class="chat-color-preset" data-color="#0ae448" style="background:#0ae448" title="Green"></button>
+					<button type="button" class="chat-color-preset" data-color="#00bae2" style="background:#00bae2" title="Cyan"></button>
+					<button type="button" class="chat-color-preset" data-color="#ff8709" style="background:#ff8709" title="Amber"></button>
+					<button type="button" class="chat-color-preset" data-color="#e61919" style="background:#e61919" title="Red"></button>
+					<button type="button" class="chat-color-preset" data-color="#687174" style="background:#687174" title="Slate"></button>
 					<span id="chat_color_value">#6366f1</span>
 				</div>
 				<div class="chat-settings-hint">Your color is saved on this computer and applies to your messages.</div>
 			</div>
 
 			<!-- Messages -->
-			<div id="chat_messages" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+			<div id="chat_messages" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; background: #e9e6dc;">
 			</div>
 
 			<!-- Input -->
-			<div id="chat_input_area" style="display: flex; gap: 6px; padding: 8px; border-top: 1px solid #333;">
-				<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"
-					style="flex: 1; min-height: 36px; max-height: 80px; padding: 8px 10px; background: #1a1a2e; border: 1px solid #3a3a5c; color: #fff; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit;"></textarea>
-				<button id="chat_send" class="primary" style="width: auto; padding: 8px 16px;">Send</button>
+			<div id="chat_input_area" class="prompt-box chat-prompt-box">
+				<textarea id="chat_input" placeholder="Type a message... (Shift+Enter for new line)"></textarea>
+				<button id="chat_send" class="primary" title="Send message" aria-label="Send message">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<line x1="22" y1="2" x2="11" y2="13"></line>
+						<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+					</svg>
+				</button>
 			</div>
 		</div>
+	</div>
+
+	<!-- TABS NAVIGATION -->
+	<div class="tabs">
+		<button class="tab-btn active" data-tab="tab_button">Tools</button>
+		<button class="tab-btn" data-tab="tab_editor">Editor</button>
+		<button class="tab-btn" data-tab="tab_ai">AI</button>
+		<button class="tab-btn" data-tab="tab_chat">Chat</button>
 	</div>
 
 	<!-- Footer Toolbar (V2 Redesign) -->
@@ -1343,19 +1264,19 @@
 			<div class="control-group" style="margin-top: 10px;">
 				<label>AI Model</label>
 				<select id="setting_ai_model"
-					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+					style="width: 100%; padding: 6px; background: #f5f2e9; color: #171717; border: 2px solid #171717; border-radius: 4px;">
 					<option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast)</option>
 					<option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
 					<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
 					<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
 				</select>
 				<button id="btn_check_models"
-					style="width: 100%; margin-top: 5px; background: #444; color: #ddd; border: 1px solid #555; padding: 4px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-					<span>🔄 Check Available Models</span>
+					style="width: 100%; margin-top: 5px; background: #f5f2e9; color: #171717; border: 2px solid #171717; padding: 4px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+					<span>Check Available Models</span>
 					<div id="model_check_loader" class="spinner"
-						style="width: 12px; height: 12px; border-width: 2px; display: none;"></div>
+style="width: 12px; height: 12px; border-width: 2px; display: none;"></div>
 				</button>
-				<div id="model_check_msg" style="font-size: 10px; margin-top: 4px; color: #888;"></div>
+				<div id="model_check_msg" style="font-size: 10px; margin-top: 4px; color: #687174;"></div>
 			</div>
 
 			<hr class="modal-divider">
@@ -1363,7 +1284,7 @@
 			<div class="control-group">
 				<label>Eyedropper Mode</label>
 				<select id="setting_picker_mode"
-					style="width: 100%; padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+					style="width: 100%; padding: 6px; background: #f5f2e9; color: #171717; border: 2px solid #171717; border-radius: 4px;">
 					<option value="os" selected>OS Color Picker (Window)</option>
 					<option value="tool">Eyedropper Tool (In-App)</option>
 				</select>
@@ -1389,12 +1310,12 @@
 					Installed version: <strong id="current_version">v2.3.0</strong>
 				</div>
 				<button id="btn_check_update" class="secondary" style="width: 100%;">Check for Updates</button>
-				<div id="update_status" style="font-size: 11px; color: #888; margin-top: 6px;"></div>
-				<div id="update_available" style="display: none; margin-top: 8px; padding: 8px; background: #18233a; border: 1px solid #34527d; border-radius: 5px;">
-					<div style="font-size: 12px; color: #bcd5ff;">New version: <strong id="new_version"></strong></div>
-					<div id="update_notes" style="font-size: 11px; color: #aaa; margin: 5px 0 8px; white-space: pre-wrap;"></div>
-					<a id="download_link" class="primary" href="#" target="_blank" rel="noopener" style="display: block; text-align: center; padding: 6px; text-decoration: none;">Download ZXP</a>
-					<div id="update_checksum" style="font-size: 10px; color: #777; margin-top: 6px; word-break: break-all;"></div>
+				<div id="update_status" style="font-size: 11px; color: #687174; margin-top: 6px;"></div>
+				<div id="update_available" style="display: none; margin-top: 8px; padding: 8px; background: #f5f2e9; border: 2px solid #171717; border-radius: 4px;">
+					<div style="font-size: 12px; color: #171717;">New version: <strong id="new_version"></strong></div>
+					<div id="update_notes" style="font-size: 11px; color: #171717; margin: 5px 0 8px; white-space: pre-wrap;"></div>
+					<a id="download_link" class="primary" href="#" target="_blank" rel="noopener" style="display: block; text-align: center; padding: 6px; text-decoration: none; border: 2px solid #171717; background: #0ae448; color: #171717;">Download ZXP</a>
+					<div id="update_checksum" style="font-size: 10px; color: #687174; margin-top: 6px; word-break: break-all;"></div>
 				</div>
 			</div>
 
@@ -1403,11 +1324,11 @@
 			<!-- Reset Section -->
 			<div class="control-group">
 				<label>Factory Reset</label>
-				<p style="font-size: 11px; color: #888; margin-top: 2px; margin-bottom: 8px;">
+				<p style="font-size: 11px; color: #687174; margin-top: 2px; margin-bottom: 8px;">
 					Restore panel to original state. Removes all custom scripts and layout changes.
 				</p>
 				<button id="btn_factory_reset"
-					style="background: #d32f2f; color: white; width: 100%; border: none;">Back to Default</button>
+					style="background: #e61919; color: #f5f2e9; width: 100%; border: 2px solid #171717; font-weight: 700;">Back to Default</button>
 			</div>
 
 
@@ -1457,11 +1378,11 @@
 			<div class="control-group">
 				<label>Script Code (JSX)</label>
 				<textarea id="script_code" placeholder="// Code..."
-					style="width: 100%; height: 100px; background: #222; color: #eee; border-radius: 4px; padding: 8px; border: 1px solid #444;"></textarea>
+					style="width: 100%; height: 100px; background: #ded9cc; color: #171717; border-radius: 4px; padding: 8px; border: 2px solid #171717; font-family: 'SF Mono', Monaco, monospace;"></textarea>
 			</div>
 
 			<div class="modal-actions" style="flex-direction: column; gap: 8px;">
-				<button id="btn_open_ai" class="secondary" style="width: 100%;">✨ Ask AI to Write Code</button>
+				<button id="btn_open_ai" class="secondary" style="width: 100%;">Ask AI to Write Code</button>
 				<div style="display: flex; gap: 8px; width: 100%;">
 					<button id="btn_cancel_script" class="secondary" style="flex: 1;">Cancel</button>
 					<button id="btn_save_script" class="primary" style="flex: 1;">Save</button>
@@ -1498,14 +1419,14 @@
 	<div id="confirm_modal" class="modal">
 		<div class="modal-content" style="max-width: 300px; text-align: center;">
 			<h3 id="confirm_modal_title">Confirm</h3>
-			<p id="confirm_modal_text" style="color: #ccc; margin: 15px 0;">Are you sure?</p>
+			<p id="confirm_modal_text" style="color: #171717; margin: 15px 0;">Are you sure?</p>
 
 			<div class="modal-actions"
 				style="display: flex; flex-direction: row; justify-content: center; gap: 10px; width: 100%;">
 				<button id="btn_confirm_cancel" class="secondary"
 					style="width: 100px; margin-bottom: 0;">Cancel</button>
 				<button id="btn_confirm_ok" class="primary"
-					style="width: 100px; background: #d32f2f; margin-bottom: 0;">Delete</button>
+					style="width: 100px; background: #e61919; color: #f5f2e9; margin-bottom: 0; border: 2px solid #171717;">Delete</button>
 			</div>
 		</div>
 	</div>
@@ -1513,10 +1434,22 @@
 	<!-- Global Context Menu -->
 	<div id="context_menu">
 		<div id="ctx_colors" class="ctx-colors"></div>
-		<div id="ctx_edit" class="ctx-item ctx-edit">✏️ Edit</div>
-		<div id="ctx_copy" class="ctx-item ctx-copy">📄 Create a Copy</div>
-		<div id="ctx_share_chat" class="ctx-item ctx-share">💬 Share to Chat</div>
-		<div id="ctx_delete" class="ctx-item ctx-delete">🗑️ Delete</div>
+		<div id="ctx_edit" class="ctx-item ctx-edit">
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18.8 8.7l-3.5-3.5L4 16.5Zm15.7-9.8c.4-.4.4-1 0-1.4l-1-1c-.4-.4-1-.4-1.4 0l-1.1 1.1 3.5 3.5 1.1-1.1Z"/></svg>
+			<span>Edit</span>
+		</div>
+		<div id="ctx_copy" class="ctx-item ctx-copy">
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8V5.5C8 4.7 8.7 4 9.5 4h9c.8 0 1.5.7 1.5 1.5v9c0 .8-.7 1.5-1.5 1.5H16V8H8Zm-3 3h9c.6 0 1 .4 1 1v7c0 .6-.4 1-1 1H5c-.6 0-1-.4-1-1v-7c0-.6.4-1 1-1Z"/></svg>
+			<span>Create a Copy</span>
+		</div>
+		<div id="ctx_share_chat" class="ctx-item ctx-share">
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5C4 4.7 4.7 4 5.5 4h13c.8 0 1.5.7 1.5 1.5v8c0 .8-.7 1.5-1.5 1.5H11l-4.5 4v-4h-1C4.7 15 4 14.3 4 13.5v-8Zm4 13.2 2.2-2.2H18c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-13c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h1v2.2Z"/></svg>
+			<span>Share to Chat</span>
+		</div>
+		<div id="ctx_delete" class="ctx-item ctx-delete">
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-.7 13H6.7L6 7Zm3-3h6l1 2H8l1-2Zm-4 2h14v2H5V6Zm4 4h2v7H9v-7Zm4 0h2v7h-2v-7Z"/></svg>
+			<span>Delete</span>
+		</div>
 	</div>
 
 	<!-- Toast for scripting -->

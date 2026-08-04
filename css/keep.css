@@ -21,7 +21,7 @@ body {
 
 /* Header */
 .header {
-    background: linear-gradient(135deg, #2d2d2d 0%, #252525 100%);
+    background: #25292b;
     padding: 10px 12px;
     border-bottom: 1px solid #3d3d3d;
 }
@@ -343,4 +343,173 @@ button {
 .info-content .btn-primary {
     width: 100%;
     margin-top: 12px;
+}
+
+:root {
+    --keep-bg: #111315;
+    --keep-surface: #191d20;
+    --keep-surface-raised: #23292d;
+    --keep-text: #f2f0ea;
+    --keep-muted: #8f9898;
+    --keep-accent: #d7f36b;
+    --keep-line: rgba(242, 240, 234, 0.12);
+}
+
+body {
+    font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+    background: var(--keep-bg);
+    color: var(--keep-text);
+    font-size: 11px;
+}
+
+.toolbar,
+.footer {
+    background: #15181a;
+    border-color: var(--keep-line);
+    padding: 9px 10px;
+}
+
+button {
+    border-radius: 5px;
+    font-family: inherit;
+    transition: background 220ms cubic-bezier(0.32, 0.72, 0, 1), color 220ms cubic-bezier(0.32, 0.72, 0, 1), border-color 220ms cubic-bezier(0.32, 0.72, 0, 1), transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.btn-primary,
+.btn-accent {
+    background: var(--keep-accent);
+    color: #111315;
+}
+
+.btn-primary:hover,
+.btn-accent:hover {
+    background: #e5ff91;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    color: var(--keep-text);
+    background: rgba(242, 240, 234, 0.05);
+    border: 1px solid var(--keep-line);
+}
+
+.btn-secondary:hover,
+.btn-icon:hover {
+    color: #111315;
+    background: var(--keep-accent);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    color: #f29b91;
+    border-color: rgba(242, 155, 145, 0.45);
+}
+
+.btn-danger:hover {
+    color: #fff;
+    background: rgba(211, 83, 70, 0.24);
+}
+
+.keeper-grid {
+    padding: 10px;
+    gap: 9px;
+}
+
+.keeper-card {
+    background: #c3c6c0;
+    border: 1px solid rgba(242, 240, 234, 0.2);
+    border-radius: 7px;
+    transition: background 220ms cubic-bezier(0.32, 0.72, 0, 1), transform 220ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.keeper-card:hover {
+    background: #e3e5dc;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.card-actions {
+    background: rgba(17, 19, 21, 0.9);
+}
+
+.card-btn {
+    background: var(--keep-accent);
+    color: #111315;
+}
+
+.card-btn:hover {
+    background: #e5ff91;
+}
+
+.card-btn.delete {
+    color: #fff;
+    background: #b84c44;
+}
+
+.empty-state {
+    padding: 54px 20px;
+    color: var(--keep-muted);
+}
+
+.empty-icon {
+    color: var(--keep-accent);
+    opacity: 0.75;
+}
+
+.empty-text {
+    color: var(--keep-text);
+    letter-spacing: 0.02em;
+}
+
+.empty-hint,
+.item-count {
+    color: var(--keep-muted);
+}
+
+.info-modal {
+    background: rgba(8, 10, 11, 0.78);
+}
+
+.info-content {
+    background: var(--keep-surface);
+    border: 1px solid var(--keep-line);
+    border-radius: 8px;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.3);
+}
+
+.info-content h2 {
+    color: var(--keep-text);
+}
+
+.info-section h3 {
+    color: var(--keep-accent);
+}
+
+.info-section p {
+    color: var(--keep-muted);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--keep-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3d4749;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5c696b;
+}
+
+button:focus-visible {
+    outline: 2px solid var(--keep-accent);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

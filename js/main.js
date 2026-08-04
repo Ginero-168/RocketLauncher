@@ -152,6 +152,8 @@
 		} else {
 			// Apply Expanded UI
 			document.body.classList.remove('collapsed');
+			const tabsContent = document.querySelector('.tabs');
+			if (tabsContent) tabsContent.style.display = '';
 			btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>'; // Up Arrow
 			btn.title = "Collapse Panel";
 
@@ -476,7 +478,10 @@
 				btn.disabled = true;
 				loader.style.display = 'block';
 				msg.textContent = "Checking API permissions...";
-				msg.style.color = "#888";
+				msg.style.color = "#171717";
+				msg.style.backgroundColor = "#f5f2e9";
+				msg.style.padding = "2px 6px";
+				msg.style.borderRadius = "4px";
 
 				try {
 					const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
@@ -516,8 +521,11 @@
 								select.appendChild(opt);
 							});
 
-							msg.textContent = `✅ Found ${validModels.length} models available for your key.`;
-							msg.style.color = "#10b981"; // Success Green
+							msg.textContent = `Found ${validModels.length} models available for your key.`;
+							msg.style.color = "#171717";
+							msg.style.backgroundColor = "#b8f55f";
+							msg.style.padding = "2px 6px";
+							msg.style.borderRadius = "4px";
 
 							// Auto-select first or previously selected if exists
 							const savedModel = localStorage.getItem('tata_ai_model');
@@ -528,14 +536,20 @@
 							}
 
 						} else {
-							msg.textContent = "⚠️ No compatible Gemini models found.";
-							msg.style.color = "#f59e0b";
+							msg.textContent = "No compatible Gemini models found.";
+							msg.style.color = "#171717";
+							msg.style.backgroundColor = "#ff8709";
+							msg.style.padding = "2px 6px";
+							msg.style.borderRadius = "4px";
 						}
 					}
 
 				} catch (e) {
-					msg.textContent = `❌ Error: ${e.message} (Check API Key)`;
-					msg.style.color = "#ef4444";
+					msg.textContent = `Error: ${e.message} (Check API Key)`;
+					msg.style.color = "#f5f2e9";
+					msg.style.backgroundColor = "#e61919";
+					msg.style.padding = "2px 6px";
+					msg.style.borderRadius = "4px";
 				} finally {
 					btn.disabled = false;
 					loader.style.display = 'none';

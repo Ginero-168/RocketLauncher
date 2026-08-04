@@ -30,13 +30,13 @@
 				'<div style="margin-bottom:10px;">' +
 				'<label>Presets</label>' +
 				'<div class="color-swatches" style="display:flex; gap:8px; justify-content:center; margin-bottom:15px;">' +
-				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e74c3c"></div>' +
-				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#e67e22"></div>' +
-				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#f1c40f"></div>' +
-				'<div class="color-swatch swatch-green" data-color="green" data-hex="#2ecc71"></div>' +
-				'<div class="color-swatch swatch-blue" data-color="blue" data-hex="#3498db"></div>' +
-				'<div class="color-swatch swatch-purple" data-color="purple" data-hex="#9b59b6"></div>' +
-				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#95a5a6"></div>' +
+				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e61919" style="background:#e61919"></div>' +
+				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#ff8709" style="background:#ff8709"></div>' +
+				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#ffe500" style="background:#ffe500"></div>' +
+				'<div class="color-swatch swatch-green" data-color="green" data-hex="#b8f55f" style="background:#b8f55f"></div>' +
+				'<div class="color-swatch swatch-blue" data-color="blue" data-hex="#00bae2" style="background:#00bae2"></div>' +
+				'<div class="color-swatch swatch-purple" data-color="purple" data-hex="#171717" style="background:#171717"></div>' +
+				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#687174" style="background:#687174"></div>' +
 				'</div>' +
 				'</div>' +
 				'<div class="control-group">' +
@@ -61,8 +61,8 @@
 		const swatches = modal.querySelectorAll('.color-swatch');
 
 		// Reset State
-		inpHex.value = initialColor || '#FF0000';
-		inpNative.value = initialColor || '#FF0000';
+		inpHex.value = initialColor || '#e61919';
+		inpNative.value = initialColor || '#e61919';
 		swatches.forEach(s => { s.classList.remove('selected'); });
 
 		// Handlers
@@ -133,7 +133,7 @@
 		let isDragging = false;
 
 		// State
-		let primaryHex = "#FF6B6B";
+		let primaryHex = "#e61919";
 		let harmonyData = {};
 		// Recent Colors State
 		let recentColors = [];
@@ -327,7 +327,7 @@
 				div.style.backgroundColor = c;
 				div.style.cursor = "pointer";
 				div.title = c;
-				div.style.border = "1px solid #555";
+				div.style.border = "1px solid rgba(23,23,23,0.28)";
 				div.style.flex = "none"; // Fix sizing
 
 				div.onclick = () => {
@@ -367,7 +367,7 @@
 				valSlider.value = hsl.l;
 				// Update Gradient
 				const midColor = hslToHex(hsl.h, hsl.s, 50);
-				valSlider.style.background = `linear-gradient(to right, black, ${midColor}, white)`;
+				valSlider.style.backgroundColor = midColor;
 				// Redraw Wheel with new Lightness
 				drawWheel(hsl.l);
 			}
@@ -382,7 +382,7 @@
 			const g = parseInt(hexcolor.substr(2, 2), 16);
 			const b = parseInt(hexcolor.substr(4, 2), 16);
 			const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-			return (yiq >= 128) ? '#000000' : '#ffffff';
+			return (yiq >= 128) ? '#171717' : '#f5f2e9';
 		}
 
 		// Core Generator
@@ -508,9 +508,10 @@
 				const colors = harmonyData[ruleName];
 				const card = document.createElement('div');
 				card.className = 'harmony-card';
-				card.style.background = "#fff"; card.style.borderRadius = "6px";
+				card.style.background = "#f5f2e9"; card.style.borderRadius = "6px";
 				card.style.marginBottom = "5px"; // Reduced to 5px
-				card.style.padding = "0"; card.style.boxShadow = "0 1px 3px rgba(0,0,0,0.15)";
+				card.style.padding = "0";
+				card.style.border = "1px solid rgba(23,23,23,0.28)";
 				card.style.display = "flex"; card.style.flexDirection = "column";
 
 				const header = document.createElement('div');
@@ -520,7 +521,7 @@
 
 				const title = document.createElement('span');
 				title.innerText = ruleName;
-				title.style.fontWeight = "bold"; title.style.color = "#333"; title.style.fontSize = "11px";
+				title.style.fontWeight = "bold"; title.style.color = "#171717"; title.style.fontSize = "11px";
 				header.appendChild(title);
 
 				// Place Button
@@ -532,7 +533,7 @@
 				btnPlace.style.display = "flex";
 				btnPlace.style.alignItems = "center"; btnPlace.style.justifyContent = "center";
 				btnPlace.style.padding = "2px 8px";
-				btnPlace.style.fontSize = "9px"; btnPlace.style.color = "#666";
+				btnPlace.style.fontSize = "9px"; btnPlace.style.color = "#3f4546";
 				btnPlace.style.whiteSpace = "nowrap";
 				btnPlace.style.flex = "none"; btnPlace.style.width = "auto";
 				btnPlace.style.marginLeft = "auto"; // Push Place to right
@@ -549,7 +550,7 @@
 				btnExp.style.cursor = "pointer"; btnExp.style.display = "flex";
 				btnExp.style.alignItems = "center"; btnExp.style.justifyContent = "center";
 				btnExp.style.padding = "2px 8px";
-				btnExp.style.fontSize = "9px"; btnExp.style.color = "#666";
+				btnExp.style.fontSize = "9px"; btnExp.style.color = "#3f4546";
 				btnExp.style.whiteSpace = "nowrap"; // Prevent wrap
 				btnExp.style.flex = "none"; btnExp.style.width = "auto";
 				btnExp.style.marginLeft = "4px"; // Small gap between Place and Save
@@ -644,7 +645,7 @@
 					});
 				} else {
 					// MODE 2: OS PICKER
-					if (!primaryHex) primaryHex = "#FF0000";
+					if (!primaryHex) primaryHex = "#e61919";
 					let currentInt = parseInt(primaryHex.replace('#', ''), 16);
 					if (isNaN(currentInt)) currentInt = 0xFF0000;
 
@@ -701,7 +702,7 @@
 		sat: 100,
 		val: 100,
 		rgb: { r: 255, g: 0, b: 0 },
-		hex: '#FF0000',
+		hex: '#e61919',
 		isDraggingCanvas: false
 	};
 
@@ -833,7 +834,7 @@
 		const y = (1 - (v / 100)) * canvas.height;
 		cursor.style.left = `${x}px`;
 		cursor.style.top = `${y}px`;
-		cursor.style.borderColor = (v < 50) ? '#fff' : '#000';
+		cursor.style.borderColor = (v < 50) ? '#f5f2e9' : '#171717';
 
 		// Update Preview
 		const prev = document.getElementById('custom_picker_preview');
@@ -966,7 +967,7 @@
 		if (tipCard) {
 			tipCard.style.backgroundColor = bgHex;
 			tipCard.style.color = textHex;
-			tipCard.style.border = (bgHex.toLowerCase() === textHex.toLowerCase()) ? "1px solid #ccc" : "none";
+			tipCard.style.border = (bgHex.toLowerCase() === textHex.toLowerCase()) ? "1px solid #171717" : "none";
 		}
 
 		const ratio = getContrastRatio(bgHex, textHex);
@@ -980,15 +981,15 @@
 
 		// --- MAIN CARD LOGIC (User Defined 5-Tiers) ---
 		function getMainState(r) {
-			const pinkBg = '#ffebee', pinkText = '#b71c1c';
-			const yellowBg = '#fff9c4', yellowText = '#fbc02d'; // darker gold for text
-			const greenBg = '#e8f5e9', greenText = '#2e7d32';
+			const failBg = '#e61919', failText = '#f5f2e9';
+			const warnBg = '#ff8709', warnText = '#171717';
+			const passBg = '#b8f55f', passText = '#171717';
 
-			if (r < 3.0) return { label: 'Very poor', bg: pinkBg, text: pinkText, stars: '★☆☆☆☆' };
-			if (r < 4.5) return { label: 'Poor', bg: pinkBg, text: pinkText, stars: '★★☆☆☆' };
-			if (r < 7.0) return { label: 'Good', bg: yellowBg, text: yellowText, stars: '★★★☆☆' };
-			if (r < 12.0) return { label: 'Very good', bg: greenBg, text: greenText, stars: '★★★★☆' };
-			return { label: 'Excellent', bg: greenBg, text: greenText, stars: '★★★★★' };
+			if (r < 3.0) return { label: 'Very poor', bg: failBg, text: failText, stars: '★☆☆☆☆' };
+			if (r < 4.5) return { label: 'Poor', bg: failBg, text: failText, stars: '★★☆☆☆' };
+			if (r < 7.0) return { label: 'Good', bg: warnBg, text: warnText, stars: '★★★☆☆' };
+			if (r < 12.0) return { label: 'Very good', bg: passBg, text: passText, stars: '★★★★☆' };
+			return { label: 'Excellent', bg: passBg, text: passText, stars: '★★★★★' };
 		}
 
 		const mainState = getMainState(ratio);
@@ -1007,9 +1008,9 @@
 
 		// --- DETAIL BOX LOGIC (Strict WCAG Fail/AA/AAA) ---
 		function getBoxState(r, limitAA, limitAAA) {
-			if (r < limitAA) return { bg: '#ffebee', text: '#b71c1c', stars: '★☆☆' }; // Fail
-			if (r < limitAAA) return { bg: '#fff9c4', text: '#fbc02d', stars: '★★★' }; // AA Pass
-			return { bg: '#e8f5e9', text: '#2e7d32', stars: '★★★' }; // AAA Pass
+			if (r < limitAA) return { bg: '#e61919', text: '#f5f2e9', stars: '★☆☆' }; // Fail
+			if (r < limitAAA) return { bg: '#ff8709', text: '#171717', stars: '★★★' }; // AA Pass
+			return { bg: '#b8f55f', text: '#171717', stars: '★★★' }; // AAA Pass
 		}
 
 		// Small Text: AA=4.5, AAA=7
@@ -1054,7 +1055,7 @@
 		const g = parseInt(hexcolor.substr(2, 2), 16);
 		const b = parseInt(hexcolor.substr(4, 2), 16);
 		const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-		return (yiq >= 128) ? '#000000' : '#ffffff';
+		return (yiq >= 128) ? '#171717' : '#f5f2e9';
 	}
 
 	function getContrastRatio(hex1, hex2) {
@@ -1114,7 +1115,7 @@
 	}
 	function initCustomColors() {
 		// Default custom colors
-		const customColors = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF"];
+		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#00bae2", "#171717"];
 	
 		// Check if we are on the Colors panel
 		const container = document.getElementById('custom_colors_container');
@@ -1152,7 +1153,7 @@
 				if (typeof placePalette === 'function') {
 					placePalette(customColors);
 				} else {
-					showToast('⚠️ Place function missing');
+					showToast(' Place function missing');
 				}
 			};
 		}
@@ -1164,7 +1165,7 @@
 				if (typeof exportPalette === 'function') {
 					exportPalette("Custom Colors", customColors);
 				} else {
-					showToast('⚠️ Export function missing');
+					showToast(' Export function missing');
 				}
 			};
 		}

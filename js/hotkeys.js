@@ -31,6 +31,17 @@
         localStorage.setItem('tata_hotkeys', JSON.stringify(hotkeys));
     }
 
+    function getHotkeyTextColor(color) {
+        const match = String(color || '').replace('#', '').match(/^[0-9a-f]{6}$/i);
+        if (!match) return '#171717';
+
+        const hex = match[0];
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#171717' : '#f5f2e9';
+    }
+
     function renderHotkeys() {
         const bar = document.getElementById('hotkey-bar');
         if (!bar) return;
@@ -50,8 +61,8 @@
                 if (data.color) {
                     slot.style.background = data.color;
                     slot.style.borderColor = data.color;
-                    slot.style.boxShadow = 'inset 0 0 10px rgba(0,0,0,0.2)';
-                    slot.style.color = '#ffffff';
+                    slot.style.boxShadow = 'none';
+                    slot.style.color = getHotkeyTextColor(data.color);
                 } else {
                     slot.style.background = '';
                     slot.style.borderColor = '';

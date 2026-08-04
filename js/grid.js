@@ -138,26 +138,16 @@
                 sectionWrap.className = 'script-section';
 
                 const header = document.createElement('div');
-                header.className = 'section-header';
+                header.className = 'section-label';
 
                 const titleEl = document.createElement('h3');
                 titleEl.className = 'section-title';
                 titleEl.innerText = title;
                 header.appendChild(titleEl);
 
-                const arrowSvg = '<svg class="section-arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>';
-                const arrowContainer = document.createElement('div');
-                arrowContainer.innerHTML = arrowSvg;
-                header.appendChild(arrowContainer.firstChild);
-
                 const grid = document.createElement('div');
                 grid.className = 'section-grid';
                 grid.id = `grid_${title.replace(/\s+/g, '_').toLowerCase()}`;
-
-                header.addEventListener('click', () => {
-                    header.classList.toggle('collapsed');
-                    grid.classList.toggle('collapsed');
-                });
 
                 sectionItems.forEach(item => {
                     const originalIndex = items.indexOf(item);
@@ -181,6 +171,17 @@
     // ==========================================
     // Create Grid Button (no per-element listeners)
     // ==========================================
+    function getButtonTextColor(color) {
+        const match = String(color || '').replace('#', '').match(/^[0-9a-f]{6}$/i);
+        if (!match) return '#f2f0ea';
+
+        const hex = match[0];
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#111315' : '#f2f0ea';
+    }
+
     function createGridButton(item, tabName, index) {
         const btn = document.createElement('div');
         btn.className = 'grid-btn';
@@ -188,11 +189,17 @@
         btn.draggable = true;
         btn.dataset.index = index;
         btn.dataset.tab = tabName;
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('tabindex', '0');
+        btn.setAttribute('aria-label', item.label);
 
         // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
         if (item.color) {
+            btn.classList.add('has-custom-color');
             btn.style.borderColor = item.color;
-            btn.style.setProperty('--btn-color', `${item.color}60`);
+            btn.style.backgroundColor = item.color;
+            btn.style.color = getButtonTextColor(item.color);
+            btn.style.setProperty('--btn-color', item.color);
         }
 
         if (item.id && item.id.indexOf('btn_') === 0) {
@@ -235,6 +242,11 @@
                 const item = v2Layout[tab] && v2Layout[tab][idx];
                 if (!item) return;
 
+                btn.classList.remove('is-launching');
+                void btn.offsetWidth;
+                btn.classList.add('is-launching');
+                setTimeout(() => btn.classList.remove('is-launching'), 460);
+
                 if (item.type === 'subpanel') {
                     CSInterface.prototype.requestOpenExtension(item.target, '');
                 } else if (item.script) {
@@ -242,6 +254,13 @@
                 } else if (item.code) {
                     TATA.host.evalCode(item.code);
                 }
+            });
+
+            container.addEventListener('keydown', e => {
+                const btn = e.target.closest('.grid-btn');
+                if (!btn || (e.key !== 'Enter' && e.key !== ' ')) return;
+                e.preventDefault();
+                btn.click();
             });
 
             // Context menu delegation
