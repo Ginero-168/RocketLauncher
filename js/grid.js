@@ -194,12 +194,13 @@
         btn.setAttribute('aria-label', item.label);
 
         // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
-        if (item.color) {
+        const resolvedColor = TATA.resolveColor ? TATA.resolveColor(item.color) : item.color;
+        if (resolvedColor) {
             btn.classList.add('has-custom-color');
             btn.style.borderColor = '#171717';
-            btn.style.backgroundColor = item.color;
-            btn.style.color = getButtonTextColor(item.color);
-            btn.style.setProperty('--btn-color', item.color);
+            btn.style.backgroundColor = resolvedColor;
+            btn.style.color = getButtonTextColor(resolvedColor);
+            btn.style.setProperty('--btn-color', resolvedColor);
         }
 
         if (item.id && item.id.indexOf('btn_') === 0) {

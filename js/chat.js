@@ -819,7 +819,9 @@
 
         // Override hardcoded color presets to the new standard palette
         const colorPresets = document.querySelectorAll('#chat_color_presets .chat-color-preset');
-        const standardPalette = ['#b8f55f', '#ff8709', '#e61919', '#00bae2', '#171717', '#687174'];
+        const standardPalette = (window.TATA && window.TATA.PRESET_COLORS)
+            ? window.TATA.PRESET_COLORS.slice(0, 6)
+            : ['#e61919', '#ff8709', '#ffe500', '#b8f55f', '#0ae448', '#00bae2'];
         colorPresets.forEach((preset, index) => {
             const c = standardPalette[index] || '#687174';
             preset.dataset.color = c;

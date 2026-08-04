@@ -33,9 +33,9 @@
 				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e61919" style="background:#e61919"></div>' +
 				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#ff8709" style="background:#ff8709"></div>' +
 				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#ffe500" style="background:#ffe500"></div>' +
-				'<div class="color-swatch swatch-green" data-color="green" data-hex="#b8f55f" style="background:#b8f55f"></div>' +
-				'<div class="color-swatch swatch-blue" data-color="blue" data-hex="#00bae2" style="background:#00bae2"></div>' +
-				'<div class="color-swatch swatch-purple" data-color="purple" data-hex="#171717" style="background:#171717"></div>' +
+				'<div class="color-swatch swatch-lime" data-color="lime" data-hex="#b8f55f" style="background:#b8f55f"></div>' +
+				'<div class="color-swatch swatch-green" data-color="green" data-hex="#0ae448" style="background:#0ae448"></div>' +
+				'<div class="color-swatch swatch-cyan" data-color="cyan" data-hex="#00bae2" style="background:#00bae2"></div>' +
 				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#687174" style="background:#687174"></div>' +
 				'</div>' +
 				'</div>' +
@@ -1115,7 +1115,7 @@
 	}
 	function initCustomColors() {
 		// Default custom colors
-		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#00bae2", "#171717"];
+		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#0ae448", "#00bae2"];
 	
 		// Check if we are on the Colors panel
 		const container = document.getElementById('custom_colors_container');

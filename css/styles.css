@@ -436,7 +436,7 @@ button:hover .icon {
 
 /* Specific colors mirroring the .btn- classes */
 .swatch-red {
-    background-color: #e74c3c;
+    background-color: #e61919;
 }
 
 /* Input Stepper */
@@ -542,28 +542,28 @@ button:hover .icon {
     opacity: 0;
 }
 
-.swatch-blue {
-    background-color: #3498db;
+.swatch-cyan {
+    background-color: #00bae2;
 }
 
-.swatch-green {
-    background-color: #2ecc71;
+.swatch-lime {
+    background-color: #b8f55f;
 }
 
 .swatch-yellow {
-    background-color: #f1c40f;
+    background-color: #ffe500;
 }
 
-.swatch-purple {
-    background-color: #9b59b6;
+.swatch-green {
+    background-color: #0ae448;
 }
 
 .swatch-orange {
-    background-color: #e67e22;
+    background-color: #ff8709;
 }
 
 .swatch-gray {
-    background-color: #95a5a6;
+    background-color: #687174;
 }
 
 
@@ -2510,17 +2510,8 @@ body.light-theme {
     border-radius: 0;
     color: #171717;
     box-shadow: none;
+    background: #ded9cc;
 }
-
-.grid-btn.default-script:nth-child(1) { background: #ffe500; }
-.grid-btn.default-script:nth-child(2) { background: #00bae2; }
-.grid-btn.default-script:nth-child(3) { background: #ff2d78; }
-.grid-btn.default-script:nth-child(4) { background: #9d95ff; }
-.grid-btn.default-script:nth-child(5) { background: #b8f55f; }
-.grid-btn.default-script:nth-child(6) { background: #ff8709; }
-.grid-btn.default-script:nth-child(7) { background: #0ae448; }
-.grid-btn.default-script:nth-child(8) { background: #ffe500; }
-.grid-btn.default-script:nth-child(9) { background: #00bae2; }
 
 .grid-btn.default-script:hover,
 .grid-btn.default-script:focus-visible {

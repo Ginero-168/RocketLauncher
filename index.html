@@ -983,7 +983,7 @@
 			<input type="hidden" id="icon_value" value="★">
 			<div class="editor-meta-pickers">
 				<button id="icon_trigger" class="editor-picker-btn" title="Choose Icon">★</button>
-				<div id="color_trigger" class="editor-color-swatch" title="Choose Color" style="background: #00bae2;">
+				<div id="color_trigger" class="editor-color-swatch" title="Choose Color" style="background: #e61919;">
 				</div>
 			</div>
 			<!-- Icon Grid Popover -->
@@ -1195,12 +1195,12 @@ stroke-linejoin="round">
 				</div>
 				<label>Message color preset</label>
 				<div id="chat_color_presets" class="chat-settings-color-row">
+					<button type="button" class="chat-color-preset" data-color="#e61919" style="background:#e61919" title="Red"></button>
+					<button type="button" class="chat-color-preset" data-color="#ff8709" style="background:#ff8709" title="Orange"></button>
+					<button type="button" class="chat-color-preset" data-color="#ffe500" style="background:#ffe500" title="Yellow"></button>
 					<button type="button" class="chat-color-preset" data-color="#b8f55f" style="background:#b8f55f" title="Lime"></button>
 					<button type="button" class="chat-color-preset" data-color="#0ae448" style="background:#0ae448" title="Green"></button>
 					<button type="button" class="chat-color-preset" data-color="#00bae2" style="background:#00bae2" title="Cyan"></button>
-					<button type="button" class="chat-color-preset" data-color="#ff8709" style="background:#ff8709" title="Amber"></button>
-					<button type="button" class="chat-color-preset" data-color="#e61919" style="background:#e61919" title="Red"></button>
-					<button type="button" class="chat-color-preset" data-color="#687174" style="background:#687174" title="Slate"></button>
 					<span id="chat_color_value">#b8f55f</span>
 				</div>
 				<div class="chat-settings-hint">Your color is saved on this computer and applies to your messages.</div>
@@ -1241,8 +1241,13 @@ stroke-linejoin="round">
 			</button>
 		</div>
 		<div class="toolbar-center"
-			style="display: flex; align-items: center; justify-content: center; flex: 1; pointer-events: none; opacity: 0.8;">
-			<img src="Logo/Logo.png" alt="TATA Logo" style="height: 20px; mix-blend-mode: plus-lighter;">
+			style="display: flex; align-items: center; justify-content: center; flex: 1; gap: 6px; pointer-events: none; overflow: hidden; height: 100%;">
+			<video src="Logo/Rocket.mov" autoplay loop muted playsinline disablepictureinpicture
+					onerror="this.style.display='none'"
+					style="height: 100%; width: auto; flex-shrink: 0; object-fit: contain;"
+					aria-hidden="true"></video>
+				<img src="Logo/Logo2.png" alt="TATA Logo"
+					style="height: auto !important; max-height: 100%; max-width: 100%; object-fit: contain; mix-blend-mode: normal; filter: none; opacity: 0.9;">
 		</div>
 		<div class="toolbar-right">
 			<button id="btn_settings" class="icon-btn" title="Settings">
@@ -1363,15 +1368,15 @@ style="width: 12px; height: 12px; border-width: 2px; display: none;"></div>
 
 			<div class="control-group">
 				<label>Color</label>
-				<input type="hidden" id="script_color" value="red">
+				<input type="hidden" id="script_color" value="#e61919">
 				<div class="color-swatches">
-					<div class="color-swatch swatch-red selected" data-color="red" title="Red"></div>
-					<div class="color-swatch swatch-orange" data-color="orange" title="Orange"></div>
-					<div class="color-swatch swatch-yellow" data-color="yellow" title="Yellow"></div>
-					<div class="color-swatch swatch-green" data-color="green" title="Green"></div>
-					<div class="color-swatch swatch-blue" data-color="blue" title="Blue"></div>
-					<div class="color-swatch swatch-purple" data-color="purple" title="Purple"></div>
-					<div class="color-swatch swatch-gray" data-color="gray" title="Gray"></div>
+					<div class="color-swatch swatch-red selected" data-color="#e61919" title="Red"></div>
+					<div class="color-swatch swatch-orange" data-color="#ff8709" title="Orange"></div>
+					<div class="color-swatch swatch-yellow" data-color="#ffe500" title="Yellow"></div>
+					<div class="color-swatch swatch-lime" data-color="#b8f55f" title="Lime"></div>
+					<div class="color-swatch swatch-blue" data-color="#0ae448" title="Green"></div>
+					<div class="color-swatch swatch-cyan" data-color="#00bae2" title="Cyan"></div>
+					<div class="color-swatch swatch-gray" data-color="#687174" title="Slate"></div>
 				</div>
 			</div>
 

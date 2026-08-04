@@ -862,6 +862,10 @@
 				// Update Hidden Input
 				const color = this.dataset.color;
 				document.getElementById('script_color').value = color;
+
+				// Update color preview
+				const colorTrigger = document.getElementById('color_trigger');
+				if (colorTrigger) colorTrigger.style.background = color;
 			});
 		});
 
@@ -1095,8 +1099,13 @@
 
 		// UI Updates (Color Selection)
 		document.querySelectorAll('.color-swatch').forEach(el => { el.classList.remove('selected'); });
-		const colorEl = document.querySelector(`.color-swatch[data-color="${script.color}"]`);
+		const resolvedColor = TATA.resolveColor ? TATA.resolveColor(script.color) : script.color;
+		const colorEl = document.querySelector(`.color-swatch[data-color="${resolvedColor}"], .color-swatch[data-color="${script.color}"]`);
 		if (colorEl) colorEl.classList.add('selected');
+
+		// Update color preview
+		const colorTrigger = document.getElementById('color_trigger');
+		if (colorTrigger) colorTrigger.style.background = resolvedColor || '';
 
 		// Set Mode
 		btnSave.dataset.mode = "edit";
