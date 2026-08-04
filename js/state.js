@@ -16,9 +16,10 @@
         orange: '#ff8709',
         yellow: '#ffe500',
         lime: '#b8f55f',
+        purple: '#9d95ff',
+        pink: '#ff9ecd',
         green: '#0ae448',
         cyan: '#00bae2',
-        purple: '#9d95ff',
         black: '#171717',
         slate: '#687174',
         gray: '#ded9cc',
@@ -37,9 +38,10 @@
         '#ff8709',
         '#ffe500',
         '#b8f55f',
+        '#9d95ff',
+        '#ff9ecd',
         '#0ae448',
-        '#00bae2',
-        '#687174'
+        '#00bae2'
     ];
 
     // ==========================================

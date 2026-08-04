@@ -367,6 +367,7 @@ button:hover .icon {
     gap: 8px;
     align-items: center;
     margin-top: 5px;
+    flex-wrap: wrap;
 }
 
 /* Icon Grid */
@@ -564,6 +565,14 @@ button:hover .icon {
 
 .swatch-gray {
     background-color: #687174;
+}
+
+.swatch-purple {
+    background-color: #9d95ff;
+}
+
+.swatch-pink {
+    background-color: #ff9ecd;
 }
 
 

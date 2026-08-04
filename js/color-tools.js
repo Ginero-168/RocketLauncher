@@ -29,11 +29,13 @@
 				'<h3>Select Color</h3>' +
 				'<div style="margin-bottom:10px;">' +
 				'<label>Presets</label>' +
-				'<div class="color-swatches" style="display:flex; gap:8px; justify-content:center; margin-bottom:15px;">' +
+				'<div class="color-swatches" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:15px;">' +
 				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e61919" style="background:#e61919"></div>' +
 				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#ff8709" style="background:#ff8709"></div>' +
 				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#ffe500" style="background:#ffe500"></div>' +
 				'<div class="color-swatch swatch-lime" data-color="lime" data-hex="#b8f55f" style="background:#b8f55f"></div>' +
+                '<div class="color-swatch swatch-purple" data-color="purple" data-hex="#9d95ff" style="background:#9d95ff"></div>' +
+                '<div class="color-swatch swatch-pink" data-color="pink" data-hex="#ff9ecd" style="background:#ff9ecd"></div>' +
 				'<div class="color-swatch swatch-green" data-color="green" data-hex="#0ae448" style="background:#0ae448"></div>' +
 				'<div class="color-swatch swatch-cyan" data-color="cyan" data-hex="#00bae2" style="background:#00bae2"></div>' +
 				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#687174" style="background:#687174"></div>' +
@@ -1115,7 +1117,7 @@
 	}
 	function initCustomColors() {
 		// Default custom colors
-		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#0ae448", "#00bae2"];
+		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#9d95ff", "#ff9ecd"];
 	
 		// Check if we are on the Colors panel
 		const container = document.getElementById('custom_colors_container');

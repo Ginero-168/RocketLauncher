@@ -13,7 +13,7 @@
     let currentContextScriptId = null;
 
     // Quick Color Palette
-    const COLORS = ['', '#e61919', '#ff8709', '#ffe500', '#b8f55f', '#0ae448', '#00bae2', '#171717', '#687174', '#ded9cc', '#f5f2e9'];
+    const COLORS = ['', '#e61919', '#ff8709', '#ffe500', '#b8f55f', '#9d95ff', '#ff9ecd', '#0ae448', '#00bae2', '#171717', '#687174', '#ded9cc', '#f5f2e9'];
 
     // ==========================================
     // Start Context Menu
