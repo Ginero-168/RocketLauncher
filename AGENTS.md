@@ -3,7 +3,7 @@
 ## Project Identity
 - **Bundle ID:** `com.tata.pro`
 - **Product Name:** Rocket Launcher
-- **Version:** 2.1.0
+- **Version:** 3.0.0
 - **Location:** `/Library/Application Support/Adobe/CEP/extensions/TATA/`
 - **Panels:** `index.html` (main), `colors.html` (color tools), `keep.html` (SVG keeper)
 

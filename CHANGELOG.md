@@ -2,6 +2,16 @@
 
 All notable changes to the Rocket Launcher extension will be documented in this file.
 
+## [3.0.0] - 2026-08-04
+
+### Changed
+- **Brutalist Paper UI Refresh**: Unified the entire interface around a warm paper canvas, black ink structure, and standard bright accent palette.
+  - Tabs, modals, settings, hotkeys, grid, `colors.html`, and `keep.html` all restyled for consistent contrast and borders.
+  - Hotkey slots now touch with no gaps, using shared 2px outlines.
+  - Default scripts no longer use random nth-child colors; unassigned buttons default to gray.
+  - Color presets unified to the standard bright palette across script modal, color tools, context menu, chat, and custom color slots.
+- **Version Bump**: `package.json`, `CSXS/manifest.xml`, `js/main.js`, `README.md`, and `AGENTS.md` aligned to v3.0.0.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
