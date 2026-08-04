@@ -61,7 +61,11 @@
     <div id="keeper_grid" class="keeper-grid">
         <!-- SVG cards will be rendered here -->
         <div class="empty-state" id="empty_state">
-            <div class="empty-icon">📦</div>
+            <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 8h-2V6c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2zm-4-2v2H8V6h8zM4 19v-9h16v9H4z"/>
+                </svg>
+            </div>
             <div class="empty-text">No items yet</div>
             <div class="empty-hint">Import SVG files or save your Illustrator selection</div>
         </div>
@@ -70,7 +74,7 @@
     <!-- Footer Actions -->
     <div class="footer">
         <button id="btn_clear" class="btn-danger" title="Delete all items">
-            🗑️ Clear All
+            Clear All
         </button>
         <span class="item-count" id="item_count">0 items</span>
     </div>

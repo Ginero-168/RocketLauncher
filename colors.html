@@ -6,17 +6,96 @@
 	<link rel="stylesheet" href="css/styles.css" />
 	<!-- Custom Styles for Colors Panel -->
 	<style>
+		:root {
+			--paper-bg: #e9e6dc;
+			--paper-surface: #f5f2e9;
+			--paper-hover: #ded9cc;
+			--paper-text: #171717;
+			--paper-muted: #687174;
+			--paper-accent: #b8f55f;
+			--paper-danger: #e61919;
+			--paper-success: #0ae448;
+			--paper-border: #171717;
+		}
+
 		body {
 			padding: 10px;
-			background: var(--bg-color);
-			color: var(--text-color);
+			background: var(--paper-bg);
+			color: var(--paper-text);
 			font-family: 'Avenir Next', 'Segoe UI', sans-serif;
 			overflow-y: auto;
 		}
 
-		/* Overwrite shared styles if needed */
 		.section-card {
 			margin-bottom: 15px;
+			background: var(--paper-surface);
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
+			overflow: hidden;
+		}
+
+		.section-header {
+			background: var(--paper-surface);
+			color: var(--paper-text);
+			border-bottom: 2px solid var(--paper-border);
+			border-radius: 4px;
+		}
+
+		.section-card.collapsed .section-header {
+			background: var(--paper-hover);
+			color: var(--paper-text);
+		}
+
+		.section-content {
+			background: var(--paper-bg);
+			border: none;
+		}
+
+		.custom-color-slot {
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
+		}
+
+		.mini-hex-card {
+			background: var(--paper-surface);
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
+		}
+
+		.tip-card {
+			background: var(--paper-surface);
+			color: var(--paper-text);
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
+		}
+
+		#score_card {
+			background: var(--paper-surface);
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
+		}
+
+		button {
+			background: var(--paper-surface);
+			color: var(--paper-text);
+			border: 2px solid var(--paper-border);
+			border-radius: 0;
+		}
+
+		button#btn_custom_explore,
+		button#share_modal_confirm,
+		button#btn_cc_text_pick,
+		button#btn_cc_bg_pick {
+			background: var(--paper-accent);
+			color: var(--paper-text);
+		}
+
+		input[type="text"],
+		input[type="number"] {
+			background: var(--paper-surface);
+			color: var(--paper-text);
+			border: 2px solid var(--paper-border);
+			border-radius: 4px;
 		}
 	</style>
 	<title>TATA Colors</title>
@@ -38,22 +117,22 @@
 			<div id="custom_colors_container" style="display: flex; gap: 4px; margin-bottom: 10px;">
 				<!-- Slots will be injected by JS or hardcoded here -->
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #FF0000; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #FF0000; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="0"></div>
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #FF7F00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #FF7F00; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="1"></div>
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #FFFF00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #FFFF00; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="2"></div>
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #00FF00; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #00FF00; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="3"></div>
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #0000FF; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #0000FF; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="4"></div>
 				<div class="custom-color-slot"
-					style="flex: 1; height: 35px; background: #8B00FF; border-radius: 4px; cursor: pointer; border: 1px solid #444; position: relative;"
+					style="flex: 1; height: 35px; background: #8B00FF; border-radius: 4px; cursor: pointer; border: 2px solid #171717; position: relative;"
 					data-index="5"></div>
 			</div>
 
@@ -64,7 +143,7 @@
 			</div>
 			<div style="margin-top: 6px;">
 				<button id="btn_custom_explore" class="btn-mini"
-					style="width: 100%; background: #5b21b6; color: white;">Explore</button>
+					style="width: 100%; background: #b8f55f; color: #171717; border: 2px solid #171717; border-radius: 0; font-weight: 600;">Explore</button>
 			</div>
 		</div>
 	</div>
@@ -81,7 +160,7 @@
 				<button id="btn_dash_generate" title="Randomize Colors"
 					style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0;">
 					<svg class="icon" viewBox="0 0 24 24"
-						style="width: 14px; height: 14px; fill: #444; transform: translateY(1px);">
+						style="width: 14px; height: 14px; fill: #171717; transform: translateY(1px);">
 						<path
 							d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
 					</svg>
@@ -101,7 +180,7 @@
 
 					<!-- Recent Colors (Moved Top) -->
 					<div id="recent-colors-container">
-						<span style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Recent
+						<span style="font-size: 11px; color: #687174; display: block; margin-bottom: 4px;">Recent
 							Colors</span>
 						<div id="recent_list" style="display: flex; gap: 4px; height: auto; flex-wrap: wrap;">
 							<!-- Swatches injected via JS -->
@@ -110,14 +189,14 @@
 
 					<!-- Mini Hex Card (Dark Purple Style) -->
 					<div class="mini-hex-card"
-						style="background: #3E3B50; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #555;">
-						<input type="text" id="input_primary_hex" value="#41315D"
-							style="background: transparent; border: none; font-family: monospace; font-weight: bold; font-size: 14px; color: #fff; width: 80px; outline: none;">
+						style="background: #f5f2e9; padding: 8px 12px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 2px solid #171717;">
+						<input type="text" id="input_primary_hex" value="#b8f55f"
+							style="background: transparent; border: none; font-family: monospace; font-weight: bold; font-size: 14px; color: #171717; width: 80px; outline: none;">
 
 						<button id="btn_pick_primary" title="Pick Color"
 							style="background: transparent; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;">
 							<svg viewBox="0 0 24 24"
-								style="width: 18px; height: 18px; fill: #888; transform: translateY(1px);">
+								style="width: 18px; height: 18px; fill: #687174; transform: translateY(1px);">
 								<path
 									d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM5.25 19H4.25v-1l8.92-8.92 1 1L5.25 19z" />
 							</svg>
@@ -128,12 +207,12 @@
 
 					<!-- Lightness Slider -->
 					<div style="display: flex; align-items: center; gap: 8px;">
-						<svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: #666;">
+						<svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: #687174;">
 							<path
 								d="M20 15.31L23.31 12 20 8.69V6c0-1.1-.9-2-2-2h-2.69L12 .69 8.69 4H6c-1.1 0-2 .9-2 2v2.69L.69 12 4 15.31V18c0 1.1.9 2 2 2h2.69L12 23.31 15.31 20H18c1.1 0 2-.9 2-2v-2.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />
 						</svg>
 						<input type="range" id="input_lightness" min="0" max="100" value="50"
-							style="flex: 1; height: 6px; cursor: pointer; -webkit-appearance: none; background: #555b5d; border-radius: 3px; outline: none; border: 1px solid #444;">
+							style="flex: 1; height: 6px; cursor: pointer; -webkit-appearance: none; background: #ded9cc; border-radius: 4px; outline: none; border: 2px solid #171717;">
 					</div>
 				</div>
 
@@ -142,9 +221,9 @@
 					<!-- Increased Size -->
 					<div style="width: 110px; height: 110px; position: relative;">
 						<canvas id="color_wheel_canvas" width="110" height="110"
-							style="cursor: crosshair; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></canvas>
+							style="cursor: crosshair; border-radius: 50%; border: 2px solid #171717;"></canvas>
 						<div id="wheel_cursor"
-							style="position: absolute; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); top: 50%; left: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+							style="position: absolute; width: 10px; height: 10px; border: 2px solid #171717; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); top: 50%; left: 50%;">
 						</div>
 					</div>
 				</div>
@@ -171,7 +250,7 @@
 
 			<!-- Tip of the Day (Designer's Life) -->
 			<div class="tip-card" onclick="updateRandomTip()" title="Click for new pain..."
-				style="background: #A8C5E5; padding: 15px; border-radius: 8px; text-align: center; color: #172A44; cursor: pointer; transition: transform 0.1s;">
+				style="background: #f5f2e9; padding: 15px; border-radius: 4px; text-align: center; color: #171717; cursor: pointer; transition: transform 0.1s; border: 2px solid #171717;">
 				<h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: bold;">Designer's Life</h3>
 				<p id="daily_tip_text"
 					style="margin: 0; font-size: 12px; font-style: italic; line-height: 1.4; opacity: 0.9;">
@@ -183,14 +262,14 @@
 			<div class="contrast-inputs" style="display: flex; gap: 10px;">
 				<!-- Left: Foreground (Text) -->
 				<div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-					<label style="font-size: 10px; color: #888; font-weight: 600;">Foreground</label>
+					<label style="font-size: 10px; color: #687174; font-weight: 600;">Foreground</label>
 					<div class="input-group"
-						style="background: #172A44; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1);">
-						<input type="text" id="cc_text_hex" value="#172A44"
-							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #fff;">
+						style="background: #f5f2e9; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 2px solid #171717;">
+						<input type="text" id="cc_text_hex" value="#171717"
+							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #171717;">
 						<!-- Custom Picker Trigger -->
 						<button id="btn_cc_text_pick" onclick="openCustomColorPicker('cc_text_hex')"
-							style="width: 24px; height: 24px; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; cursor: pointer; background: #d7f36b; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;"></button>
+							style="width: 24px; height: 24px; border: 2px solid #171717; border-radius: 0; cursor: pointer; background: #b8f55f; transition: transform 0.1s;"></button>
 					</div>
 				</div>
 
@@ -198,7 +277,7 @@
 				<div style="display: flex; align-items: flex-end; padding-bottom: 8px;">
 					<button onclick="swapContrastColors()" title="Swap Colors"
 						style="background: none; border: none; cursor: pointer; padding: 4px; opacity: 0.7; transition: opacity 0.2s;">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2"
 							stroke-linecap="round" stroke-linejoin="round">
 							<path d="M7 16V4M7 4L3 8M7 4L11 8"></path>
 							<path d="M17 8v12M17 20l4-4M17 20l-4-4"></path>
@@ -208,30 +287,30 @@
 
 				<!-- Right: Background -->
 				<div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-					<label style="font-size: 10px; color: #888; font-weight: 600;">Background</label>
+					<label style="font-size: 10px; color: #687174; font-weight: 600;">Background</label>
 					<div class="input-group"
-						style="background: #B2C7E2; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(0,0,0,0.1);">
-						<input type="text" id="cc_bg_hex" value="#B2C7E2"
-							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #000;">
+						style="background: #f5f2e9; padding: 8px; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; border: 2px solid #171717;">
+						<input type="text" id="cc_bg_hex" value="#f5f2e9"
+							style="background: transparent; border: none; font-weight: bold; width: 60px; font-family: monospace; outline: none; color: #171717;">
 						<!-- Custom Picker Trigger -->
 						<button id="btn_cc_bg_pick" onclick="openCustomColorPicker('cc_bg_hex')"
-							style="width: 24px; height: 24px; border: 1px solid rgba(0,0,0,0.2); border-radius: 6px; cursor: pointer; background: #d7f36b; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s;"></button>
+							style="width: 24px; height: 24px; border: 2px solid #171717; border-radius: 0; cursor: pointer; background: #b8f55f; transition: transform 0.1s;"></button>
 					</div>
 				</div>
 			</div>
 
 			<!-- Score Card -->
 			<div id="score_card"
-				style="background: #D4F7D4; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+				style="background: #f5f2e9; border: 2px solid #171717; border-radius: 4px; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
 				<!-- Header Region -->
 				<div
-					style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
+					style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #171717; padding-bottom: 10px;">
 					<div class="score-number" id="cc_score_val"
 						style="font-size: 42px; font-weight: 900; line-height: 1;">8.36</div>
 					<div style="text-align: right;">
 						<div id="cc_score_text" style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">Very
 							good</div>
-						<div id="cc_score_stars" style="color: rgba(0,0,0,0.4); font-size: 14px;">★★★★☆</div>
+						<div id="cc_score_stars" style="color: #687174; font-size: 14px;">★★★★☆</div>
 					</div>
 				</div>
 
@@ -239,15 +318,15 @@
 				<div style="display: flex; gap: 10px;">
 					<!-- Small Text -->
 					<div id="cc_small_box"
-						style="flex: 1; background: rgba(255,255,255,0.3); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+						style="flex: 1; background: #e9e6dc; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
 						<span id="cc_s_label" style="font-size: 11px; font-weight: bold;">Small text</span>
-						<span id="cc_small_stars" style="font-size: 10px; color: rgba(0,0,0,0.5);">★★★</span>
+						<span id="cc_small_stars" style="font-size: 10px; color: #687174;">★★★</span>
 					</div>
 					<!-- Large Text -->
 					<div id="cc_large_box"
-						style="flex: 1; background: rgba(255,255,255,0.3); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+						style="flex: 1; background: #e9e6dc; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
 						<span id="cc_l_label" style="font-size: 11px; font-weight: bold;">Large text</span>
-						<span id="cc_large_stars" style="font-size: 10px; color: rgba(0,0,0,0.5);">★★★</span>
+						<span id="cc_large_stars" style="font-size: 10px; color: #687174;">★★★</span>
 					</div>
 				</div>
 			</div>
@@ -257,14 +336,14 @@
 
 	<!-- Custom Picker Modal (Duplicate from Main for safety) -->
 	<div id="custom_picker_modal"
-		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;">
+		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(23,23,23,0.45); z-index: 9999; justify-content: center; align-items: center;">
 		<div
-			style="background: #2D2D2D; padding: 15px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 220px; display: flex; flex-direction: column; gap: 10px;">
+			style="background: #f5f2e9; padding: 15px; border: 2px solid #171717; border-radius: 4px; width: 220px; display: flex; flex-direction: column; gap: 10px;">
 			<div
-				style="display: flex; justify-content: space-between; align-items: center; color: #fff; margin-bottom: 5px;">
+				style="display: flex; justify-content: space-between; align-items: center; color: #171717; margin-bottom: 5px;">
 				<span style="font-size: 12px; font-weight: bold;">Select Color</span>
 				<div id="custom_picker_preview"
-					style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #fff;"></div>
+					style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #171717;"></div>
 			</div>
 
 			<!-- Saturation/Value Canvas -->
@@ -272,59 +351,59 @@
 				<canvas id="custom_picker_canvas" width="190" height="150"
 					style="width: 100%; height: 100%; border-radius: 4px;"></canvas>
 				<div id="custom_picker_cursor"
-					style="position: absolute; top: 0; left: 0; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; transform: translate(-5px, -5px); pointer-events: none; box-shadow: 0 0 2px rgba(0,0,0,0.5);">
+					style="position: absolute; top: 0; left: 0; width: 10px; height: 10px; border: 2px solid #171717; border-radius: 50%; transform: translate(-5px, -5px); pointer-events: none;">
 				</div>
 			</div>
 
 			<!-- Hue Slider -->
 			<input type="range" id="custom_picker_hue" min="0" max="360" value="0"
-				style="width: 100%; height: 10px; -webkit-appearance: none; background: #7f8790; border-radius: 5px; cursor: pointer;">
+				style="width: 100%; height: 10px; -webkit-appearance: none; background: #ded9cc; border: 2px solid #171717; border-radius: 4px; cursor: pointer;">
 
 			<!-- Buttons -->
 			<div style="display: flex; gap: 10px; margin-top: 5px;">
 				<button onclick="closeCustomPicker()"
-					style="flex: 1; padding: 6px; background: #444; color: #ccc; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Cancel</button>
+					style="flex: 1; padding: 6px; background: #f5f2e9; color: #171717; border: 2px solid #171717; border-radius: 0; cursor: pointer; font-size: 11px;">Cancel</button>
 				<button onclick="confirmCustomPicker()"
-					style="flex: 1; padding: 6px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Select</button>
+					style="flex: 1; padding: 6px; background: #b8f55f; color: #171717; border: 2px solid #171717; border-radius: 0; cursor: pointer; font-size: 11px; font-weight: bold;">Select</button>
 			</div>
 		</div>
 	</div>
 	<!-- Share Palette Name Modal -->
 	<div id="share_modal"
-		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center;">
+		style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(23,23,23,0.45); z-index: 10000; justify-content: center; align-items: center;">
 		<div
-			style="background: #24282a; padding: 20px; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); width: 280px; border: 1px solid #444;">
+			style="background: #f5f2e9; padding: 20px; border: 2px solid #171717; border-radius: 4px; width: 280px;">
 			<!-- Header -->
 			<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
 				<div
-					style="width: 36px; height: 36px; background: #d7f36b; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+					style="width: 36px; height: 36px; background: #b8f55f; border: 2px solid #171717; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="#171717">
 						<path
 							d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
 					</svg>
 				</div>
 				<div>
-					<div style="font-size: 14px; font-weight: 600; color: #fff;">Share to Explore</div>
-					<div style="font-size: 10px; color: #888;">Enter a name for your palette</div>
+					<div style="font-size: 14px; font-weight: 600; color: #171717;">Share to Explore</div>
+					<div style="font-size: 10px; color: #687174;">Enter a name for your palette</div>
 				</div>
 			</div>
 
 			<!-- Input -->
 			<input type="text" id="share_palette_name"
-				style="width: 100%; padding: 10px 12px; background: #333; border: 1px solid #555; color: #fff; font-size: 13px; border-radius: 6px; outline: none; box-sizing: border-box;"
+				style="width: 100%; padding: 10px 12px; background: #f5f2e9; border: 2px solid #171717; color: #171717; font-size: 13px; border-radius: 4px; outline: none; box-sizing: border-box;"
 				placeholder="e.g. Sunset Vibes">
 
 			<!-- Preview (will be filled by JS) -->
 			<div id="share_color_preview"
-				style="display: flex; height: 24px; border-radius: 4px; overflow: hidden; margin: 12px 0;">
+				style="display: flex; height: 24px; border: 2px solid #171717; border-radius: 4px; overflow: hidden; margin: 12px 0;">
 			</div>
 
 			<!-- Buttons -->
 			<div style="display: flex; gap: 10px; margin-top: 5px;">
 				<button id="share_modal_cancel"
-					style="flex: 1; padding: 10px; background: #444; color: #ccc; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">Cancel</button>
+					style="flex: 1; padding: 10px; background: #f5f2e9; color: #171717; border: 2px solid #171717; border-radius: 0; cursor: pointer; font-size: 12px; font-weight: 500;">Cancel</button>
 				<button id="share_modal_confirm"
-					style="flex: 1; padding: 10px; background: #d7f36b; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">Share</button>
+					style="flex: 1; padding: 10px; background: #b8f55f; color: #171717; border: 2px solid #171717; border-radius: 0; cursor: pointer; font-size: 12px; font-weight: 600;">Share</button>
 			</div>
 		</div>
 	</div>
