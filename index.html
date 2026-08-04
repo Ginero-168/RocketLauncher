@@ -381,7 +381,7 @@
 			flex: 1;
 			background: transparent;
 			border: none;
-			color: #d4d4d4;
+			color: #171717;
 			font-family: 'Fira Code', 'Consolas', monospace;
 			padding: 10px;
 			resize: none;
@@ -983,7 +983,7 @@
 			<input type="hidden" id="icon_value" value="★">
 			<div class="editor-meta-pickers">
 				<button id="icon_trigger" class="editor-picker-btn" title="Choose Icon">★</button>
-				<div id="color_trigger" class="editor-color-swatch" title="Choose Color" style="background: #3b82f6;">
+				<div id="color_trigger" class="editor-color-swatch" title="Choose Color" style="background: #00bae2;">
 				</div>
 			</div>
 			<!-- Icon Grid Popover -->
@@ -995,8 +995,8 @@
 			<div class="editor-color-modal-title">Select Color</div>
 			<div id="color_grid" class="editor-color-grid"></div>
 			<div class="editor-color-custom">
-				<div id="color_preview" class="editor-color-preview" style="background: #3b82f6;"></div>
-				<input type="text" id="color_hex_input" value="#3b82f6" class="editor-color-hex-input">
+				<div id="color_preview" class="editor-color-preview" style="background: #00bae2;"></div>
+				<input type="text" id="color_hex_input" value="#00bae2" class="editor-color-hex-input">
 			</div>
 		</div>
 		<div id="color_backdrop" class="editor-color-backdrop"></div>
@@ -1066,15 +1066,15 @@ return;
 					if (navigator.clipboard && navigator.clipboard.readText) {
 navigator.clipboard.readText().then(function (text) {
 	if (text && text.trim().length > 0) {
-		pasteBtn.style.background = '#f97316';
+		pasteBtn.style.background = '#ff8709';
 	} else {
-		pasteBtn.style.background = '#666';
+		pasteBtn.style.background = '#687174';
 	}
 }).catch(function () {
-	pasteBtn.style.background = '#666';
+	pasteBtn.style.background = '#687174';
 });
 					} else {
-pasteBtn.style.background = '#666';
+pasteBtn.style.background = '#687174';
 					}
 				}
 
@@ -1197,7 +1197,7 @@ stroke-linejoin="round">
 					<button type="button" class="chat-color-preset" data-color="#ff8709" style="background:#ff8709" title="Amber"></button>
 					<button type="button" class="chat-color-preset" data-color="#e61919" style="background:#e61919" title="Red"></button>
 					<button type="button" class="chat-color-preset" data-color="#687174" style="background:#687174" title="Slate"></button>
-					<span id="chat_color_value">#6366f1</span>
+					<span id="chat_color_value">#b8f55f</span>
 				</div>
 				<div class="chat-settings-hint">Your color is saved on this computer and applies to your messages.</div>
 			</div>
