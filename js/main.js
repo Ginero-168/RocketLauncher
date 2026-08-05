@@ -657,7 +657,7 @@
 		// ==========================================
 		// VERSION CHECK SYSTEM
 		// ==========================================
-		const CURRENT_VERSION = '3.0.4';
+		const CURRENT_VERSION = '3.0.5';
 		const RELEASES_API_URL = 'https://api.github.com/repos/Ginero-168/RocketLauncher/releases/latest';
 
 		async function checkForUpdates() {

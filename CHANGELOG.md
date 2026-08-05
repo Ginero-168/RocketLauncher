@@ -45,6 +45,14 @@ All notable changes to the Rocket Launcher extension will be documented in this 
   - Replaced with standard grid ID lookup and `closest('.script-section')`.
 - **Version**: aligned all manifests and docs to v3.0.4.
 
+## [3.0.5] - 2026-08-04
+
+### Fixed
+- **Light Theme Accent**: `.light-theme` was overriding `--accent-color` to blue.
+  - Restored standard lime (`#b8f55f`) so active tab and primary buttons (New) show lime again.
+  - Active tab text now uses black (`#171717`) for contrast on lime.
+- **Version**: aligned all manifests and docs to v3.0.5.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
