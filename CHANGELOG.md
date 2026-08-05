@@ -30,6 +30,14 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - **Storage Cache**: `TATA.getStored`/`setStored` helpers for hot localStorage keys.
 - **Version**: aligned all manifests and docs to v3.0.2.
 
+## [3.0.3] - 2026-08-04
+
+### Changed
+- **Incremental Grid/Hotkey Render**: reuse existing DOM nodes instead of wiping innerHTML on every render.
+- **Hotkey Click Delegation**: bar-level delegation for remove and trigger actions.
+- **Theme Cache**: `tata_theme` reads/writes use `TATA.getStored`/`setStored`; default light.
+- **Version**: aligned all manifests and docs to v3.0.3.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
