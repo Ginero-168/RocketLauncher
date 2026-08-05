@@ -631,12 +631,11 @@
         renderRecentRooms();
         setChatColor(chatState.chatColor);
 
-        // If already has username, show chat
+        // If already has username, show chat UI but let tab switch control polling
         if (chatState.username && chatSetup && chatMain) {
             chatSetup.style.display = 'none';
             chatMain.style.display = 'flex';
             setUsername(chatState.username);
-            activateChat();
         }
 
         // Join button
@@ -832,6 +831,7 @@
 
     function activateChat() {
         if (chatState.active) return;
+        if (!chatState.username) return;
         chatState.active = true;
 
         // Initial poll

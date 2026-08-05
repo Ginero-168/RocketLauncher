@@ -734,8 +734,8 @@
 			btnCheckUpdate.addEventListener('click', checkForUpdates);
 		}
 
-		// Auto-check once after startup; installation remains manual.
-		setTimeout(() => { checkForUpdates(); }, 3000);
+		// Update checks are manual (Settings → Check for Updates) to avoid
+		// unnecessary network calls on every panel load.
 
 		// ==================
 		// 2. Add Script Logic
@@ -1170,6 +1170,7 @@
 
 	function setupTabsV2() {
 		const tabs = document.querySelectorAll('.tab-btn');
+		const chat = TATA.chat;
 		tabs.forEach(tab => {
 			tab.addEventListener('click', function () {
 				document.querySelectorAll('.tab-btn').forEach(t => { t.classList.remove('active'); });
@@ -1190,6 +1191,15 @@
 				if (targetId === 'tab_editor' && window.cmEditor) {
 					setTimeout(() => { window.cmEditor.refresh(); }, 50);
 				}
+
+				// Activate/deactivate chat polling based on tab visibility
+				if (chat) {
+					if (targetId === 'tab_chat') {
+						chat.activate();
+					} else {
+						chat.deactivate();
+					}
+				}
 			});
 
 			// Drag Over to Switch Tab
@@ -1200,10 +1210,54 @@
 			tab.addEventListener('dragover', e => { e.preventDefault(); });
 			tab.addEventListener('drop', e => { e.preventDefault(); });
 		});
+
+		// Ensure chat is not polling on initial load (default is not the chat tab)
+		if (chat) chat.deactivate();
 	}
 
 	// Tab rename reset removed (tabs are no longer renamable)
 
+	// ==========================================
+	// Background Work Pause/Resume
+	// ==========================================
+	function pauseBackgroundWork() {
+		if (TATA.chat && typeof TATA.chat.deactivate === 'function') {
+			TATA.chat.deactivate();
+		}
+	}
+
+	function resumeBackgroundWork() {
+		const activeTab = document.querySelector('.tab-btn.active');
+		const activeTabId = activeTab ? activeTab.dataset.tab : 'tab_button';
+		if (activeTabId === 'tab_chat' && TATA.chat && typeof TATA.chat.activate === 'function') {
+			TATA.chat.activate();
+		}
+	}
+
+	document.addEventListener('visibilitychange', () => {
+		if (document.hidden) {
+			pauseBackgroundWork();
+		} else {
+			resumeBackgroundWork();
+		}
+	});
+
+	// Also pause/resume based on panel collapse
+	function setupPanelVisibilityObserver() {
+		const body = document.body;
+		if (!body) return;
+		new MutationObserver((mutations) => {
+			for (const m of mutations) {
+				if (m.attributeName !== 'class') continue;
+				if (body.classList.contains('collapsed')) {
+					pauseBackgroundWork();
+				} else {
+					resumeBackgroundWork();
+				}
+			}
+		}).observe(body, { attributes: true, attributeFilter: ['class'] });
+	}
+	setupPanelVisibilityObserver();
 
 	// ==========================================
 	// V4.2: Export to Global TATA Namespace
