@@ -201,9 +201,17 @@
             return { h, s, l };
         }
 
+		// Cache wheel renders by lightness to avoid recomputing pixels every time
+		const wheelCache = new Map();
+
 		// Draw Wheel (Dynamic Lightness)
 		function drawWheel(lightness) {
 			if (lightness === undefined) lightness = 50;
+			const key = String(lightness);
+			if (wheelCache.has(key)) {
+				ctx.putImageData(wheelCache.get(key), 0, 0);
+				return;
+			}
 			const image = ctx.createImageData(width, height);
 			const data = image.data;
 
@@ -246,6 +254,7 @@
 				}
 			}
 			ctx.putImageData(image, 0, 0);
+			wheelCache.set(key, image);
 		}
 
 		function updateCursorFromHex(hex) {
@@ -614,7 +623,7 @@
 						} else if (res === 'TOOL_ACTIVATED') {
 							// Poll for change in Default Fill Color (since user is picking now)
 							let pollCount = 0;
-							const maxPolls = 30; // 15 seconds
+							const maxPolls = 15; // 15 seconds
 							const lastHex = primaryHex;
 
 							const interval = setInterval(() => {
@@ -639,7 +648,7 @@
 										}
 									}
 								});
-							}, 500); // Check every 0.5s
+							}, 1000); // Check every 1.0s
 
 						} else if (res.indexOf('ERR') === 0) {
 							alert(res);
