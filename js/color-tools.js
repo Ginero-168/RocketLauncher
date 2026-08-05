@@ -133,6 +133,7 @@
 		const centerX = width / 2;
 		const centerY = height / 2;
 		let isDragging = false;
+		let activePickerInterval = null;
 
 		// State
 		let primaryHex = "#e61919";
@@ -626,9 +627,9 @@
 							const maxPolls = 15; // 15 seconds
 							const lastHex = primaryHex;
 
-							const interval = setInterval(() => {
+							activePickerInterval = setInterval(() => {
 								pollCount++;
-								if (pollCount > maxPolls) { clearInterval(interval); return; }
+								if (pollCount > maxPolls) { clearInterval(activePickerInterval); activePickerInterval = null; return; }
 
 								const checkScript = "try { " +
 									"   var c = app.activeDocument.defaultFillColor; " +
@@ -644,7 +645,8 @@
 									if (res && res.indexOf('#') === 0) {
 										if (res !== lastHex) {
 											updatePrimary(res);
-											clearInterval(interval); // Found new color, stop polling
+											clearInterval(activePickerInterval); // Found new color, stop polling
+																																													activePickerInterval = null;
 										}
 									}
 								});
@@ -1188,6 +1190,13 @@
 	}
 
 
+	function stopEyeDropper() {
+		if (activePickerInterval) {
+			clearInterval(activePickerInterval);
+			activePickerInterval = null;
+		}
+	}
+
 	// Expose color tools on TATA namespace
 	TATA.colorTools = {
 		init,
@@ -1197,7 +1206,8 @@
 		initContrastChecker,
 		setupCreative,
 		exportPalette,
-		placePalette
+		placePalette,
+		stopEyeDropper
 	};
 
 	// Keep window references for inline HTML onclick attributes

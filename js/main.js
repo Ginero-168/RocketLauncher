@@ -1230,6 +1230,9 @@
 		if (TATA.chat && typeof TATA.chat.deactivate === 'function') {
 			TATA.chat.deactivate();
 		}
+		if (TATA.colorTools && typeof TATA.colorTools.stopEyeDropper === 'function') {
+			TATA.colorTools.stopEyeDropper();
+		}
 		const logoGif = document.getElementById('logo_gif');
 		if (logoGif) logoGif.style.display = 'none';
 	}

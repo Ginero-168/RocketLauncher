@@ -14,7 +14,20 @@ function loadChat() {
         <div id="chat_recent_rooms"></div>
         <div id="chat_rooms_panel"></div>
     `;
-    window.TATA = { showToast: jest.fn() };
+    window.TATA = {
+        showToast: jest.fn(),
+        getStored: (key, fallback) => {
+            const value = localStorage.getItem(key);
+            return value === null ? fallback : value;
+        },
+        setStored: (key, value) => {
+            if (value === undefined || value === null) {
+                localStorage.removeItem(key);
+            } else {
+                localStorage.setItem(key, value);
+            }
+        }
+    };
     window.TATA_CONFIG = { CHAT_BACKEND_URL: 'https://chat.example.test' };
     global.TATA = window.TATA;
     global.TATA_CONFIG = window.TATA_CONFIG;

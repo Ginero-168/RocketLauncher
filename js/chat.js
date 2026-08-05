@@ -12,13 +12,13 @@
     const MAX_MESSAGES = 200;    // keep last N in DOM
 
     let chatState = {
-        username: localStorage.getItem('tata_chat_username') || '',
+        username: TATA.getStored('tata_chat_username', ''),
         lastId: 0,
         polling: false,
         pollTimer: null,
         active: false,
         sending: false,
-        chatColor: localStorage.getItem('tata_chat_color') || '#b8f55f',
+        chatColor: TATA.getStored('tata_chat_color', '#b8f55f'),
         room: { slug: 'public', name: 'Public Lounge', is_private: false },
         roomPassword: '',
     };
@@ -89,7 +89,7 @@
         if (!room || room.slug === 'public') return;
         const saved = getRecentRooms().filter(item => item && item.slug !== room.slug);
         saved.unshift({ slug: room.slug, name: room.name, is_private: true });
-        localStorage.setItem('tata_chat_recent_rooms', JSON.stringify(saved.slice(0, 8)));
+        TATA.setStored('tata_chat_recent_rooms', JSON.stringify(saved.slice(0, 8)));
         renderRecentRooms();
     }
 
@@ -493,7 +493,7 @@
     // ==========================================
     function setUsername(name) {
         chatState.username = name;
-        localStorage.setItem('tata_chat_username', name);
+        TATA.setStored('tata_chat_username', name);
         const whoami = $('chat_whoami');
         if (whoami) whoami.textContent = `Chatting as ${name}`;
         const rename = $('chat_rename');
@@ -515,7 +515,7 @@
     function setChatColor(value) {
         const color = isValidColor(value) ? value.toLowerCase() : '#b8f55f';
         chatState.chatColor = color;
-        localStorage.setItem('tata_chat_color', color);
+        TATA.setStored('tata_chat_color', color);
         const label = $('chat_color_value');
         if (label) label.textContent = color;
         document.querySelectorAll('#chat_color_presets .chat-color-preset').forEach(preset => {
@@ -531,7 +531,7 @@
 
     function getRecentRooms() {
         try {
-            const parsed = JSON.parse(localStorage.getItem('tata_chat_recent_rooms') || '[]');
+            const parsed = JSON.parse(TATA.getStored('tata_chat_recent_rooms', '[]'));
             return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
             return [];
