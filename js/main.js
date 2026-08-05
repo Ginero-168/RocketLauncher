@@ -104,7 +104,7 @@
 
 			// Show active AI model badge
 			const initModelBadge = document.getElementById('ai_model_name');
-			const initModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+			const initModel = TATA.getStored('tata_ai_model') || 'gemini-2.0-flash';
 			if (initModelBadge) initModelBadge.textContent = `(${initModel})`;
 		}
 
@@ -449,7 +449,7 @@
 
 				// V3: Load AI Model
 				const elModel = document.getElementById('setting_ai_model');
-				const savedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+				const savedModel = TATA.getStored('tata_ai_model') || 'gemini-2.0-flash';
 				if (elModel) elModel.value = savedModel;
 
 				// Load Count UI
@@ -528,7 +528,7 @@
 							msg.style.borderRadius = "4px";
 
 							// Auto-select first or previously selected if exists
-							const savedModel = localStorage.getItem('tata_ai_model');
+							const savedModel = TATA.getStored('tata_ai_model');
 							if (savedModel) {
 								// Check if saved exists in new list
 								const exists = Array.from(select.options).some(o => { return o.value === savedModel; });
@@ -630,7 +630,7 @@
 				// V3: Save AI Model
 				const elModel = document.getElementById('setting_ai_model');
 				if (elModel) {
-					localStorage.setItem('tata_ai_model', elModel.value);
+					TATA.setStored('tata_ai_model', elModel.value);
 					// Update model badge in AI Helper
 					const modelBadge = document.getElementById('ai_model_name');
 					if (modelBadge) modelBadge.textContent = `(${elModel.value})`;
@@ -976,7 +976,7 @@
         let modelsToTry = [];
 
         // 1. User Preference (if set)
-        const userModel = localStorage.getItem('tata_ai_model');
+        const userModel = TATA.getStored('tata_ai_model');
         if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
 			// Add user model first if it's not one of the old defaults (unless they really want it)
 			// Actually just add it first regardless.
@@ -1187,9 +1187,15 @@
 					tabActions.style.display = (targetId === 'tab_button') ? 'flex' : 'none';
 				}
 
-				// Refresh CodeMirror when switching to Editor tab
-				if (targetId === 'tab_editor' && window.cmEditor) {
-					setTimeout(() => { window.cmEditor.refresh(); }, 50);
+				// Lazy-load CodeMirror the first time the Editor tab is opened
+				if (targetId === 'tab_editor') {
+					if (TATA.ensureCodeMirror) {
+						TATA.ensureCodeMirror(() => {
+							if (window.cmEditor) window.cmEditor.refresh();
+						});
+					} else if (window.cmEditor) {
+						setTimeout(() => { window.cmEditor.refresh(); }, 50);
+					}
 				}
 
 				// Activate/deactivate chat polling based on tab visibility
@@ -1224,6 +1230,8 @@
 		if (TATA.chat && typeof TATA.chat.deactivate === 'function') {
 			TATA.chat.deactivate();
 		}
+		const logoGif = document.getElementById('logo_gif');
+		if (logoGif) logoGif.style.display = 'none';
 	}
 
 	function resumeBackgroundWork() {
@@ -1232,6 +1240,8 @@
 		if (activeTabId === 'tab_chat' && TATA.chat && typeof TATA.chat.activate === 'function') {
 			TATA.chat.activate();
 		}
+		const logoGif = document.getElementById('logo_gif');
+		if (logoGif) logoGif.style.display = '';
 	}
 
 	document.addEventListener('visibilitychange', () => {

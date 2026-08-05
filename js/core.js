@@ -150,6 +150,31 @@
     }
 
     // ==========================================
+    // localStorage Cache for Hot Keys
+    // ==========================================
+    const storageCache = new Map();
+    function getStored(key, fallback) {
+        if (storageCache.has(key)) return storageCache.get(key);
+        const value = localStorage.getItem(key);
+        if (value === null) return fallback;
+        storageCache.set(key, value);
+        return value;
+    }
+    function setStored(key, value) {
+        if (value === undefined || value === null) {
+            storageCache.delete(key);
+            localStorage.removeItem(key);
+        } else {
+            storageCache.set(key, value);
+            localStorage.setItem(key, value);
+        }
+    }
+    function clearStored(key) {
+        storageCache.delete(key);
+        localStorage.removeItem(key);
+    }
+
+    // ==========================================
     // Fetch with Timeout (AbortController)
     // ==========================================
     function fetchWithTimeout(url, options, timeoutMs) {
@@ -174,5 +199,8 @@
     TATA.checkStorageVersion = checkStorageVersion;
     TATA.backupBeforeSave = backupBeforeSave;
     TATA.fetchWithTimeout = fetchWithTimeout;
+    TATA.getStored = getStored;
+    TATA.setStored = setStored;
+    TATA.clearStored = clearStored;
 
 })();

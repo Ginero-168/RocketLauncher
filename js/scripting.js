@@ -15,6 +15,21 @@
         return csInterface;
     }
 
+    function loadScript(src, cb) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = cb;
+        s.onerror = () => console.error('[TATA] Failed to load', src);
+        document.head.appendChild(s);
+    }
+
+    function loadCss(href) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+    }
+
     // ==================== ICONS ====================
     // Expanded icon library (60+ icons)
     const ICONS = {
@@ -100,8 +115,7 @@
         initRecentCode();
         initListeners();
 
-        // V3: Initialize CodeMirror for Syntax Highlighting
-        initCodeMirror();
+        // V3: CodeMirror is lazy-loaded when the Editor tab is first opened
 
         // V4: Status Init
         updateEditorStatus('new');
@@ -523,7 +537,7 @@
             }
 
             // V3: Get AI model from Settings (localStorage) or default
-            const selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+            const selectedModel = TATA.getStored('tata_ai_model') || 'gemini-2.0-flash';
 
             // Workspace Context: scan active Illustrator document
             try {
@@ -606,7 +620,7 @@
                             }
 
                             const fixPrompt = `Fix this Adobe Illustrator JSX code error:\n\nError: ${res}\n\nCode:\n\`\`\`javascript\n${code}\n\`\`\`\n\nFix the error and return the corrected code.`;
-                            const selectedModel = localStorage.getItem('tata_ai_model') || 'gemini-2.0-flash';
+                            const selectedModel = TATA.getStored('tata_ai_model') || 'gemini-2.0-flash';
                             const result = await callAI(apiKey, fixPrompt, selectedModel);
 
                             if (result.code) {
@@ -717,7 +731,7 @@
             let modelsToTry = [];
 
             // 1. User Preference (if set in Settings)
-            const userModel = localStorage.getItem('tata_ai_model');
+            const userModel = TATA.getStored('tata_ai_model');
             if (userModel && userModel !== 'gemini-1.5-pro' && userModel !== 'gemini-2.0-flash') {
                 modelsToTry.push(userModel);
             }
@@ -949,6 +963,29 @@
 
     // ==================== V3: CODEMIRROR ====================
     let cmEditor = null;
+    let cmLoadRequested = false;
+
+    function ensureCodeMirror(cb) {
+        if (cmEditor) { if (cb) cb(); return; }
+        if (cmLoadRequested) { return; } // wait for current load
+        cmLoadRequested = true;
+
+        getCS();
+        const base = (extensionPath || '').replace(/\\/g, '/');
+        const css1 = base + '/js/libs/codemirror/codemirror.min.css';
+        const css2 = base + '/js/libs/codemirror/material-darker.min.css';
+        const js1 = base + '/js/libs/codemirror/codemirror.min.js';
+        const js2 = base + '/js/libs/codemirror/javascript.min.js';
+
+        loadCss(css1);
+        loadCss(css2);
+        loadScript(js1, () => {
+            loadScript(js2, () => {
+                initCodeMirror();
+                if (cb) cb();
+            });
+        });
+    }
 
     function initCodeMirror() {
         const textarea = document.getElementById('code_editor');
@@ -1025,6 +1062,7 @@
 
     // Export to TATA namespace (no auto-init)
     TATA.initScripting = init;
+    TATA.ensureCodeMirror = ensureCodeMirror;
 
     // Expose editor helpers globally
     window.cmEditor = null; // Will be set by initCodeMirror
@@ -1077,7 +1115,7 @@ window.TATA.callGemini = async messages => {
     }
 
     let model = 'gemini-2.0-flash';
-    const userModel = localStorage.getItem('tata_ai_model');
+    const userModel = TATA.getStored('tata_ai_model');
     if (userModel) model = userModel;
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
