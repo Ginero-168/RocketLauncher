@@ -33,7 +33,7 @@
 		checkStorageVersion();
 
 		// V3: Apply saved theme
-		const savedTheme = localStorage.getItem('tata_theme');
+		const savedTheme = TATA.getStored('tata_theme', 'light');
 		if (savedTheme === 'light') {
 			document.body.classList.add('light-theme');
 		}
@@ -444,7 +444,7 @@
 
 				// V3: Load Theme
 				const elTheme = document.getElementById('setting_theme');
-				const savedTheme = localStorage.getItem('tata_theme') || 'dark';
+				const savedTheme = TATA.getStored('tata_theme', 'light');
 				if (elTheme) elTheme.value = savedTheme;
 
 				// V3: Load AI Model
@@ -619,7 +619,7 @@
 				const elTheme = document.getElementById('setting_theme');
 				if (elTheme) {
 					const theme = elTheme.value;
-					localStorage.setItem('tata_theme', theme);
+					TATA.setStored('tata_theme', theme);
 					if (theme === 'light') {
 						document.body.classList.add('light-theme');
 					} else {
