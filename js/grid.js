@@ -109,7 +109,7 @@
     const saveV2LayoutBatched = TATA.debounce(saveV2Layout, 150);
 
     // ==========================================
-    // Render Grid
+    // Render Grid (incremental: reuse DOM instead of wiping)
     // ==========================================
     function renderGrid() {
         loadV2Layout();
@@ -117,7 +117,6 @@
         ['tab_button'].forEach(tabName => {
             const container = document.getElementById(tabName);
             if (!container) return;
-            container.innerHTML = '';
 
             const items = v2Layout[tabName] || [];
             const userItems = [];
@@ -131,37 +130,72 @@
                 }
             });
 
-            function createSection(title, sectionItems) {
-                if (sectionItems.length === 0) return;
+            function getOrCreateSection(title) {
+                const gridId = `grid_${title.replace(/\s+/g, '_').toLowerCase()}`;
+                let sectionWrap = container.querySelector(`:scope > .script-section:has(#${gridId})`);
+                if (!sectionWrap) {
+                    sectionWrap = document.createElement('div');
+                    sectionWrap.className = 'script-section';
 
-                const sectionWrap = document.createElement('div');
-                sectionWrap.className = 'script-section';
+                    const header = document.createElement('div');
+                    header.className = 'section-label';
 
-                const header = document.createElement('div');
-                header.className = 'section-label';
+                    const titleEl = document.createElement('h3');
+                    titleEl.className = 'section-title';
+                    titleEl.innerText = title;
+                    header.appendChild(titleEl);
 
-                const titleEl = document.createElement('h3');
-                titleEl.className = 'section-title';
-                titleEl.innerText = title;
-                header.appendChild(titleEl);
+                    const grid = document.createElement('div');
+                    grid.className = 'section-grid';
+                    grid.id = gridId;
 
-                const grid = document.createElement('div');
-                grid.className = 'section-grid';
-                grid.id = `grid_${title.replace(/\s+/g, '_').toLowerCase()}`;
+                    sectionWrap.appendChild(header);
+                    sectionWrap.appendChild(grid);
+                    container.appendChild(sectionWrap);
+                }
+                return sectionWrap.querySelector(`#${gridId}`);
+            }
+
+            function renderSection(title, sectionItems) {
+                const grid = getOrCreateSection(title);
+                if (!grid) return;
+
+                // Hide empty sections, show non-empty
+                const sectionWrap = grid.parentElement;
+                if (sectionItems.length === 0) {
+                    if (sectionWrap) sectionWrap.style.display = 'none';
+                    return;
+                }
+                if (sectionWrap) sectionWrap.style.display = '';
+
+                // Track which buttons should remain
+                const activeIds = new Set();
 
                 sectionItems.forEach(item => {
                     const originalIndex = items.indexOf(item);
-                    const btn = createGridButton(item, tabName, originalIndex);
+                    let btn = document.getElementById(item.id);
+                    if (btn && !btn.classList.contains('grid-btn')) {
+                        btn = null;
+                    }
+                    if (!btn) {
+                        btn = createGridButton(item, tabName, originalIndex);
+                    } else {
+                        updateGridButton(btn, item, tabName, originalIndex);
+                    }
                     grid.appendChild(btn);
+                    activeIds.add(item.id);
                 });
 
-                sectionWrap.appendChild(header);
-                sectionWrap.appendChild(grid);
-                container.appendChild(sectionWrap);
+                // Remove buttons that are no longer in this section
+                Array.from(grid.children).forEach(child => {
+                    if (child.classList.contains('grid-btn') && !activeIds.has(child.id)) {
+                        child.remove();
+                    }
+                });
             }
 
-            createSection('User Script', userItems);
-            createSection('Default Script', defaultItems);
+            renderSection('User Script', userItems);
+            renderSection('Default Script', defaultItems);
         });
 
         // Setup event delegation (once only)
@@ -219,6 +253,53 @@
         const lbl = document.createElement('span');
         lbl.innerText = item.label;
         btn.appendChild(lbl);
+
+        return btn;
+    }
+
+    function updateGridButton(btn, item, tabName, index) {
+        btn.dataset.index = index;
+        btn.dataset.tab = tabName;
+        btn.setAttribute('aria-label', item.label);
+
+        const resolvedColor = TATA.resolveColor ? TATA.resolveColor(item.color) : item.color;
+        if (resolvedColor) {
+            btn.classList.add('has-custom-color');
+            btn.style.borderColor = '#171717';
+            btn.style.backgroundColor = resolvedColor;
+            btn.style.color = getButtonTextColor(resolvedColor);
+            btn.style.setProperty('--btn-color', resolvedColor);
+        } else {
+            btn.classList.remove('has-custom-color');
+            btn.style.borderColor = '';
+            btn.style.backgroundColor = '';
+            btn.style.color = '';
+            btn.style.removeProperty('--btn-color');
+        }
+
+        if (item.id && item.id.indexOf('btn_') === 0) {
+            btn.classList.add('default-script');
+        } else {
+            btn.classList.remove('default-script');
+        }
+
+        // Update icon
+        const iconDiv = btn.querySelector('div') || document.createElement('div');
+        iconDiv.innerHTML = item.icon || ICONS.stars;
+        const svg = iconDiv.querySelector('svg');
+        if (svg) {
+            svg.setAttribute('width', '24');
+            svg.setAttribute('height', '24');
+        }
+        if (!iconDiv.parentNode) btn.appendChild(iconDiv);
+
+        // Update label
+        let lbl = iconDiv.nextElementSibling;
+        if (!lbl || lbl.tagName !== 'SPAN') {
+            lbl = document.createElement('span');
+            btn.appendChild(lbl);
+        }
+        lbl.innerText = item.label;
 
         return btn;
     }
