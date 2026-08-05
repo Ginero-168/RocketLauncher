@@ -132,7 +132,8 @@
 
             function getOrCreateSection(title) {
                 const gridId = `grid_${title.replace(/\s+/g, '_').toLowerCase()}`;
-                let sectionWrap = container.querySelector(`:scope > .script-section:has(#${gridId})`);
+                const existingGrid = container.querySelector(`#${gridId}`);
+                let sectionWrap = existingGrid ? existingGrid.closest('.script-section') : null;
                 if (!sectionWrap) {
                     sectionWrap = document.createElement('div');
                     sectionWrap.className = 'script-section';
