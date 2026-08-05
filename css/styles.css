@@ -1501,8 +1501,8 @@ body.collapsed .footer {
     --surface-color: #ffffff;
     --text-color: #333333;
     --text-secondary: #666666;
-    --accent-color: #2563eb;
-    --accent-hover: #3b82f6;
+    --accent-color: #b8f55f;
+    --accent-hover: #caff78;
     --border-color: #e0e0e0;
     --input-bg: #ffffff;
     --hover-color: #e8e8e8;
@@ -1527,7 +1527,7 @@ body.collapsed .footer {
 
 .light-theme .tab-btn.active {
     background: var(--accent-color);
-    color: #fff;
+    color: #171717;
 }
 
 .light-theme .grid-btn {
