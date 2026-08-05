@@ -22,6 +22,14 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - Color swatch rows now wrap when they exceed available width.
 - `CSXS/manifest.xml`, `package.json`, `js/main.js`, `README.md`, `AGENTS.md`, and release workflow default aligned to v3.0.1.
 
+## [3.0.2] - 2026-08-04
+
+### Changed
+- **Panel Performance**: chat polling, eyedropper, GIF, and CodeMirror now pause/start based on tab/panel visibility.
+- **Color Wheel**: cached by lightness.
+- **Storage Cache**: `TATA.getStored`/`setStored` helpers for hot localStorage keys.
+- **Version**: aligned all manifests and docs to v3.0.2.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
