@@ -38,6 +38,13 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - **Theme Cache**: `tata_theme` reads/writes use `TATA.getStored`/`setStored`; default light.
 - **Version**: aligned all manifests and docs to v3.0.3.
 
+## [3.0.4] - 2026-08-04
+
+### Fixed
+- **Critical Init Error**: `querySelector` failed on `:has()` selector in older CEP Chromium.
+  - Replaced with standard grid ID lookup and `closest('.script-section')`.
+- **Version**: aligned all manifests and docs to v3.0.4.
+
 ## [2.2.0] - 2026-07-22
 
 ### Added
