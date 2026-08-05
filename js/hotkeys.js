@@ -45,17 +45,21 @@
     function renderHotkeys() {
         const bar = document.getElementById('hotkey-bar');
         if (!bar) return;
-        bar.innerHTML = '';
 
         const cols = hotkeyCount > 5 ? 5 : hotkeyCount;
         bar.style.setProperty('--col-count', cols);
 
         for (let i = 0; i < hotkeyCount; i++) {
-            const slot = document.createElement('div');
-            slot.className = 'hotkey-slot';
-            slot.dataset.slot = (i + 1);
-
             const data = hotkeys[i];
+            let slot = bar.querySelector(`.hotkey-slot[data-slot="${i + 1}"]`);
+
+            if (!slot) {
+                slot = document.createElement('div');
+                slot.className = 'hotkey-slot';
+                slot.dataset.slot = (i + 1);
+                bar.appendChild(slot);
+            }
+
             if (data) {
                 slot.classList.add('filled');
                 if (data.color) {
@@ -66,12 +70,22 @@
                     slot.style.color = '';
                 }
 
+                slot.title = data.label;
+                slot.dataset.id = data.id;
+
                 // Icon element
-                const iconEl = document.createElement('span');
-                iconEl.className = 'hotkey-icon';
+                let iconEl = slot.querySelector('.hotkey-icon');
+                if (!iconEl) {
+                    iconEl = document.createElement('span');
+                    iconEl.className = 'hotkey-icon';
+                    slot.appendChild(iconEl);
+                }
 
                 if (data.icon) {
                     iconEl.innerHTML = data.icon;
+                    iconEl.style.fontSize = '';
+                    iconEl.style.fontWeight = '';
+                    iconEl.style.lineHeight = '';
                     const svg = iconEl.querySelector('svg');
                     if (svg) {
                         svg.setAttribute('width', '20');
@@ -87,47 +101,40 @@
                     iconEl.style.fontWeight = '700';
                     iconEl.style.lineHeight = '1';
                 }
-                slot.appendChild(iconEl);
-                slot.title = data.label;
 
-                // Name label (small text below icon)
-                const nameLabel = document.createElement('span');
-                nameLabel.className = 'hotkey-label';
+                // Name label
+                let nameLabel = slot.querySelector('.hotkey-label');
+                if (!nameLabel) {
+                    nameLabel = document.createElement('span');
+                    nameLabel.className = 'hotkey-label';
+                    slot.appendChild(nameLabel);
+                }
                 nameLabel.textContent = data.label;
-                slot.appendChild(nameLabel);
 
-                const removeBtn = document.createElement('span');
-                removeBtn.className = 'hotkey-remove';
-                removeBtn.innerHTML = '&times;';
-                removeBtn.title = 'Remove';
-                removeBtn.onclick = (idx => {
-                    return e => {
-                        e.stopPropagation();
-                        hotkeys[idx] = null;
-                        saveHotkeys();
-                        renderHotkeys();
-                    };
-                })(i);
-                slot.appendChild(removeBtn);
-
-                slot.onclick = (slotData => {
-                    return function () {
-                        // Default: trigger button click
-                        const btn = document.getElementById(slotData.id);
-                        if (btn) {
-                            btn.click();
-                            this.style.opacity = '0.5';
-                            const self = this;
-                            setTimeout(() => { self.style.opacity = '1'; }, 100);
-                        }
-                    };
-                })(data);
+                // Remove button
+                let removeBtn = slot.querySelector('.hotkey-remove');
+                if (!removeBtn) {
+                    removeBtn = document.createElement('span');
+                    removeBtn.className = 'hotkey-remove';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.title = 'Remove';
+                    slot.appendChild(removeBtn);
+                }
             } else {
+                slot.classList.remove('filled');
+                slot.style.background = '';
+                slot.style.color = '';
                 slot.title = "Drag a button here";
+                slot.dataset.id = '';
+                slot.textContent = '';
             }
-
-            bar.appendChild(slot);
         }
+
+        // Remove extra slots if hotkeyCount reduced
+        Array.from(bar.querySelectorAll('.hotkey-slot')).forEach(slot => {
+            const idx = parseInt(slot.dataset.slot, 10) - 1;
+            if (idx >= hotkeyCount) slot.remove();
+        });
     }
 
     // Event delegation for hotkey slots (set up once)
@@ -163,6 +170,32 @@
                     saveHotkeys();
                     renderHotkeys();
                 } catch (e) { }
+            }
+        });
+
+        bar.addEventListener('click', e => {
+            const slot = e.target.closest('.hotkey-slot');
+            if (!slot) return;
+
+            const index = parseInt(slot.dataset.slot, 10) - 1;
+
+            // Remove button clicked
+            if (e.target.closest('.hotkey-remove')) {
+                e.stopPropagation();
+                hotkeys[index] = null;
+                saveHotkeys();
+                renderHotkeys();
+                return;
+            }
+
+            // Slot clicked: trigger the assigned button
+            const data = hotkeys[index];
+            if (!data || !data.id) return;
+            const btn = document.getElementById(data.id);
+            if (btn) {
+                btn.click();
+                slot.style.opacity = '0.5';
+                setTimeout(() => { slot.style.opacity = '1'; }, 100);
             }
         });
     }
