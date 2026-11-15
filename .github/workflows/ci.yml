@@ -40,8 +40,6 @@ jobs:
 
       - name: Check PHP syntax
         run: |
-          find chat-backend -maxdepth 1 -name '*.php' -print0 |
-            xargs -0 -n1 php -l
           find market-backend -name '*.php' -print0 |
             xargs -0 -n1 php -l
 

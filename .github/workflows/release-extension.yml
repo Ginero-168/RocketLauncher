@@ -106,9 +106,6 @@ jobs:
             --exclude 'playwright-report/' \
             --exclude 'test-results/' \
             --exclude 'js/config.local.json' \
-            --exclude 'chat-backend/chat-config.json' \
-            --exclude 'chat-backend/config.php' \
-            --exclude 'chat-backend/tata-env.php' \
             --exclude 'market-backend/' \
             --exclude 'release-build/' \
             --exclude 'ZXPSignCmd' \
@@ -162,7 +159,7 @@ jobs:
         run: |
           if (-not $env:ZXP_CERT_PASSWORD) { throw 'Missing ZXP_CERT_PASSWORD secret' }
           New-Item -ItemType Directory -Force -Path release-build/TATA | Out-Null
-          robocopy . release-build/TATA /E /XD .git .github node_modules tests market-backend playwright-report test-results release-build /XF config.local.json chat-config.json config.php tata-env.php ZXPSignCmd.exe signing-certificate.p12 package.json package-lock.json README.md AGENTS.md .gitignore CHANGELOG.md *.zxp *.sha256
+          robocopy . release-build/TATA /E /XD .git .github node_modules tests market-backend playwright-report test-results release-build /XF config.local.json ZXPSignCmd.exe signing-certificate.p12 package.json package-lock.json README.md AGENTS.md .gitignore CHANGELOG.md *.zxp *.sha256
           if ($LASTEXITCODE -gt 7) { exit $LASTEXITCODE }
           & .\ZXPSignCmd.exe -sign release-build/TATA "RocketLauncher-v$env:VERSION-windows.zxp" signing-certificate.p12 $env:ZXP_CERT_PASSWORD
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

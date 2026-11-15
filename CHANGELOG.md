@@ -17,6 +17,7 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 ### Changed
 - The Marketplace site now lives in `market-backend/` in this repository (was `RocketLauncher-backend`).
   It is published to the `market-deploy` branch for Hostinger and left out of the ZXP.
+- Removed `chat-backend/` and its deploy workflow; the panel has had no chat since 3.1.0.
 - Factory reset also sets the safe copy aside (kept in `panel-data/before-reset`).
 
 ## 3.1.0

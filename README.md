@@ -1,126 +1,59 @@
-# Rocket Launcher - TATA Extension
+# Rocket Launcher
 
-Adobe Illustrator CEP 11 extension with team chat feature.
+Adobe Illustrator CEP 11 panel (bundle `com.tata.pro`) and its Marketplace website.
 
 ## Repository
-- Frontend: `js/`, `index.html`, `css/`, `CSXS/`
-- Chat backend: `chat-backend/`
+- Panel: `index.html`, `js/`, `jsx/`, `css/`, `CSXS/`
+- Marketplace site (PHP, https://rl.kirita.me): `market-backend/` — see `market-backend/README.md`
+- Panel tests: `tests/`
 
-## Auto-Deploy Chat Backend to Hostinger
-
-This repo includes a GitHub Actions workflow (`.github/workflows/deploy-chat-backend.yml`) that deploys the `chat-backend/` folder to Hostinger shared hosting over FTPS every time you push to `main`.
-
-### Required GitHub Secrets
-
-Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-
-| Secret | Example | Description |
-|---|---|---|
-| `FTP_SERVER` | `ftp.yourdomain.com` | Your Hostinger FTP server |
-| `FTP_USERNAME` | `u123456789` | Hostinger FTP username |
-| `FTP_PASSWORD` | `your-ftp-password` | Hostinger FTP password |
-| `FTP_REMOTE_DIR` | `/public_html/chat-backend/` | Target directory on Hostinger |
-| `DB_HOST` | `localhost` | MySQL host |
-| `DB_NAME` | `u123456789_tata_chat` | MySQL database name |
-| `DB_USER` | `u123456789_tata_chat` | MySQL username |
-| `DB_PASS` | `your-db-password` | MySQL password |
-| `ADMIN_SETUP_TOKEN` | `random-long-secret` | Required once when claiming the admin panel |
-### Hostinger Setup
-
-1. **Create MySQL database** in hPanel → Databases → MySQL Databases
-2. **Add every required GitHub Secret** above
-3. **Push to `main`** to deploy and initialize/migrate the schema on first use
-4. **Set the admin password**: Visit `https://yourdomain.com/chat-backend/admin.php`, enter `ADMIN_SETUP_TOKEN`, and choose a password
-
-The workflow deliberately does not deploy `setup.php`, `ping.php`, or the retired
-`install-config.php`, and removes those exact files from the remote backend if found.
-
-### Admin panel
-
-`chat-backend/admin.php` shows storage usage (images + database) against a quota and tunes the
-message retention window automatically to stay near a target fill level. See
-`chat-backend/README.md` for the full settings reference.
-
-### Manual Backend Setup (without Actions)
-
-See `chat-backend/README.md` for manual upload instructions.
-
-## Manual Updates
-
-Releases are distributed as signed ZXP files through GitHub Releases. The extension detects
-macOS/Windows and shows the matching **Download ZXP** link in **Settings → Extension Updates**;
-it never overwrites its own files automatically.
-
-To publish a release:
+## Local development
 
 ```bash
-git tag v3.0.5
-git push origin v3.0.5
+npm install
+npm test -- --runInBand
+cd market-backend && php tests/run.php
 ```
 
-GitHub Actions validates that the tag matches `CSXS/manifest.xml`, runs the test suite, and creates:
+To run the panel from source, copy or symlink this folder to
+`/Library/Application Support/Adobe/CEP/extensions/TATA` and restart Illustrator.
 
-- `RocketLauncher-v3.0.5-macos.zxp`
-- `RocketLauncher-v3.0.5-macos.sha256`
-- `RocketLauncher-v3.0.5-windows.zxp`
-- `RocketLauncher-v3.0.5-windows.sha256`
+## Where the panel keeps its data
 
-The ZXP is signed with the team's self-signed certificate. The certificate file and password are
-kept in GitHub Secrets and are never included in the release.
+Scripts, layout, hotkeys, the Keep index and custom colours live in the panel's `localStorage` and are
+mirrored to `~/Library/Application Support/RocketLauncher/panel-data`
+(`%APPDATA%\RocketLauncher\panel-data` on Windows), so clearing the CEP cache does not remove them.
+Keep files are in `~/.tata_keeper`; graphic styles are in `~/Documents/Illustrator_Style_Presets`.
+
+## Releasing the panel
+
+Releases are signed ZXP files on GitHub Releases. The panel shows the matching **Download ZXP** link in
+**Settings → Extension updates**; it never overwrites its own files.
+
+```bash
+git tag v3.1.0
+git push origin v3.1.0
+```
+
+GitHub Actions checks that the tag matches `CSXS/manifest.xml`, runs the tests and creates
+`RocketLauncher-v<version>-macos.zxp`, `-windows.zxp` and their `.sha256` files. `market-backend/`,
+tests and docs are left out of the ZXP.
 
 ### Configure signing once
-
-Create a self-signed certificate with Adobe's `ZXPSignCmd`:
 
 ```bash
 ZXPSignCmd -selfSignedCert US NY RocketLauncher RocketLauncher \
   'choose-a-strong-password' RocketLauncher.p12
 ```
 
-Base64-encode `RocketLauncher.p12` and add these GitHub Actions secrets:
+Base64-encode `RocketLauncher.p12` and add the GitHub Actions secrets `ZXP_CERT_P12_B64` and
+`ZXP_CERT_PASSWORD`. Keep the `.p12` and password backed up; the same certificate must sign every release.
 
-```text
-ZXP_CERT_P12_B64
-ZXP_CERT_PASSWORD
-```
+## Deploying the Marketplace site
 
-Keep the `.p12` file and password backed up securely. The same certificate must be reused for
-future releases so existing installations recognize the publisher.
-
-To install manually:
-
-1. Download the ZXP matching the user's operating system.
-2. Verify the SHA-256 checksum.
-3. Install it with a ZXP installer/ExManCmd compatible with Adobe CEP.
-4. Restart Illustrator and confirm the version in Settings.
-
-The release package excludes local development overrides such as `js/config.local.json`. The
-production Chat backend URL is included as a public default in `js/config.js`, so users do not
-need to create a local config file for normal Chat usage. Server credentials remain on Hostinger
-and are never included in the extension.
-
-## Local Development
-
-```bash
-npm install
-npm test -- --runInBand
-```
-
-## Extension Installation
-
-Copy the entire repo folder to:
-
-```
-/Library/Application Support/Adobe/CEP/extensions/TATA
-```
-
-Then create `js/config.local.json`:
-
-```json
-{
-    "CHAT_BACKEND_URL": "https://yourdomain.com/chat-backend"
-}
-```
+A push to `main` that changes `market-backend/` runs the site's tests and republishes that folder as the
+root of the `market-deploy` branch. Hostinger's Git deployment pulls that branch. Never point Hostinger at
+`main`. `config.json` and the data in `storage/` exist only on the server.
 
 ## License
 MIT
