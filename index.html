@@ -12,6 +12,7 @@
 	<link rel="stylesheet" href="css/tools.css">
 	<link rel="stylesheet" href="css/library.css">
 	<link rel="stylesheet" href="css/colors.css">
+	<link rel="stylesheet" href="css/insight.css">
 </head>
 
 <body data-tab="tab_button">
@@ -69,6 +70,10 @@
 		<button type="button" id="btn_export_script" class="btn" title="Export a script to a file" aria-label="Export script">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4v6Zm-4 2h14v2H5v-2Z" /></svg>
 			<span class="btn-label">Export</span>
+		</button>
+		<button type="button" id="btn_census" class="btn" lang="th" title="สำรวจเอกสาร: จัดกลุ่มวัตถุที่เหมือนกัน แล้วเลือกทั้งชุด" aria-label="สำรวจเอกสาร">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8v2H3V5Zm0 6h8v2H3v-2Zm0 6h8v2H3v-2Zm11.5-9.5 2 2 4-4L22 7l-5.5 5.5L13 9l1.5-1.5ZM14 16h7v2h-7v-2Z" /></svg>
+			<span class="btn-label">Census</span>
 		</button>
 		<button type="button" id="btn_upload_script" class="btn" title="ขึ้น Marketplace" aria-label="Upload script to Marketplace">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96ZM14 13v4h-4v-4H7l5-5 5 5h-3Z" /></svg>
@@ -572,6 +577,49 @@
 		</div>
 	</div>
 
+	<!-- Document census (js/census.js) -->
+	<div id="census_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="census_title">
+		<div class="modal-content" lang="th">
+			<h3 id="census_title" class="modal-title">สำรวจเอกสาร</h3>
+			<div class="chips census-scope" role="group" aria-label="ขอบเขตการสำรวจ">
+				<button type="button" class="chip is-on" data-census-scope="artboard" aria-pressed="true">Artboard นี้</button>
+				<button type="button" class="chip" data-census-scope="document" aria-pressed="false">ทั้งเอกสาร</button>
+			</div>
+			<p id="census_summary" class="control-hint"></p>
+			<div id="census_list" class="census-list"></div>
+			<p id="census_status" class="census-status" role="status"></p>
+			<div class="modal-actions">
+				<button type="button" id="btn_census_rescan" class="btn">สำรวจใหม่</button>
+				<button type="button" id="btn_census_close" class="btn btn--primary">ปิด</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Before installing a Marketplace script (js/script-review.js) -->
+	<div id="script_review_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="script_review_title">
+		<div class="modal-content" lang="th">
+			<h3 id="script_review_title" class="modal-title">ก่อนติดตั้ง</h3>
+			<p id="script_review_name" class="review-name"></p>
+			<p id="script_review_by" class="control-hint"></p>
+			<span id="script_review_badge" class="review-badge"></span>
+			<div id="script_review_rows" class="review-rows"></div>
+			<div id="script_review_lines_wrap">
+				<span class="control-label">บรรทัดที่ทำให้ติดป้าย</span>
+				<div id="script_review_lines" class="modal-code review-lines"></div>
+			</div>
+			<label id="script_review_consent" class="control-check review-consent">
+				<input type="checkbox" id="script_review_ack">
+				<span>ฉันอ่านบรรทัดที่ติดป้ายแล้ว และยอมให้สคริปต์นี้ทำสิ่งนั้น</span>
+			</label>
+			<p class="control-hint">ป้ายมาจากการสแกนโค้ดในเครื่องคุณก่อนรัน เป็นตัวช่วย ไม่ใช่การรับประกัน</p>
+			<div class="modal-actions">
+				<button type="button" id="btn_review_cancel" class="btn">ยกเลิก</button>
+				<button type="button" id="btn_review_remix" class="btn" title="ติดตั้งแล้วเปิดในตัวแก้โค้ด">Remix</button>
+				<button type="button" id="btn_review_install" class="btn btn--primary">ติดตั้ง</button>
+			</div>
+		</div>
+	</div>
+
 	<!-- Script context menu -->
 	<div id="context_menu" class="popover context-menu" role="menu" aria-label="Script" hidden>
 		<div id="ctx_colors" class="ctx-colors" role="group" aria-label="Button color"></div>
@@ -614,6 +662,9 @@
 	<script src="js/scripting.js"></script>
 	<script src="js/color-tools.js"></script>
 	<script src="js/graphic-styles.js"></script>
+	<script src="js/census.js"></script>
+	<script src="js/script-scan.js"></script>
+	<script src="js/script-review.js"></script>
 	<script src="js/market.js"></script>
 	<script src="js/keep.js"></script>
 	<script src="js/settings.js"></script>

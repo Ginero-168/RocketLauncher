@@ -1610,3 +1610,138 @@ function hexToRgb(hex) {
     var b = parseInt(hex.substring(4, 6), 16);
     return { r: r, g: g, b: b };
 }
+
+// ====================================================================================
+// ===============================   DOCUMENT CENSUS   ================================
+// ====================================================================================
+// Lists what the document holds so the panel can group objects that share a
+// stroke, fill or font, select a whole group, and even out near-misses.
+// Object references are kept in this engine between calls; every later call
+// checks that the document is still the one that was scanned.
+
+TATA._census = { refs: [], doc: "", count: -1 };
+
+TATA._censusHex = function (r, g, b) {
+    function h(n) { var s = Math.max(0, Math.min(255, Math.round(n))).toString(16).toUpperCase(); return s.length === 1 ? "0" + s : s; }
+    return "#" + h(r) + h(g) + h(b);
+};
+
+// Returns [key, swatchHex]. The key is what "same colour" means; an empty key is no paint.
+TATA._censusColor = function (c) {
+    try {
+        if (!c) return ["", ""];
+        var t = c.typename;
+        if (t === "RGBColor") { var hex = TATA._censusHex(c.red, c.green, c.blue); return [hex, hex]; }
+        if (t === "CMYKColor") {
+            var k = 1 - c.black / 100;
+            return ["C" + Math.round(c.cyan) + " M" + Math.round(c.magenta) + " Y" + Math.round(c.yellow) + " K" + Math.round(c.black),
+                TATA._censusHex(255 * (1 - c.cyan / 100) * k, 255 * (1 - c.magenta / 100) * k, 255 * (1 - c.yellow / 100) * k)];
+        }
+        if (t === "GrayColor") { var v = 255 * (1 - c.gray / 100); return ["K" + Math.round(c.gray), TATA._censusHex(v, v, v)]; }
+        if (t === "SpotColor") { return ["Spot " + c.spot.name, TATA._censusColor(c.spot.color)[1]]; }
+        if (t === "GradientColor") { return ["Gradient " + c.gradient.name, ""]; }
+        if (t === "PatternColor") { return ["Pattern " + c.pattern.name, ""]; }
+    } catch (e) { }
+    return ["", ""];
+};
+
+// Locked or hidden, on the object itself or anywhere above it.
+TATA._censusBlocked = function (item) {
+    try {
+        var p = item;
+        while (p && p.typename !== "Document") {
+            if (p.typename === "Layer") { if (p.locked || !p.visible) return true; }
+            else if (p.locked || p.hidden) return true;
+            p = p.parent;
+        }
+    } catch (e) { }
+    return false;
+};
+
+TATA.censusScan = function (params) {
+    if (app.documents.length === 0) return JSON.stringify({ error: "nodoc" });
+    var doc = app.activeDocument;
+    var max = parseInt(params.max, 10) || 4000;
+    var whole = params.scope === "document";
+    var board = whole ? null : doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
+    var refs = [], items = [], truncated = false;
+
+    function inScope(item) {
+        if (!board) return true;
+        try {
+            var b = item.geometricBounds; // left, top, right, bottom (y grows upward)
+            return !(b[2] < board[0] || b[0] > board[2] || b[3] > board[1] || b[1] < board[3]);
+        } catch (e) { return false; }
+    }
+
+    var i, item, rec;
+    for (i = 0; i < doc.pathItems.length; i++) {
+        if (refs.length >= max) { truncated = true; break; }
+        try {
+            item = doc.pathItems[i];
+            if (item.guides || item.clipping || !inScope(item)) continue;
+            var stroke = item.stroked ? TATA._censusColor(item.strokeColor) : ["", ""];
+            var fill = item.filled ? TATA._censusColor(item.fillColor) : ["", ""];
+            if (!stroke[0] && !fill[0]) continue;
+            rec = { i: refs.length, k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
+            if (TATA._censusBlocked(item)) rec.skip = 1;
+            refs.push(item);
+            items.push(rec);
+        } catch (e1) { }
+    }
+    for (i = 0; i < doc.textFrames.length; i++) {
+        if (refs.length >= max) { truncated = true; break; }
+        try {
+            item = doc.textFrames[i];
+            if (!inScope(item) || item.contents === "") continue;
+            var attrs = item.textRange.characterAttributes;
+            var tfill = TATA._censusColor(attrs.fillColor);
+            rec = { i: refs.length, k: "text", font: attrs.textFont.family + " " + attrs.textFont.style, size: Math.round(attrs.size * 1000) / 1000, fc: tfill[0], fh: tfill[1] };
+            if (TATA._censusBlocked(item)) rec.skip = 1;
+            refs.push(item);
+            items.push(rec);
+        } catch (e2) { }
+    }
+
+    TATA._census = { refs: refs, doc: doc.name, count: doc.pageItems.length };
+    return JSON.stringify({ doc: doc.name, scope: whole ? "document" : "artboard", truncated: truncated, items: items });
+};
+
+TATA._censusCurrent = function () {
+    if (app.documents.length === 0) return null;
+    var doc = app.activeDocument;
+    var c = TATA._census;
+    if (!c || c.doc !== doc.name || c.count !== doc.pageItems.length) return null;
+    return doc;
+};
+
+TATA.censusSelect = function (params) {
+    var doc = TATA._censusCurrent();
+    if (!doc) return JSON.stringify({ error: "stale" });
+    var ids = params.ids || [];
+    var done = 0, missed = 0;
+    doc.selection = null;
+    for (var i = 0; i < ids.length; i++) {
+        try { TATA._census.refs[ids[i]].selected = true; done++; } catch (e) { missed++; }
+    }
+    return JSON.stringify({ selected: done, missed: missed });
+};
+
+// Evens out a near-miss: kind "stroke" sets the stroke width, "size" the font size (points).
+TATA.censusFix = function (params) {
+    var doc = TATA._censusCurrent();
+    if (!doc) return JSON.stringify({ error: "stale" });
+    var value = parseFloat(params.value);
+    if (!(value > 0)) return JSON.stringify({ error: "value" });
+    var ids = params.ids || [];
+    var done = 0;
+    for (var i = 0; i < ids.length; i++) {
+        try {
+            var item = TATA._census.refs[ids[i]];
+            if (params.kind === "size") item.textRange.characterAttributes.size = value;
+            else item.strokeWidth = value;
+            done++;
+        } catch (e) { }
+    }
+    return JSON.stringify({ changed: done });
+};

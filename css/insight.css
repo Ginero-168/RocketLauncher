@@ -1,0 +1,265 @@
+/* ==========================================================================
+   Rocket Launcher — document census and the "before you install" dialog
+   Loaded last; styles only its own classes and reads tokens.css.
+   ========================================================================== */
+
+/* --- census ---------------------------------------------------------- */
+.census-scope {
+    margin-bottom: var(--sp-4);
+}
+
+.census-list {
+    display: flex;
+    max-height: 46vh;
+    flex-direction: column;
+    gap: var(--sp-6);
+    margin-top: var(--sp-4);
+    overflow-y: auto;
+}
+
+.census-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.census-heading {
+    color: var(--c-accent);
+    font: 500 var(--fs-xs)/1.4 var(--font-tech);
+    letter-spacing: var(--track-caps);
+}
+
+.census-row {
+    display: flex;
+    width: 100%;
+    min-height: var(--h-ctl-lg);
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid var(--c-line-2);
+    border-radius: var(--r-sm);
+    background: var(--c-surface);
+    color: var(--c-text);
+    text-align: left;
+    transition: border-color var(--t-fast) ease, background-color var(--t-fast) ease;
+}
+
+.census-row[data-depth="1"] {
+    width: calc(100% - var(--sp-6));
+    margin-left: var(--sp-6);
+}
+
+.census-row[data-depth="2"] {
+    width: calc(100% - var(--sp-6) * 2);
+    margin-left: calc(var(--sp-6) * 2);
+}
+
+.census-row:hover {
+    border-color: var(--c-line-3);
+    background: var(--c-surface-hover);
+}
+
+.census-row.is-on {
+    border-color: var(--focus-ring);
+    background: var(--c-surface-hover);
+}
+
+.census-swatch {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border: 1px solid var(--c-line-3);
+    border-radius: 3px;
+}
+
+.census-swatch--none {
+    background: linear-gradient(135deg, transparent 45%, var(--c-line-3) 45%, var(--c-line-3) 55%, transparent 55%);
+}
+
+.census-text {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+}
+
+.census-label {
+    overflow: hidden;
+    font: 400 var(--fs-sm)/1.35 var(--font-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.census-sub {
+    overflow: hidden;
+    color: var(--c-text-3);
+    font: 400 var(--fs-xs)/1.35 var(--font-tech);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.census-count {
+    flex: none;
+    font: 600 var(--fs-lg)/1 var(--font-tech);
+}
+
+.census-more,
+.census-empty {
+    margin: 0;
+    color: var(--c-text-3);
+    font-size: var(--fs-sm);
+}
+
+.census-near {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--c-warning);
+    border-radius: var(--r-sm);
+    background: rgba(255, 214, 10, 0.08);
+}
+
+.census-near-title {
+    color: var(--c-warning);
+    font: 500 var(--fs-xs)/1.4 var(--font-tech);
+    letter-spacing: var(--track-caps);
+}
+
+.census-near-text {
+    margin: 0;
+    color: var(--c-text);
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+}
+
+.census-near-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+}
+
+.census-near-actions .btn {
+    flex: 1 1 auto;
+}
+
+.census-status {
+    min-height: 1.5em;
+    margin: var(--sp-4) 0 0;
+    color: var(--c-text-3);
+    font-size: var(--fs-sm);
+}
+
+.census-status[data-tone="ok"] {
+    color: var(--c-success);
+}
+
+.census-status[data-tone="error"] {
+    color: var(--c-danger-ink);
+}
+
+/* --- before you install ---------------------------------------------- */
+.review-name {
+    margin: 0;
+    font: 600 var(--fs-lg)/1.35 var(--font-ui);
+    overflow-wrap: anywhere;
+}
+
+.review-badge {
+    display: block;
+    width: fit-content;
+    margin: var(--sp-4) 0;
+    padding: var(--sp-1) var(--sp-4);
+    border: 1px solid currentColor;
+    border-radius: var(--r-pill);
+    font: 500 var(--fs-xs)/1.6 var(--font-tech);
+}
+
+.review-badge[data-tone="ok"],
+.review-row-value[data-tone="ok"] {
+    color: var(--c-success);
+}
+
+.review-badge[data-tone="warn"],
+.review-row-value[data-tone="warn"] {
+    color: var(--c-warning);
+}
+
+.review-badge[data-tone="bad"],
+.review-row-value[data-tone="bad"] {
+    color: var(--c-danger-ink);
+}
+
+.review-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-5);
+}
+
+.review-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-sm);
+    background: var(--c-surface);
+    font-size: var(--fs-sm);
+}
+
+.review-row-label {
+    color: var(--c-text-2);
+}
+
+.review-row-value {
+    flex: none;
+    color: var(--c-text-3);
+    font-family: var(--font-tech);
+}
+
+.review-lines {
+    max-height: 120px;
+    white-space: normal;
+}
+
+.review-line {
+    display: flex;
+    gap: var(--sp-4);
+}
+
+.review-line-no {
+    width: 3ch;
+    flex: none;
+    color: var(--c-text-4);
+    text-align: right;
+}
+
+.review-line-code {
+    min-width: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.review-line-more {
+    color: var(--c-text-3);
+}
+
+.review-consent {
+    align-items: flex-start;
+    margin: var(--sp-5) 0;
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+}
+
+/* --- remix credit on Marketplace cards -------------------------------- */
+.market-credit {
+    display: block;
+    overflow: hidden;
+    padding: 0 var(--sp-1);
+    color: var(--c-accent);
+    font-size: var(--fs-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

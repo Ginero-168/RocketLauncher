@@ -12,6 +12,14 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - A full panel storage now shows an error instead of dropping the change silently.
 
 ### Added
+- Census (Tool tab): lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
+  and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
+  much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
+  Works offline and without AI. Locked and hidden objects are counted but never selected.
+- Before installing a Marketplace script the panel scans its code and shows whether it touches local files, the
+  network or other programs, with the lines that caused each label. Network and system access need a tick first.
+- Remix: a Marketplace script can be installed straight into the editor. Uploading an edited copy records which
+  item it came from, and the credit chain is shown on the card, in the install dialog and on the website.
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
