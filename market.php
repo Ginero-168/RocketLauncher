@@ -186,7 +186,11 @@ rl_layout_start('Marketplace · Rocket Launcher', array(
                 <?php if ($item['description'] !== '') { ?>
                     <p class="card-desc"><?php echo rl_h($item['description']); ?></p>
                 <?php } ?>
+                <?php if ($item['credits']) { $from = $item['credits'][count($item['credits']) - 1]; ?>
+                    <p class="card-meta">ดัดแปลงจาก <?php echo rl_h($from['name']); ?><?php if ($from['by'] !== '') { ?> โดย <?php echo rl_h($from['by']); ?><?php } ?><?php if (count($item['credits']) > 1) { ?> · สายนี้มี <?php echo count($item['credits']); ?> รุ่นก่อนหน้า<?php } ?></p>
+                <?php } ?>
                 <p class="card-meta">
+                    <?php if ($item['remixes'] > 0) { ?>Remix <?php echo (int) $item['remixes']; ?> · <?php } ?>
                     <?php if ($item['owner_name'] !== '') { ?>โดย <?php echo rl_h($item['owner_name']); ?> · <?php } ?>
                     <?php echo (int) $item['stars']; ?> Star · โหลด <?php echo (int) $item['downloads']; ?>
                     <?php if ($item['bytes'] > 0) { ?> · <?php echo rl_h(rl_size_text($item['bytes'])); ?><?php } ?>
