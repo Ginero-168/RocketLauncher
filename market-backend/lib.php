@@ -268,7 +268,34 @@ function rl_public_item($item, $userId = '', $starred = false, $stars = 0, $owne
         'starred' => (bool) $starred,
         'stars' => (int) $stars,
         'mine' => $userId !== '' && $ownerId !== '' && $ownerId === $userId,
+        'parent' => isset($item['parent']) ? (string) $item['parent'] : '',
+        'credits' => rl_item_credits($item),
+        'remixes' => 0,
     );
+}
+
+// The chain of earlier versions an item was remixed from, oldest first.
+// It is copied onto the item at upload, so the credit outlives the originals.
+function rl_item_credits($item)
+{
+    $out = array();
+    if (!isset($item['credits']) || !is_array($item['credits'])) {
+        return $out;
+    }
+    foreach ($item['credits'] as $credit) {
+        if (is_array($credit) && isset($credit['name'])) {
+            $out[] = array(
+                'name' => (string) $credit['name'],
+                'by' => isset($credit['by']) ? (string) $credit['by'] : '',
+            );
+        }
+    }
+    return $out;
+}
+
+function rl_valid_item_id($id)
+{
+    return is_string($id) && preg_match('/^[a-f0-9]{16}$/', $id) === 1;
 }
 
 function rl_new_id()
@@ -1050,6 +1077,17 @@ function rl_present_catalog($type, $userId, $starredOnly)
             $ownerName
         );
     }
+    $remixes = array();
+    foreach (rl_catalog()['items'] as $item) {
+        if (!empty($item['parent']) && rl_expiry_time($item) > time()) {
+            $remixes[$item['parent']] = (isset($remixes[$item['parent']]) ? $remixes[$item['parent']] : 0) + 1;
+        }
+    }
+    foreach ($items as $index => $public) {
+        if (isset($remixes[$public['id']])) {
+            $items[$index]['remixes'] = $remixes[$public['id']];
+        }
+    }
     usort($items, function ($a, $b) {
         return strcmp($b['created'], $a['created']);
     });
@@ -1134,6 +1172,25 @@ function rl_create_item($user)
         return array('ok' => false, 'error' => 'Marketplace storage is full', 'status' => 507);
     }
 
+    // A remix names the item it was made from. The credit chain is fixed here.
+    $parentId = isset($_POST['parent']) && is_string($_POST['parent']) ? trim($_POST['parent']) : '';
+    $parent = null;
+    $credits = array();
+    if ($parentId !== '') {
+        $parent = rl_valid_item_id($parentId) ? rl_find_item($parentId) : null;
+        if (!$parent || rl_normalize_type(isset($parent['type']) ? $parent['type'] : '') !== $type || rl_expiry_time($parent) <= time()) {
+            return array('ok' => false, 'error' => 'The original is no longer in the Marketplace', 'status' => 409);
+        }
+        $users = rl_user_map();
+        $parentOwner = !empty($parent['owner_id']) && isset($users[$parent['owner_id']]['name']) ? $users[$parent['owner_id']]['name'] : '';
+        $credits = rl_item_credits($parent);
+        $credits[] = array('name' => (string) $parent['name'], 'by' => (string) $parentOwner);
+        if (count($credits) > 12) {
+            // Keep the original author and the eleven most recent steps.
+            $credits = array_merge(array($credits[0]), array_slice($credits, -11));
+        }
+    }
+
     $id = rl_new_id();
     $stored = '';
     $preview = '';
@@ -1172,6 +1229,12 @@ function rl_create_item($user)
         if ($type === 'script' && !rl_looks_like_text($file['tmp_name'])) {
             return array('ok' => false, 'error' => 'A script must be a text file');
         }
+        if ($parent && !empty($parent['stored'])) {
+            $original = rl_storage_dir() . '/' . $parent['stored'];
+            if (is_file($original) && hash_file('sha256', $original) === hash_file('sha256', $file['tmp_name'])) {
+                return array('ok' => false, 'error' => 'Change something before sharing a remix', 'status' => 409);
+            }
+        }
         $stored = 'files/' . $id . '.' . $rule['ext'];
         if (!move_uploaded_file($file['tmp_name'], rl_storage_dir() . '/' . $stored)) {
             return array('ok' => false, 'error' => 'Could not store the file');
@@ -1205,6 +1268,10 @@ function rl_create_item($user)
         'expires' => rl_fresh_expiry(),
         'downloads' => 0,
     );
+    if ($parent) {
+        $item['parent'] = $parentId;
+        $item['credits'] = $credits;
+    }
 
     $saved = rl_locked(function () use ($item) {
         $catalog = rl_catalog();
