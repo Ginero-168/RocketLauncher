@@ -52,4 +52,11 @@
 - The 3.1.0 working tree was lost and rebuilt from the signed ZXP. `css/`, `js/`, `jsx/`, `CSXS/` and `index.html`
   are the shipped 3.1.0 files. The module list above, `chat-backend/`, the deploy/release workflows and `README.md`
   still describe 3.0.5 in places (chat and `ai-agent.js` no longer exist in the panel) and need a pass.
-- The Marketplace tab (`js/market.js`) talks to https://rl.kirita.me, source in `Ginero-168/RocketLauncher-backend`.
+
+## Marketplace site (`market-backend/`)
+- PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former
+  `Ginero-168/RocketLauncher-backend` repository with its history (git subtree).
+- Tests: `cd market-backend && php tests/run.php` (PHP CLI with curl).
+- Deploy: `deploy-market-backend.yml` republishes this folder as the root of the `market-deploy` branch, which
+  Hostinger pulls. Never point Hostinger at `main`. `config.json` and `storage/` data exist only on the server.
+- The folder is excluded from the ZXP in `release-extension.yml`; keep it that way.

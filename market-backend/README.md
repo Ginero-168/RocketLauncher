@@ -59,7 +59,9 @@
 
 ## ขึ้น Hostinger ผ่าน GitHub
 
-1. ใน hPanel เปิด Git แล้วเชื่อม repo นี้ ชี้โดเมนมาที่รากของ repo
+โค้ดของเว็บอยู่ในโฟลเดอร์ `market-backend/` ของ repo `Ginero-168/RocketLauncher` ทุกครั้งที่ `main` มีการแก้ไขในโฟลเดอร์นี้ GitHub Actions (`deploy-market-backend.yml`) จะรันเทสต์ แล้วเผยแพร่เฉพาะโฟลเดอร์นี้เป็นรากของ branch `market-deploy`
+
+1. ใน hPanel เปิด Git แล้วเชื่อม repo `Ginero-168/RocketLauncher` เลือก branch `market-deploy` ชี้โดเมนมาที่รากของ branch นั้น (อย่าเลือก `main` เพราะจะได้ซอร์สของพาเนลทั้งหมดขึ้นเว็บ)
 2. เปิด `https://โดเมน/setup.php` หนึ่งครั้ง แล้วเก็บโทเคนที่แสดง
 3. ใน Google Cloud สร้าง OAuth client ชนิด Web แล้วใส่ Redirect URI ที่หน้า setup แสดง
 4. กลับมาที่ `setup.php` ใส่โทเคนเดิม, ที่อยู่เว็บ, client id และ client secret
