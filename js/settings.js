@@ -41,8 +41,23 @@
         const count = byId('hotkey_count_display');
         if (count) count.textContent = localStorage.getItem('tata_hotkey_count') || '5';
         setStatus(byId('model_check_msg'), '');
+        paintDataFolder();
         syncStepper();
         if (TATA.market && TATA.market.paintAccount) TATA.market.paintAccount();
+    }
+
+    function paintDataFolder() {
+        const hint = byId('data_folder_hint');
+        const button = byId('btn_show_data_folder');
+        const persist = TATA.persist;
+        const on = !!(persist && persist.available);
+        if (hint) {
+            hint.textContent = on
+                ? 'Scripts, layout, hotkeys and colours are also saved outside the Illustrator cache, so clearing the cache does not remove them.'
+                : 'A safe copy could not be created on this computer. Clearing the Illustrator cache will remove your panel data.';
+            if (on) hint.title = persist.dir;
+        }
+        if (button) button.hidden = !on;
     }
 
     function syncStepper() {
@@ -142,6 +157,13 @@
             });
         }
 
+        const btnData = byId('btn_show_data_folder');
+        if (btnData) {
+            btnData.addEventListener('click', () => {
+                if (!TATA.persist || !TATA.persist.reveal()) toast('Could not open the data folder', 'error');
+            });
+        }
+
         const btnCheck = byId('btn_check_models');
         if (btnCheck) btnCheck.addEventListener('click', () => checkToken(btnCheck));
 
@@ -171,6 +193,8 @@
                     danger: true
                 }).then(ok => {
                     if (!ok) return;
+                    // Without this the durable copy would restore everything.
+                    if (TATA.persist && TATA.persist.reset) TATA.persist.reset();
                     localStorage.clear();
                     location.reload();
                 });

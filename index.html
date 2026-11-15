@@ -499,6 +499,14 @@
 			<hr class="modal-divider">
 
 			<div class="control-group">
+				<span class="control-label">Your data</span>
+				<p id="data_folder_hint" class="control-hint"></p>
+				<button type="button" id="btn_show_data_folder" class="btn btn--block" hidden>Show data folder</button>
+			</div>
+
+			<hr class="modal-divider">
+
+			<div class="control-group">
 				<span class="control-label">Factory reset</span>
 				<p class="control-hint">Restore the panel to its original state. Removes all custom scripts and layout changes.</p>
 				<button type="button" id="btn_factory_reset" class="btn btn--danger btn--block">Back to default</button>
@@ -590,6 +598,7 @@
 	<div id="boot_error" class="boot-error" role="alert" hidden></div>
 
 	<script src="js/libs/CSInterface.js"></script>
+	<script src="js/persist.js"></script>
 	<script src="js/core.js"></script>
 	<script src="js/storage.js"></script>
 	<script src="js/sanitize.js"></script>

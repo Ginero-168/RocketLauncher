@@ -2,6 +2,29 @@
 
 All notable changes to the Rocket Launcher extension will be documented in this file.
 
+## Unreleased
+
+### Fixed
+- Clearing the Illustrator/CEP cache no longer removes scripts, layout, hotkeys, the Keep index or custom colours.
+  The panel now keeps a second copy in `~/Library/Application Support/RocketLauncher/panel-data`
+  (`%APPDATA%\RocketLauncher\panel-data` on Windows) and restores it on the next start. One snapshot per key per
+  day is kept (last 5). Sign-in sessions and the Replicate token are not copied.
+- A full panel storage now shows an error instead of dropping the change silently.
+
+### Added
+- Settings → Your data: shows whether the safe copy is active and opens its folder.
+
+### Changed
+- Factory reset also sets the safe copy aside (kept in `panel-data/before-reset`).
+
+## 3.1.0
+
+Source recovered from the signed `RocketLauncher-v3.1.0.zxp`; the original commits were lost.
+- Color tools and the SVG keeper moved into the main panel (`colors.html`, `keep.html` removed).
+- Added Marketplace, Graphic Styles, settings, update check and input sanitising modules.
+- Stylesheet split into tokens, base, components, shell, tools, library and colors.
+- Team chat and the old AI agent module removed from the panel.
+
 ## [3.0.0] - 2026-08-04
 
 ### Changed
