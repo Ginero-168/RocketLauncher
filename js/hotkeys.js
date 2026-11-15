@@ -8,22 +8,37 @@
     let hotkeys = [];
     let hotkeyCount = 5;
 
+    let hotkeyListenersBound = false;
+
     function initHotkeys() {
         const savedCount = localStorage.getItem('tata_hotkey_count');
         if (savedCount) hotkeyCount = parseInt(savedCount);
         if (isNaN(hotkeyCount) || hotkeyCount < 1) hotkeyCount = 5;
 
-        const saved = localStorage.getItem('tata_hotkeys');
-        if (saved) {
-            try { hotkeys = JSON.parse(saved); } catch (e) { }
+        if (global.TATA && typeof global.TATA.readStoredHotkeys === 'function') {
+            hotkeys = global.TATA.readStoredHotkeys() || [];
+        } else {
+            const saved = localStorage.getItem('tata_hotkeys');
+            if (saved) {
+                try { hotkeys = JSON.parse(saved); } catch (e) { hotkeys = []; }
+            }
         }
+        if (!Array.isArray(hotkeys)) hotkeys = [];
+        hotkeys = hotkeys.map(entry => (
+            entry && typeof entry === 'object' && entry.id != null && String(entry.id).trim() !== ''
+                ? entry
+                : null
+        ));
 
         while (hotkeys.length < hotkeyCount) {
             hotkeys.push(null);
         }
 
-        setupSlotDelegation();
         renderHotkeys();
+        if (!hotkeyListenersBound) {
+            setupSlotDelegation();
+            hotkeyListenersBound = true;
+        }
         setupDraggableButtons();
     }
 
@@ -31,15 +46,73 @@
         localStorage.setItem('tata_hotkeys', JSON.stringify(hotkeys));
     }
 
-    function getHotkeyTextColor(color) {
-        const match = String(color || '').replace('#', '').match(/^[0-9a-f]{6}$/i);
-        if (!match) return '#171717';
+    // Built-in tools take their icon from this release, so a pinned tool
+    // picks up icon updates; anything else keeps the icon it was pinned with.
+    function iconFor(data) {
+        const id = String(data.id || '');
+        const defaults = global.TATA && global.TATA.v2Defaults && global.TATA.v2Defaults.tab_button;
+        if (id.indexOf('btn_') === 0 && Array.isArray(defaults)) {
+            for (let i = 0; i < defaults.length; i++) {
+                if (defaults[i].id === id) return defaults[i].icon;
+            }
+        }
+        return data.icon;
+    }
 
-        const hex = match[0];
-        const r = parseInt(hex.slice(0, 2), 16);
-        const g = parseInt(hex.slice(2, 4), 16);
-        const b = parseInt(hex.slice(4, 6), 16);
-        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#171717' : '#f5f2e9';
+    function fillSlot(slot, data, index) {
+        slot.classList.add('filled');
+        const tata = global.TATA || {};
+        const color = tata.resolveColor ? (tata.resolveColor(data.color) || data.color) : data.color;
+        if (typeof tata.applyTint === 'function') tata.applyTint(slot, color);
+
+        slot.title = data.label || '';
+        slot.dataset.id = data.id;
+        slot.setAttribute('aria-label', 'Hotkey slot ' + (index + 1) + ', ' + (data.label || 'assigned action'));
+
+        let iconEl = slot.querySelector('.hotkey-icon');
+        if (!iconEl) {
+            iconEl = document.createElement('span');
+            iconEl.className = 'hotkey-icon';
+            iconEl.setAttribute('aria-hidden', 'true');
+            slot.appendChild(iconEl);
+        }
+        const icon = iconFor(data);
+        const mounted = icon && typeof tata.mountSanitizedIcon === 'function'
+            ? tata.mountSanitizedIcon(iconEl, icon, '')
+            : false;
+        if (!mounted) iconEl.textContent = String(data.label || '?').substring(0, 2);
+
+        let nameLabel = slot.querySelector('.hotkey-label');
+        if (!nameLabel) {
+            nameLabel = document.createElement('span');
+            nameLabel.className = 'hotkey-label';
+            slot.appendChild(nameLabel);
+        }
+        nameLabel.textContent = data.label || '';
+
+        // Shown on hover and keyboard focus by CSS (:hover / :focus-within).
+        let removeBtn = slot.querySelector('.hotkey-remove');
+        if (!removeBtn || removeBtn.tagName !== 'BUTTON') {
+            const oldRemoveBtn = removeBtn;
+            removeBtn = document.createElement('button');
+            removeBtn.className = 'hotkey-remove';
+            if (oldRemoveBtn) oldRemoveBtn.replaceWith(removeBtn);
+            else slot.appendChild(removeBtn);
+        }
+        removeBtn.type = 'button';
+        removeBtn.textContent = '\u00d7';
+        removeBtn.setAttribute('aria-label', 'Remove hotkey from slot ' + (index + 1));
+        removeBtn.title = 'Remove';
+    }
+
+    function clearSlot(slot, index) {
+        slot.classList.remove('filled');
+        const tata = global.TATA || {};
+        if (typeof tata.applyTint === 'function') tata.applyTint(slot, '');
+        slot.title = 'Drag a button here';
+        slot.dataset.id = '';
+        slot.setAttribute('aria-label', 'Hotkey slot ' + (index + 1) + ', empty');
+        slot.textContent = '';
     }
 
     function renderHotkeys() {
@@ -50,84 +123,18 @@
         bar.style.setProperty('--col-count', cols);
 
         for (let i = 0; i < hotkeyCount; i++) {
-            const data = hotkeys[i];
             let slot = bar.querySelector(`.hotkey-slot[data-slot="${i + 1}"]`);
-
             if (!slot) {
                 slot = document.createElement('div');
-                slot.className = 'hotkey-slot';
+                slot.className = 'hotkey-slot tile';
                 slot.dataset.slot = (i + 1);
                 bar.appendChild(slot);
             }
-
-            if (data) {
-                slot.classList.add('filled');
-                if (data.color) {
-                    slot.style.background = data.color;
-                    slot.style.color = getHotkeyTextColor(data.color);
-                } else {
-                    slot.style.background = '';
-                    slot.style.color = '';
-                }
-
-                slot.title = data.label;
-                slot.dataset.id = data.id;
-
-                // Icon element
-                let iconEl = slot.querySelector('.hotkey-icon');
-                if (!iconEl) {
-                    iconEl = document.createElement('span');
-                    iconEl.className = 'hotkey-icon';
-                    slot.appendChild(iconEl);
-                }
-
-                if (data.icon) {
-                    iconEl.innerHTML = data.icon;
-                    iconEl.style.fontSize = '';
-                    iconEl.style.fontWeight = '';
-                    iconEl.style.lineHeight = '';
-                    const svg = iconEl.querySelector('svg');
-                    if (svg) {
-                        svg.setAttribute('width', '20');
-                        svg.setAttribute('height', '20');
-                        svg.style.width = '20px';
-                        svg.style.height = '20px';
-                        svg.style.minWidth = '20px';
-                        svg.style.display = 'block';
-                    }
-                } else {
-                    iconEl.textContent = data.label.substring(0, 2);
-                    iconEl.style.fontSize = '12px';
-                    iconEl.style.fontWeight = '700';
-                    iconEl.style.lineHeight = '1';
-                }
-
-                // Name label
-                let nameLabel = slot.querySelector('.hotkey-label');
-                if (!nameLabel) {
-                    nameLabel = document.createElement('span');
-                    nameLabel.className = 'hotkey-label';
-                    slot.appendChild(nameLabel);
-                }
-                nameLabel.textContent = data.label;
-
-                // Remove button
-                let removeBtn = slot.querySelector('.hotkey-remove');
-                if (!removeBtn) {
-                    removeBtn = document.createElement('span');
-                    removeBtn.className = 'hotkey-remove';
-                    removeBtn.innerHTML = '&times;';
-                    removeBtn.title = 'Remove';
-                    slot.appendChild(removeBtn);
-                }
-            } else {
-                slot.classList.remove('filled');
-                slot.style.background = '';
-                slot.style.color = '';
-                slot.title = "Drag a button here";
-                slot.dataset.id = '';
-                slot.textContent = '';
-            }
+            slot.classList.add('tile');
+            slot.setAttribute('tabindex', '0');
+            slot.setAttribute('role', 'button');
+            if (hotkeys[i]) fillSlot(slot, hotkeys[i], i);
+            else clearSlot(slot, i);
         }
 
         // Remove extra slots if hotkeyCount reduced
@@ -173,38 +180,74 @@
             }
         });
 
+        bar.addEventListener('keydown', e => {
+            const slot = e.target.closest('.hotkey-slot');
+            if (!slot || e.target !== slot) return;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                activateSlot(slot);
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+            }
+        });
+
+        bar.addEventListener('keyup', e => {
+            const slot = e.target.closest('.hotkey-slot');
+            if (!slot || e.target !== slot || (e.key !== ' ' && e.key !== 'Spacebar')) return;
+            e.preventDefault();
+            activateSlot(slot);
+        });
+
         bar.addEventListener('click', e => {
             const slot = e.target.closest('.hotkey-slot');
             if (!slot) return;
 
-            const index = parseInt(slot.dataset.slot, 10) - 1;
-
             // Remove button clicked
             if (e.target.closest('.hotkey-remove')) {
                 e.stopPropagation();
-                hotkeys[index] = null;
-                saveHotkeys();
-                renderHotkeys();
+                removeHotkey(slot);
                 return;
             }
 
             // Slot clicked: trigger the assigned button
-            const data = hotkeys[index];
-            if (!data || !data.id) return;
-            const btn = document.getElementById(data.id);
-            if (btn) {
-                btn.click();
-                slot.style.opacity = '0.5';
-                setTimeout(() => { slot.style.opacity = '1'; }, 100);
-            }
+            activateSlot(slot);
         });
+    }
+
+    function activateSlot(slot) {
+        const index = parseInt(slot.dataset.slot, 10) - 1;
+        const data = hotkeys[index];
+        if (!data || !data.id) return;
+        const btn = document.getElementById(data.id);
+        if (!btn) {
+            hotkeys[index] = null;
+            saveHotkeys();
+            renderHotkeys();
+            return;
+        }
+        btn.click();
+    }
+
+    function removeHotkey(slot) {
+        const index = parseInt(slot.dataset.slot, 10) - 1;
+        hotkeys[index] = null;
+        saveHotkeys();
+        renderHotkeys();
+        slot.focus();
     }
 
     function setupDraggableButtons() {
         const buttons = document.querySelectorAll('.tab-content button');
         buttons.forEach(btn => {
+            if (!btn.id || btn.dataset.hotkeyDragBound === '1') return;
+            btn.dataset.hotkeyDragBound = '1';
             btn.setAttribute('draggable', 'true');
             btn.addEventListener('dragstart', e => {
+                if (!btn.id) {
+                    e.preventDefault();
+                    return;
+                }
                 const tabId = btn.closest('.tab-content') ? btn.closest('.tab-content').id : 'unknown';
                 const label = btn.innerText.trim();
                 let icon = null;
@@ -213,10 +256,12 @@
                     icon = svg.outerHTML;
                 }
 
+                // Panel buttons carry no user colour; a btn-<colour> class may.
                 let color = null;
+                const resolve = global.TATA && global.TATA.resolveColor;
                 btn.classList.forEach(cls => {
-                    if (cls.startsWith('btn-')) {
-                        color = cls.replace('btn-', '');
+                    if (!color && cls.indexOf('btn-') === 0 && resolve && resolve(cls.slice(4))) {
+                        color = cls.slice(4);
                     }
                 });
 

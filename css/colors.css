@@ -1,0 +1,653 @@
+/* ==========================================================================
+   Colors tab: Custom Colors, Color Harmony and Contrast Checker.
+   Colour values are data, so they arrive as custom properties set by
+   js/color-tools.js (--swatch, --dot, --hex-bg/--hex-fg, --tip-bg/--tip-fg).
+   ========================================================================== */
+
+#tab_colors.active {
+    gap: var(--sp-3);
+    padding: var(--sp-2);
+}
+
+/* ------------------------------------------------------- wheel + dot */
+
+.mini-wheel,
+.harmony-wheel {
+    position: relative;
+    flex: none;
+}
+
+.mini-wheel canvas,
+.harmony-wheel canvas {
+    display: block;
+    border: 1px solid var(--c-line-2);
+    border-radius: 50%;
+    cursor: crosshair;
+}
+
+.mini-wheel canvas {
+    width: 76px;
+    height: 76px;
+}
+
+.harmony-wheel canvas {
+    width: 92px;
+    height: 92px;
+}
+
+.wheel-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: var(--dot, transparent);
+    box-shadow: 0 0 0 1px #1c1916;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.wheel-dot.is-light {
+    border-color: #1c1916;
+    box-shadow: 0 0 0 1px #ffffff;
+}
+
+/* Hex text field drawn on its own colour. */
+.hex-input {
+    min-width: 0;
+    height: 24px;
+    padding: 0 var(--sp-2);
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: 700 var(--fs-md)/1 var(--font-tech);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.hex-input:focus-visible {
+    outline: none;
+}
+
+.hex-input[aria-invalid="true"] {
+    text-decoration: underline wavy var(--c-danger);
+}
+
+@media (max-width: 199px) {
+    .hex-input {
+        letter-spacing: 0;
+    }
+}
+
+
+/* ===================================================== Custom Colors */
+
+.custom-colors-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.custom-colors-slots {
+    display: grid;
+    flex: 1;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.custom-color-slot {
+    height: 30px;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--r-chrome);
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease-spring);
+}
+
+.custom-color-slot:hover {
+    transform: translateY(var(--lift));
+}
+
+.custom-color-slot.is-selected {
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px var(--c-bg);
+}
+
+.slot-editor {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+}
+
+.slot-editor-fields {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-width: 0;
+}
+
+.slot-name {
+    color: var(--c-text-3);
+    font: 700 var(--fs-2xs)/1 var(--font-tech);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+}
+
+.slot-editor .field {
+    height: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.custom-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.custom-actions .btn:not(.btn--icon) {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Narrow panel: the swatches get the full row (the stepper moves under
+   them) so up to eight stay easy to hit. */
+@media (max-width: 279px) {
+    .custom-colors-row {
+        flex-wrap: wrap;
+    }
+
+    .custom-colors-slots {
+        flex-basis: 100%;
+    }
+
+    .custom-count {
+        margin: 0 auto;
+    }
+}
+
+/* Very narrow: swatches wrap onto a second row instead of shrinking
+   below a usable width. */
+@media (max-width: 199px) {
+    .custom-colors-slots {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(auto-fit, minmax(14px, 1fr));
+    }
+
+    .custom-color-slot {
+        height: 26px;
+    }
+}
+
+@media (max-width: 239px) {
+    .slot-editor {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .slot-editor .mini-wheel {
+        align-self: center;
+    }
+
+    .custom-actions .btn-label {
+        display: none;
+    }
+
+    .custom-actions .btn,
+    .custom-actions .btn:not(.btn--icon) {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        padding: 0;
+    }
+}
+
+/* ===================================================== Color Harmony */
+
+.harmony-top {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-5);
+}
+
+.harmony-controls {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-4);
+    min-width: 0;
+}
+
+@media (max-width: 239px) {
+    .harmony-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .harmony-wheel {
+        order: -1;
+        align-self: center;
+    }
+}
+
+.recent-colors {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-height: 14px;
+}
+
+.recent-label {
+    color: var(--c-text-3);
+    font: 500 var(--fs-2xs)/1 var(--font-tech);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.recent-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+}
+
+.recent-list .swatch-btn {
+    width: 14px;
+    height: 14px;
+}
+
+.mini-hex-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-1) 0 var(--sp-2);
+    border: 1px solid var(--c-line-2);
+    background: var(--hex-bg, var(--c-field));
+    color: var(--hex-fg, var(--c-text));
+}
+
+.mini-hex-card .hex-input {
+    flex: 1;
+}
+
+.hex-pick {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-xs);
+    background: transparent;
+    color: inherit;
+    opacity: 0.8;
+}
+
+.hex-pick:hover {
+    opacity: 1;
+    background: rgba(127, 127, 127, 0.2);
+}
+
+.hex-pick svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.lightness-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+}
+
+.lightness-row svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: var(--c-text-3);
+}
+
+.harmony-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.harmony-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: var(--sp-2);
+    overflow: hidden;
+    border: 1px solid var(--c-line);
+    background: var(--c-surface);
+}
+
+.harmony-name {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    padding: var(--sp-2) 0 var(--sp-2) var(--sp-3);
+    overflow: hidden;
+    color: var(--c-text);
+    font: 700 var(--fs-xs)/1.2 var(--font-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.harmony-place,
+.harmony-swatch {
+    grid-row: 1;
+    margin: var(--sp-1) 0;
+}
+
+.harmony-place {
+    grid-column: 2;
+}
+
+.harmony-swatch {
+    grid-column: 3;
+    margin-right: var(--sp-1);
+}
+
+.harmony-strip {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 18px;
+}
+
+@media (max-width: 259px) {
+    .harmony-card .btn-label {
+        display: none;
+    }
+
+    .harmony-place,
+    .harmony-swatch {
+        width: var(--btn-h);
+        padding: 0;
+    }
+
+    .harmony-place > svg,
+    .harmony-swatch > svg {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+@media (max-width: 199px) {
+    .harmony-name {
+        grid-column: 1 / -1;
+        padding: var(--sp-2) var(--sp-3) var(--sp-1);
+    }
+
+    .harmony-strip {
+        grid-column: 1;
+        height: 20px;
+    }
+
+    .harmony-place,
+    .harmony-swatch {
+        --btn-h: 18px;
+        grid-row: 2;
+        margin-top: 1px;
+        margin-bottom: 1px;
+    }
+
+    .harmony-place > svg,
+    .harmony-swatch > svg {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+.harmony-strip span {
+    flex: 1;
+    background: var(--swatch, transparent);
+}
+
+/* ================================================== Contrast Checker */
+
+.tip-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-5) var(--sp-6);
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: var(--tip-bg, #f5f2e9);
+    color: var(--tip-fg, #171717);
+    text-align: center;
+    transition: transform var(--t-fast) var(--ease-spring);
+}
+
+.tip-card:active {
+    transform: scale(0.98);
+}
+
+.tip-card.is-same {
+    border-color: var(--c-line-3);
+}
+
+.tip-kicker {
+    font: 600 var(--fs-2xs)/1 var(--font-tech);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+}
+
+.tip-text {
+    font: italic 700 var(--fs-lg)/1.35 var(--font-ui);
+    overflow-wrap: anywhere;
+}
+
+.contrast-pair {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.contrast-side {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+}
+
+.contrast-label {
+    color: var(--c-text-3);
+    font: 700 var(--fs-xs)/1 var(--font-tech);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+}
+
+.cc-hex {
+    display: flex;
+    width: 100%;
+    border: 1px solid var(--c-line-2);
+    background: var(--hex-bg, var(--c-field));
+    color: var(--hex-fg, var(--c-text));
+}
+
+.cc-hex .hex-input {
+    width: 100%;
+    text-align: center;
+}
+
+.contrast-swap {
+    flex: none;
+}
+
+@media (max-width: 219px) {
+    .contrast-pair {
+        flex-direction: column;
+    }
+
+    .contrast-swap {
+        transform: rotate(90deg);
+    }
+
+    .contrast-side {
+        width: 100%;
+    }
+}
+
+/* Score card: the level drives every colour (fail / warn / pass). */
+.score-card {
+    --level: var(--c-level-aaa);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    padding: var(--sp-5);
+    border: 1px solid var(--c-line);
+    background: var(--c-surface);
+}
+
+.score-card[data-level="fail"] {
+    --level: var(--c-danger);
+}
+
+.score-card[data-level="warn"] {
+    --level: var(--c-level-aa);
+}
+
+.score-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--c-line);
+}
+
+.score-number {
+    color: var(--level);
+    font: 800 var(--fs-display)/1 var(--font-ui);
+    letter-spacing: -0.02em;
+}
+
+.score-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--sp-1);
+    color: var(--level);
+}
+
+.score-label {
+    font: 700 var(--fs-lg)/1.2 var(--font-ui);
+}
+
+.score-stars {
+    font-size: var(--fs-md);
+    letter-spacing: 0.08em;
+}
+
+.score-boxes {
+    display: flex;
+    gap: var(--sp-4);
+}
+
+.score-box {
+    --box: var(--c-level-aaa);
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    min-width: 0;
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-xs);
+    background: var(--box);
+    color: #171717;
+    font: 700 var(--fs-sm)/1.2 var(--font-ui);
+}
+
+.score-box[data-level="fail"] {
+    --box: var(--c-level-fail);
+    color: #ffffff;
+}
+
+.score-box[data-level="aa"] {
+    --box: var(--c-level-aa);
+}
+
+.score-box span:last-child {
+    flex: none;
+    font-size: var(--fs-xs);
+}
+
+@media (max-width: 219px) {
+    .score-boxes {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 199px) {
+    .score-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .score-meta {
+        align-items: flex-start;
+    }
+
+    .score-number {
+        font-size: 28px;
+    }
+}
+
+/* Tiny panel (~100px): smaller pick button and tip padding. */
+@media (max-width: 139px) {
+    .mini-hex-card {
+        gap: var(--sp-1);
+        padding: 0 var(--sp-1);
+    }
+
+    .mini-hex-card .hex-input {
+        padding: 0 var(--sp-1);
+        font-size: var(--fs-sm);
+    }
+
+    .hex-pick {
+        width: 20px;
+        height: 20px;
+    }
+
+    .tip-card {
+        padding: var(--sp-4) var(--sp-3);
+    }
+
+    .tip-kicker {
+        letter-spacing: 0.04em;
+        overflow-wrap: anywhere;
+    }
+
+    .score-box {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ~100px: the Random button needs the chevron's room in the Harmony header. */
+@media (max-width: 119px) {
+    .section-head-row .section-header {
+        padding: 0 var(--sp-3);
+    }
+
+    .section-head-row .chevron {
+        display: none;
+    }
+}

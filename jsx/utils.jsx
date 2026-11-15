@@ -19,6 +19,65 @@ if (!JSON.stringify) {
     };
 }
 
+if (!JSON.parse) {
+    // ExtendScript (ES3) has no native JSON.parse. Strict recursive-descent parser (no eval).
+    JSON.parse = function (text) {
+        var at = 0, ch = ' ', str = String(text);
+        function error(m) { throw new SyntaxError("JSON.parse: " + m + " at " + at); }
+        function next(c) { if (c && c !== ch) error("Expected '" + c + "'"); ch = str.charAt(at); at += 1; return ch; }
+        function white() { while (ch && ch <= ' ') next(); }
+        function number() {
+            var s = '';
+            if (ch === '-') { s = '-'; next('-'); }
+            while (ch >= '0' && ch <= '9') { s += ch; next(); }
+            if (ch === '.') { s += '.'; while (next() && ch >= '0' && ch <= '9') s += ch; }
+            if (ch === 'e' || ch === 'E') { s += ch; next(); if (ch === '-' || ch === '+') { s += ch; next(); } while (ch >= '0' && ch <= '9') { s += ch; next(); } }
+            var n = +s; if (isNaN(n)) error("Bad number"); return n;
+        }
+        function string() {
+            var s = '', esc = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
+            if (ch !== '"') error("Bad string");
+            while (next()) {
+                if (ch === '"') { next(); return s; }
+                if (ch === '\\') {
+                    next();
+                    if (ch === 'u') { var u = 0; for (var i = 0; i < 4; i++) { var h = parseInt(next(), 16); if (isNaN(h)) error("Bad unicode"); u = u * 16 + h; } s += String.fromCharCode(u); }
+                    else if (esc.hasOwnProperty(ch)) s += esc[ch]; else error("Bad escape");
+                } else s += ch;
+            }
+            error("Unterminated string");
+        }
+        function word() {
+            if (ch === 't') { next('t'); next('r'); next('u'); next('e'); return true; }
+            if (ch === 'f') { next('f'); next('a'); next('l'); next('s'); next('e'); return false; }
+            if (ch === 'n') { next('n'); next('u'); next('l'); next('l'); return null; }
+            error("Unexpected '" + ch + "'");
+        }
+        function array() {
+            var a = []; next('['); white();
+            if (ch === ']') { next(); return a; }
+            while (ch) { a.push(value()); white(); if (ch === ']') { next(); return a; } next(','); white(); }
+            error("Bad array");
+        }
+        function object() {
+            var o = {}, k; next('{'); white();
+            if (ch === '}') { next(); return o; }
+            while (ch) { k = string(); white(); next(':'); o[k] = value(); white(); if (ch === '}') { next(); return o; } next(','); white(); }
+            error("Bad object");
+        }
+        function value() {
+            white();
+            if (ch === '{') return object();
+            if (ch === '[') return array();
+            if (ch === '"') return string();
+            if (ch === '-' || (ch >= '0' && ch <= '9')) return number();
+            return word();
+        }
+        var result = value(); white(); if (ch) error("Trailing characters");
+        return result;
+    };
+}
+
 // ====================================================================================
 // ====================================   LAYER MANAGEMENT   ==========================
 // ====================================================================================
