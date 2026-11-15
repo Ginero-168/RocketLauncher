@@ -1,0 +1,530 @@
+/* ==========================================================================
+   Shell: the frame every tab sits in — hotkey bar, tab bar, the Tools
+   action row, the scrolling panel area, the footer and panel states.
+   The panel opens at 125×300, so the narrow layout is the main layout.
+   ========================================================================== */
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================================== hotkey bar */
+
+.hotkey-bar {
+    flex: none;
+    display: grid;
+    grid-template-columns: repeat(var(--col-count, 5), minmax(0, 1fr));
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-chrome);
+}
+
+.hotkey-slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-width: 0;
+    height: var(--h-hotkey);
+    padding: var(--sp-1) var(--sp-2);
+}
+
+.hotkey-slot:not(.filled) {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.025);
+    background-image: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: var(--c-text-4);
+    cursor: default;
+}
+
+.hotkey-slot:not(.filled):hover,
+.hotkey-slot:not(.filled):active {
+    transform: none;
+}
+
+.hotkey-slot:not(.filled)::before {
+    content: "+";
+    font: 400 var(--fs-md)/1 var(--font-tech);
+}
+
+.hotkey-slot.drag-over {
+    border-style: solid;
+    border-color: rgba(var(--c-accent-rgb), 0.85);
+    background-color: rgba(var(--c-accent-rgb), 0.12);
+}
+
+.hotkey-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
+    font: 700 var(--fs-md)/1 var(--font-ui);
+}
+
+.hotkey-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.hotkey-label {
+    max-width: 100%;
+    overflow: hidden;
+    font: 700 var(--fs-xs)/1.15 var(--font-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hotkey-remove {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    z-index: var(--z-raised);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    background: #111111;
+    color: #ffffff;
+    font: 600 var(--fs-sm)/1 var(--font-ui);
+    text-shadow: none;
+    opacity: 0;
+    transition: opacity var(--t-fast) ease, background-color var(--t-fast) ease;
+}
+
+.hotkey-slot:hover .hotkey-remove,
+.hotkey-slot:focus-within .hotkey-remove {
+    opacity: 1;
+}
+
+.hotkey-remove:hover {
+    border-color: rgba(255, 90, 80, 0.9);
+    background: var(--c-danger);
+}
+
+/* Narrow panel: five slots are ~20px wide, so they show the icon only. */
+@media (max-width: 239px) {
+    .hotkey-slot {
+        height: 30px;
+    }
+
+    .hotkey-label {
+        display: none;
+    }
+
+    .hotkey-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* ============================================================= tab bar */
+/* Short labels at normal widths, icons when narrow, a scrolling strip
+   only below the 20px-per-tab floor (the panel's 20×20 minimum). */
+
+.tabs {
+    flex: none;
+    display: flex;
+    align-items: stretch;
+    height: var(--h-tabs);
+    padding: 0 var(--sp-3);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-chrome);
+    scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-btn {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    padding: 0 var(--sp-2);
+    border: 0;
+    background: transparent;
+    color: var(--c-text-4);
+    font: 500 var(--fs-xs)/1 var(--font-tech);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color var(--t-fast) ease;
+}
+
+.tab-btn:hover {
+    color: var(--c-text-2);
+}
+
+.tab-btn.active {
+    color: var(--c-text);
+}
+
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: 0;
+    height: 2px;
+    background: #ffffff;
+}
+
+.tab-btn:focus-visible {
+    outline-offset: -3px;
+}
+
+.tab-icon {
+    display: none;
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+}
+
+@media (max-width: 339px) {
+    .tab-btn {
+        padding: 0 var(--sp-1);
+        letter-spacing: 0.06em;
+    }
+}
+
+@media (max-width: 259px) {
+    .tab-label {
+        display: none;
+    }
+
+    .tab-icon {
+        display: block;
+    }
+
+    .tab-btn {
+        padding: 0;
+    }
+}
+
+/* Tiny panel: six 16px tabs still fit in 100px before the strip scrolls. */
+@media (max-width: 139px) {
+    .tabs {
+        padding: 0 var(--sp-1);
+    }
+
+    .tab-btn {
+        min-width: 16px;
+    }
+
+    .tab-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* ===================================================== Tools action row */
+
+.tab-actions {
+    flex: none;
+    display: none;
+    justify-content: center;
+    gap: var(--sp-3);
+    padding: var(--sp-4) var(--gutter) var(--sp-1);
+}
+
+body[data-tab="tab_button"] .tab-actions {
+    display: flex;
+}
+
+.tab-actions .btn {
+    padding: 0 var(--sp-5);
+}
+
+@media (max-width: 339px) {
+    .tab-actions .btn-label {
+        display: none;
+    }
+
+    .tab-actions .btn {
+        width: var(--btn-h);
+        padding: 0;
+    }
+}
+
+@media (max-width: 179px) {
+    .tab-actions {
+        gap: var(--sp-2);
+        padding: var(--sp-4) var(--sp-3) var(--sp-1);
+    }
+
+    .tab-actions .btn {
+        --btn-h: 24px;
+        flex: 0 1 var(--btn-h);
+        min-width: 0;
+    }
+}
+
+/* ========================================================= panel area */
+
+.panel-main {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-content {
+    display: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--gutter);
+}
+
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+/* ============================================================= footer */
+
+.footer-toolbar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    height: var(--h-footer);
+    padding: 0 var(--sp-4);
+    border-top: 1px solid var(--c-line);
+    background: rgba(5, 5, 5, 0.92);
+}
+
+.brand-mark {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+    overflow: hidden;
+    color: var(--c-text);
+    font: 600 var(--fs-2xs)/1 var(--font-tech);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.brand-dot {
+    flex: none;
+    width: 5px;
+    height: 5px;
+    background: var(--c-success);
+}
+
+.brand-short {
+    display: none;
+}
+
+.footer-right {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.footer-market.active {
+    border-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+.profile-slot {
+    position: relative;
+    flex: none;
+}
+
+.footer-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--h-ctl);
+    height: var(--h-ctl);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--glass-rim);
+    border-radius: 50%;
+    background-color: var(--glass-fill);
+    background-image: var(--glass-sheen);
+    box-shadow: var(--glass-inner), var(--glass-drop);
+    color: var(--c-text);
+    transition: border-color var(--t-base) ease, transform var(--t-base) var(--ease-spring);
+}
+
+.footer-profile:hover {
+    transform: translateY(var(--lift));
+    border-color: var(--glass-rim-hover);
+}
+
+.footer-profile:active {
+    transform: scale(var(--press));
+}
+
+.footer-profile[aria-expanded="true"] {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-profile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.footer-profile svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.profile-menu {
+    right: 0;
+    bottom: calc(100% + var(--sp-3));
+    width: 200px;
+    max-width: calc(100vw - 16px);
+}
+
+.profile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 299px) {
+    .brand-name {
+        display: none;
+    }
+
+    .brand-short {
+        display: inline;
+    }
+}
+
+@media (max-width: 259px) {
+    .footer-market .btn-label {
+        display: none;
+    }
+
+    .footer-market {
+        width: var(--btn-h);
+        padding: 0;
+    }
+}
+
+@media (max-width: 179px) {
+    .brand-mark > * {
+        display: none;
+    }
+}
+
+@media (max-width: 139px) {
+    .footer-toolbar {
+        gap: var(--sp-2);
+        padding: 0 var(--sp-3);
+    }
+
+    .footer-right {
+        gap: var(--sp-2);
+    }
+}
+
+@media (max-width: 119px) {
+    .tab-content {
+        padding: var(--sp-3);
+    }
+
+    .footer-toolbar {
+        gap: var(--sp-1);
+        padding: 0 var(--sp-2);
+    }
+
+    .footer-right {
+        gap: var(--sp-1);
+    }
+}
+
+/* ============================================================ states */
+
+/* Collapsed: hotkeys only, plus a strip to expand again. */
+.collapsed-strip {
+    display: none;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 14px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-chrome);
+    color: var(--c-text-3);
+}
+
+.collapsed-strip:hover {
+    color: var(--c-text);
+    background: var(--c-surface-2);
+}
+
+.collapsed-strip svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+body.collapsed .tabs,
+body.collapsed .tab-actions,
+body.collapsed .panel-main,
+body.collapsed .footer-toolbar {
+    display: none;
+}
+
+body.collapsed .collapsed-strip {
+    display: flex;
+}
+
+/* Waiting for a click on a script (export, upload): chrome steps back,
+   script buttons get a dashed target outline. */
+body.export-mode .tabs,
+body.export-mode .tab-actions,
+body.export-mode .footer-toolbar,
+body.export-mode .hotkey-bar,
+body.market-mode .tabs,
+body.market-mode .tab-actions,
+body.market-mode .footer-toolbar,
+body.market-mode .hotkey-bar {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+body.export-mode .grid-btn,
+body.market-mode .grid-btn {
+    outline: 1px dashed rgba(255, 214, 10, 0.85);
+    outline-offset: 2px;
+}
+
+/* Dragging a button: hotkey slots light up as targets. */
+body.dragging-mode .hotkey-slot:not(.filled) {
+    border-color: rgba(var(--c-accent-rgb), 0.5);
+}

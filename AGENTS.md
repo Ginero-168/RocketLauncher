@@ -3,9 +3,9 @@
 ## Project Identity
 - **Bundle ID:** `com.tata.pro`
 - **Product Name:** Rocket Launcher
-- **Version:** 3.0.5
+- **Version:** 3.1.0
 - **Location:** `/Library/Application Support/Adobe/CEP/extensions/TATA/`
-- **Panels:** `index.html` (main), `colors.html` (color tools), `keep.html` (SVG keeper)
+- **Panels:** `index.html` only. Color tools and the SVG keeper are tabs inside it since 3.1.0.
 
 ## Build / Test Commands
 - Run tests: `npm test -- --runInBand`
@@ -13,27 +13,23 @@
 - Whitespace check: `git diff --check`
 
 ## Architecture
-- Modular IIFE modules in `js/`:
-  - `core.js`, `state.js`, `modals.js`, `tabs.js`, `host.js` — shared infrastructure
-  - `grid.js`, `scripts.js`, `context-menu.js`, `hotkeys.js` — main panel
-  - `scripting.js`, `ai-agent.js` — editor/AI
-  - `color-tools.js`, `script-transfer.js` — extracted feature modules
-  - `chat.js` — team chat (polls Hostinger PHP backend every 10s)
+- `js/persist.js` loads first. It restores panel data from, and mirrors every `tata_*` localStorage write to,
+  `~/Library/Application Support/RocketLauncher/panel-data` (`%APPDATA%\\RocketLauncher\\panel-data` on Windows),
+  because CEP keeps localStorage inside its cache folder. Keep using `localStorage` in modules; do not bypass it.
+  Sign-in sessions and API tokens are deliberately not mirrored. A factory reset must call `TATA.persist.reset()`.
+- Modular IIFE modules in `js/` (load order is the `<script>` list at the end of `index.html`):
+  - `core.js`, `storage.js`, `sanitize.js`, `state.js`, `modals.js`, `tabs.js`, `host.js` — shared infrastructure
+  - `grid.js`, `scripts.js`, `context-menu.js`, `hotkeys.js`, `script-transfer.js` — Tool tab
+  - `scripting.js` — editor and Replicate AI assistant (CodeMirror is loaded on first use)
+  - `color-tools.js`, `graphic-styles.js`, `keep.js` — Color, Style and Keep tabs
+  - `market.js` — Marketplace; `settings.js`, `updates.js` — settings dialog and update check
+  - `main.js`, `bootstrap.js` — startup
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
-- `js/config.js` loads public defaults and merges `js/config.local.json` (gitignored) for optional server features.
-- `chat-backend/` contains PHP + MySQL backend files for the team chat feature (deployed to Hostinger by GitHub Actions).
-  - `lib.php` is the shared backend library (settings store, storage stats, adaptive retention).
-  - `admin.php` is the password-protected storage/retention dashboard.
-  - `chat.js` supports text messages, button sharing/import, rooms, and display-name settings only.
-  - `setup.php` is a one-time browser wizard that writes `chat-config.json` and creates the tables.
-  - Credentials live in `chat-config.json`, not a PHP file: `config.php` repeatedly vanished from
-    the Hostinger account between deploys. `lib.php` still migrates a legacy `config.php` if found.
-  - The deploy workflow never uploads or overwrites the server config.
+- Team chat was removed in 3.1.0; its backend folder and deploy workflow are gone from the repository.
 
 ## Security Notes
-- Never commit `js/config.local.json`.
-- Never commit `chat-backend/chat-config.json` (contains MySQL credentials).
+- Never commit `market-backend/config.json` or anything under `market-backend/storage/` except the tracked placeholders.
 - User-provided JSX/ExtendScript in grid/scripting is intentionally executed directly; sandboxing would require a separate architectural change.
 
 ## CEP / Node
@@ -42,6 +38,16 @@
 - `SystemPath.EXTENSION` from `CSInterface` is the canonical extension root.
 
 ## Common Pitfalls
-- `main.js` is loaded by both `index.html` and `colors.html`; the `isColorPanel` branch selects behavior.
-- `keep.html` is standalone and loads `js/core.js`, `js/host.js`, then `js/keep.js`.
 - `TATA` namespace is shared across modules; `host.js` must load before modules that call `TATA.host`.
+
+## Recovered source (3.1.0)
+- The 3.1.0 working tree was lost and rebuilt from the signed ZXP. `css/`, `js/`, `jsx/`, `CSXS/` and `index.html`
+  are the shipped 3.1.0 files. Tests for the modules added in 3.1.0 were not recovered.
+
+## Marketplace site (`market-backend/`)
+- PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former
+  `Ginero-168/RocketLauncher-backend` repository with its history (git subtree).
+- Tests: `cd market-backend && php tests/run.php` (PHP CLI with curl).
+- Deploy: `deploy-market-backend.yml` republishes this folder as the root of the `market-deploy` branch, which
+  Hostinger pulls. Never point Hostinger at `main`. `config.json` and `storage/` data exist only on the server.
+- The folder is excluded from the ZXP in `release-extension.yml`; keep it that way.

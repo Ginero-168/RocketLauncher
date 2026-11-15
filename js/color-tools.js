@@ -1,121 +1,347 @@
+/**
+ * Rocket Launcher - Colors tab
+ * Custom Colors (2–8 slots), Color Harmony and Contrast Checker.
+ * Colour values reach CSS as custom properties (--swatch, --dot, --hex-bg,
+ * --hex-fg, --tip-bg, --tip-fg); the level of a contrast result is a
+ * data-level attribute. Nothing here writes presentational inline styles.
+ */
 (() => {
 	'use strict';
 
 	const TATA = window.TATA || {};
-	const showToast = TATA.showToast;
+	let activePickerInterval = null;
 
-	function swapContrastColors() {
-		const bgEl = document.getElementById('cc_bg_hex');
-		const textEl = document.getElementById('cc_text_hex');
-		if (!bgEl || !textEl) return;
+	const extraWheels = [];
+	const contrastWheels = [];
+	const wheelFrame = { id: 0, wheels: new Set() };
 
-		const temp = bgEl.value;
-		bgEl.value = textEl.value;
-		textEl.value = temp;
-
-		updateContrastUI();
+	function toast(message, type) {
+		if (typeof TATA.showToast === 'function') TATA.showToast(message, type);
 	}
-	function openGlobalColorPicker(callback, initialColor) {
-		// Create modal if needed
-		const modalId = 'global_color_picker';
-		let modal = document.getElementById(modalId);
 
-		if (!modal) {
-			modal = document.createElement('div');
-			modal.id = modalId;
-			modal.className = 'modal'; // Reuse existing modal styles
-			modal.innerHTML =
-				'<div class="modal-content" style="max-width:250px;">' +
-				'<h3>Select Color</h3>' +
-				'<div style="margin-bottom:10px;">' +
-				'<label>Presets</label>' +
-				'<div class="color-swatches" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:15px;">' +
-				'<div class="color-swatch swatch-red" data-color="red" data-hex="#e61919" style="background:#e61919"></div>' +
-				'<div class="color-swatch swatch-orange" data-color="orange" data-hex="#ff8709" style="background:#ff8709"></div>' +
-				'<div class="color-swatch swatch-yellow" data-color="yellow" data-hex="#ffe500" style="background:#ffe500"></div>' +
-				'<div class="color-swatch swatch-lime" data-color="lime" data-hex="#b8f55f" style="background:#b8f55f"></div>' +
-                '<div class="color-swatch swatch-purple" data-color="purple" data-hex="#9d95ff" style="background:#9d95ff"></div>' +
-                '<div class="color-swatch swatch-pink" data-color="pink" data-hex="#ff9ecd" style="background:#ff9ecd"></div>' +
-				'<div class="color-swatch swatch-green" data-color="green" data-hex="#0ae448" style="background:#0ae448"></div>' +
-				'<div class="color-swatch swatch-cyan" data-color="cyan" data-hex="#00bae2" style="background:#00bae2"></div>' +
-				'<div class="color-swatch swatch-gray" data-color="gray" data-hex="#687174" style="background:#687174"></div>' +
-				'</div>' +
-				'</div>' +
-				'<div class="control-group">' +
-				'<label>Custom Hex</label>' +
-				'<div style="display:flex; gap:5px;">' +
-				'<input type="color" id="gcp_native" style="width:30px; height:30px; padding:0; border:none; background:none;">' +
-				'<input type="text" id="gcp_hex" placeholder="#RRGGBB" style="flex:1;">' +
-				'</div>' +
-				'</div>' +
-				'<div class="modal-actions">' +
-				'<button id="gcp_cancel" class="secondary">Cancel</button>' +
-				'<button id="gcp_ok" class="primary">Select</button>' +
-				'</div>' +
-				'</div>';
-			document.body.appendChild(modal);
+	// Place on the artboard / add to the Swatches panel (also in index.html).
+	const ACTION_ICONS = {
+		place: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2Z',
+		swatch: 'M6 5H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Zm14 0h-3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Zm-7 0h-3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1Z'
+	};
+
+	function actionButton(kind, label, accessibleName, onClick) {
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = `btn btn--sm harmony-${kind}`;
+		btn.title = accessibleName;
+		btn.setAttribute('aria-label', accessibleName);
+		const svgNS = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(svgNS, 'svg');
+		svg.setAttribute('viewBox', '0 0 24 24');
+		svg.setAttribute('aria-hidden', 'true');
+		const path = document.createElementNS(svgNS, 'path');
+		path.setAttribute('d', ACTION_ICONS[kind]);
+		svg.appendChild(path);
+		const text = document.createElement('span');
+		text.className = 'btn-label';
+		text.textContent = label;
+		btn.appendChild(svg);
+		btn.appendChild(text);
+		btn.addEventListener('click', onClick);
+		return btn;
+	}
+
+	function requestFrame(cb) {
+		return typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 16);
+	}
+
+	function scheduleWheelRefresh(wheels) {
+		const list = Array.isArray(wheels) ? wheels : [wheels];
+		list.forEach(wheel => {
+			if (wheel && typeof wheel.refresh === 'function') wheelFrame.wheels.add(wheel);
+		});
+		if (!wheelFrame.wheels.size || wheelFrame.id) return;
+		wheelFrame.id = requestFrame(() => {
+			wheelFrame.id = 0;
+			const pending = Array.from(wheelFrame.wheels);
+			wheelFrame.wheels.clear();
+			pending.forEach(wheel => wheel.refresh());
+		});
+	}
+
+	// ==========================================
+	// Shared converters
+	// ==========================================
+	function hslToHexShared(h, s, l) {
+		if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return '';
+		l /= 100;
+		const a = s * Math.min(l, 1 - l) / 100;
+		const f = n => {
+			const k = (n + h / 30) % 12;
+			const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+			return Math.round(255 * color).toString(16).padStart(2, '0');
+		};
+		return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+	}
+
+	function hexToHslShared(H) {
+		let r = 0, g = 0, b = 0;
+		if (!H) H = '#E61919';
+		if (H.length === 4) {
+			r = parseInt(H[1] + H[1], 16);
+			g = parseInt(H[2] + H[2], 16);
+			b = parseInt(H[3] + H[3], 16);
+		} else if (H.length === 7) {
+			r = parseInt(H.slice(1, 3), 16);
+			g = parseInt(H.slice(3, 5), 16);
+			b = parseInt(H.slice(5, 7), 16);
 		}
+		r /= 255; g /= 255; b /= 255;
+		const cmin = Math.min(r, g, b);
+		const cmax = Math.max(r, g, b);
+		const delta = cmax - cmin;
+		let h = 0;
+		let s = 0;
+		const l = (cmax + cmin) / 2;
+		if (delta !== 0) {
+			if (cmax === r) h = ((g - b) / delta) % 6;
+			else if (cmax === g) h = (b - r) / delta + 2;
+			else h = (r - g) / delta + 4;
+			s = delta / (1 - Math.abs(2 * l - 1));
+		}
+		h = Math.round(h * 60);
+		if (h < 0) h += 360;
+		return { h, s: +(s * 100).toFixed(1), l: +(l * 100).toFixed(1) };
+	}
 
-		const inpNative = document.getElementById('gcp_native');
-		const inpHex = document.getElementById('gcp_hex');
-		const btnOk = document.getElementById('gcp_ok');
-		const btnCancel = document.getElementById('gcp_cancel');
-		const swatches = modal.querySelectorAll('.color-swatch');
+	function hexToRgb(hex) {
+		const full = String(hex || '').replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i, (m, r, g, b) => r + r + g + g + b + b);
+		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(full);
+		return result
+			? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
+			: { r: 0, g: 0, b: 0 };
+	}
 
-		// Reset State
-		inpHex.value = initialColor || '#e61919';
-		inpNative.value = initialColor || '#e61919';
-		swatches.forEach(s => { s.classList.remove('selected'); });
+	function isValidHex(hex) {
+		return /^#[0-9A-F]{6}$/i.test(hex) || /^#[0-9A-F]{3}$/i.test(hex);
+	}
 
-		// Handlers
-		const onSwatch = e => {
-			const hex = e.target.getAttribute('data-hex');
-			if (hex) {
-				inpHex.value = hex;
-				inpNative.value = hex;
-				swatches.forEach(s => { s.classList.remove('selected'); });
-				e.target.classList.add('selected');
+	// Ink that reads on top of a colour (YIQ, same as before).
+	function inkFor(hex) {
+		const rgb = hexToRgb(hex);
+		return ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000 >= 128 ? '#171717' : '#f5f2e9';
+	}
+
+	function getLuminance(hex) {
+		const rgb = hexToRgb(hex);
+		const a = [rgb.r, rgb.g, rgb.b].map(v => {
+			v /= 255;
+			return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+		});
+		return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+	}
+
+	function getContrastRatio(hex1, hex2) {
+		const lum1 = getLuminance(hex1);
+		const lum2 = getLuminance(hex2);
+		return (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+	}
+
+	function showHexError(input, announce) {
+		if (input) {
+			input.classList.add('hex-invalid');
+			input.setAttribute('aria-invalid', 'true');
+			input.title = 'Enter a hex color like #E61919';
+		}
+		if (announce) toast('Enter a hex color like #E61919', 'error');
+	}
+
+	function clearHexError(input) {
+		if (!input) return;
+		input.classList.remove('hex-invalid');
+		input.setAttribute('aria-invalid', 'false');
+		input.title = '';
+	}
+
+	// A field drawn on its own colour.
+	function paintHexSurface(el, hex) {
+		if (!el || !isValidHex(hex)) return;
+		el.style.setProperty('--hex-bg', hex);
+		el.style.setProperty('--hex-fg', inkFor(hex));
+	}
+
+	// ==========================================
+	// Colour wheels (hue around, saturation out, lightness from a slider)
+	// ==========================================
+	const sharedWheelCache = new Map();
+
+	function paintSharedWheel(canvas, lightness) {
+		if (!canvas || typeof canvas.getContext !== 'function') return;
+		const ctx = canvas.getContext('2d');
+		if (!ctx || typeof ctx.createImageData !== 'function') return;
+		const width = canvas.width;
+		const height = canvas.height;
+		const radius = width / 2;
+		const centerX = width / 2;
+		const centerY = height / 2;
+		const l = Math.max(0, Math.min(100, Math.round(lightness)));
+		const key = `${width}x${height}@${l}`;
+		if (sharedWheelCache.has(key)) {
+			ctx.putImageData(sharedWheelCache.get(key), 0, 0);
+			return;
+		}
+		const image = ctx.createImageData(width, height);
+		const data = image.data;
+		for (let x = 0; x < width; x++) {
+			for (let y = 0; y < height; y++) {
+				const dx = x - centerX;
+				const dy = y - centerY;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				if (dist > radius) continue;
+				let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+				if (angle < 0) angle += 360;
+				const s = (dist / radius) * 100;
+				const c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100);
+				const xVal = c * (1 - Math.abs(((angle / 60) % 2) - 1));
+				const m = (l / 100) - c / 2;
+				let rr = 0, gg = 0, bb = 0;
+				if (angle < 60) { rr = c; gg = xVal; }
+				else if (angle < 120) { rr = xVal; gg = c; }
+				else if (angle < 180) { gg = c; bb = xVal; }
+				else if (angle < 240) { gg = xVal; bb = c; }
+				else if (angle < 300) { rr = xVal; bb = c; }
+				else { rr = c; bb = xVal; }
+				const index = (y * width + x) * 4;
+				data[index] = (rr + m) * 255;
+				data[index + 1] = (gg + m) * 255;
+				data[index + 2] = (bb + m) * 255;
+				data[index + 3] = 255;
 			}
-		};
-		swatches.forEach(s => { s.onclick = onSwatch; });
+		}
+		ctx.putImageData(image, 0, 0);
+		sharedWheelCache.set(key, image);
+	}
 
-		const onNative = () => {
-			inpHex.value = inpNative.value;
-			swatches.forEach(s => { s.classList.remove('selected'); });
-		};
-		inpNative.oninput = onNative;
+	function paintWheelDot(dot, hex) {
+		if (!dot || !hex) return;
+		dot.style.setProperty('--dot', hex);
+		dot.classList.toggle('is-light', hexToHslShared(hex).l > 62);
+	}
 
-		const onHex = () => {
-			inpNative.value = inpHex.value;
-			swatches.forEach(s => { s.classList.remove('selected'); });
-		};
-		inpHex.oninput = onHex;
+	// Put the dot's centre at a bitmap point, in CSS pixels.
+	function placeDot(canvas, dot, x, y) {
+		const rect = canvas.getBoundingClientRect();
+		const viewW = rect.width || canvas.width;
+		const viewH = rect.height || canvas.height;
+		dot.style.left = `${(x / canvas.width) * viewW}px`;
+		dot.style.top = `${(y / canvas.height) * viewH}px`;
+	}
 
-		const onConfirm = () => {
-			const val = inpHex.value;
-			cleanup();
-			if (callback) callback(val);
-		};
+	function mountColorWheel(canvas, cursor, hooks) {
+		if (!canvas || !cursor) return { refresh() {} };
+		let dragging = false;
+		const radius = canvas.width / 2;
+		const centerX = canvas.width / 2;
+		const centerY = canvas.height / 2;
 
-		const onDismiss = () => {
-			cleanup();
-		};
-
-		function cleanup() {
-			modal.classList.remove('active');
-			btnOk.onclick = null;
-			btnCancel.onclick = null;
+		function lightness() {
+			if (typeof hooks.lightness === 'function') return hooks.lightness();
+			return hexToHslShared(hooks.getHex() || '#E61919').l;
 		}
 
-		btnOk.onclick = onConfirm;
-		btnCancel.onclick = onDismiss;
+		function place(hex) {
+			const hsl = hexToHslShared(hex || '#E61919');
+			const angle = (hsl.h - 90) * (Math.PI / 180);
+			const dist = (Math.min(100, hsl.s) / 100) * (radius - 2);
+			placeDot(canvas, cursor, centerX + dist * Math.cos(angle), centerY + dist * Math.sin(angle));
+			paintWheelDot(cursor, hex);
+		}
 
-		modal.classList.add('active');
+		function refresh() {
+			paintSharedWheel(canvas, lightness());
+			place(hooks.getHex());
+		}
+
+		function pick(e) {
+			const rect = canvas.getBoundingClientRect();
+			const x = (e.clientX - rect.left) * (canvas.width / (rect.width || canvas.width));
+			const y = (e.clientY - rect.top) * (canvas.height / (rect.height || canvas.height));
+			const dx = x - centerX;
+			const dy = y - centerY;
+			const logicDist = Math.min(Math.sqrt(dx * dx + dy * dy), radius);
+			let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+			if (angleDeg < 0) angleDeg += 360;
+			const hex = hslToHexShared(angleDeg, (logicDist / radius) * 100, lightness());
+			hooks.setHex(hex);
+			place(hex);
+		}
+
+		canvas.addEventListener('mousedown', e => {
+			dragging = true;
+			pick(e);
+		});
+		window.addEventListener('mousemove', e => {
+			if (dragging) pick(e);
+		});
+		window.addEventListener('mouseup', () => {
+			if (!dragging) return;
+			dragging = false;
+			if (typeof hooks.commit === 'function') hooks.commit();
+		});
+
+		refresh();
+		return { refresh, place };
 	}
-	// HARMONY DASHBOARD LOGIC (Wheel Version)
-	// ===========================================
+
+	// ==========================================
+	// Color Harmony
+	// ==========================================
+	let wheelPainter = null;
+
+	const HARMONY_RULES = [
+		'Analogous', 'Complementary', 'Triad', 'Split Complementary', 'Tetradic', 'Square',
+		'Shades', 'Saturation', 'Hue Scale', 'Temperature', 'Random'
+	];
+
+	function harmonyCount(rule) {
+		if (rule === 'Complementary') return 2;
+		if (rule === 'Triad' || rule === 'Split Complementary') return 3;
+		if (rule === 'Tetradic' || rule === 'Square') return 4;
+		if (rule === 'Shades' || rule === 'Saturation' || rule === 'Hue Scale' || rule === 'Temperature') return 7;
+		return 5;
+	}
+
+	// Pull a hue part of the way towards a target hue (shortest way round).
+	function towardHue(h, target, amount) {
+		const dist = (target - h + 540) % 360 - 180;
+		return (h + dist * amount + 360) % 360;
+	}
+
+	function harmonyColors(rule, base) {
+		const count = harmonyCount(rule);
+		const center = Math.floor(count / 2);
+		const OFFSETS = {
+			Complementary: [0, 180],
+			Triad: [0, 120, 240],
+			'Split Complementary': [0, 150, 210],
+			Tetradic: [0, 60, 180, 240],
+			Square: [0, 90, 180, 270]
+		};
+		const colors = [];
+		for (let i = 0; i < count; i++) {
+			let h = base.h, s = base.s, l = base.l;
+			const step = i - center;
+			if (rule === 'Analogous') h = (base.h + i * 30) % 360;
+			else if (OFFSETS[rule]) h = (base.h + OFFSETS[rule][i]) % 360;
+			else if (rule === 'Random' && i > 0) {
+				h = Math.random() * 360;
+				s = 40 + Math.random() * 60;
+			} else if (rule === 'Shades') l = Math.min(100, Math.max(0, l - step * 15)); // light → dark
+			else if (rule === 'Saturation') s = Math.min(100, Math.max(0, s + step * 15));
+			else if (rule === 'Hue Scale') h = (h + step * 15 + 360) % 360;
+			else if (rule === 'Temperature' && step) h = towardHue(h, step < 0 ? 210 : 45, Math.abs(step) * 0.15);
+			colors.push(hslToHexShared(h, s, l));
+		}
+		return colors;
+	}
+
 	function setupCreative() {
-		// UI Elements
 		const btnDashGen = document.getElementById('btn_dash_generate');
 		const inputPrimary = document.getElementById('input_primary_hex');
 		const btnPickPrimary = document.getElementById('btn_pick_primary');
@@ -123,1072 +349,702 @@
 		const canvas = document.getElementById('color_wheel_canvas');
 		const wheelCursor = document.getElementById('wheel_cursor');
 		const valSlider = document.getElementById('input_lightness');
-
 		if (!btnDashGen || !listContainer || !canvas) return;
 
-		const ctx = canvas.getContext('2d');
-		const width = canvas.width;
-		const height = canvas.height;
-		const radius = width / 2;
-		const centerX = width / 2;
-		const centerY = height / 2;
+		const radius = canvas.width / 2;
+		const centerX = canvas.width / 2;
+		const centerY = canvas.height / 2;
 		let isDragging = false;
-		let activePickerInterval = null;
-
-		// State
-		let primaryHex = "#e61919";
-		let harmonyData = {};
-		// Recent Colors State
+		let primaryHex = '#E61919';
 		let recentColors = [];
 		try {
-			const savedRecent = localStorage.getItem('tata_recent_colors');
-			if (savedRecent) recentColors = JSON.parse(savedRecent);
+			recentColors = JSON.parse(localStorage.getItem('tata_recent_colors') || '[]');
 			if (!Array.isArray(recentColors)) recentColors = [];
-			// Force limit to 7 (fix legacy larger lists)
-			if (recentColors.length > 7) recentColors = recentColors.slice(0, 7);
+			// One entry per colour: '#e61919' and '#E61919' are the same swatch.
+			recentColors = recentColors
+				.filter(isValidHex)
+				.map(c => c.toUpperCase())
+				.filter((c, i, list) => list.indexOf(c) === i)
+				.slice(0, 7);
 		} catch (e) { recentColors = []; }
 
-		// Ensure shareColorsToExplore is available in this scope (it is now global)
-		// No local definition needed.
-
-		// Helper: HSL/Hex
-		function hslToHex(h, s, l) {
-			l /= 100;
-			const a = s * Math.min(l, 1 - l) / 100;
-			const f = n => {
-				const k = (n + h / 30) % 12;
-				const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-				return Math.round(255 * color).toString(16).padStart(2, '0');
-			};
-			return `#${f(0)}${f(8)}${f(4)}`;
-		}
-		function hexToHSL(H) {
-            // Convert hex to RGB first
-            let r = 0, g = 0, b = 0;
-            if (H.length == 4) {
-				r = `0x${H[1]}${H[1]}`;
-				g = `0x${H[2]}${H[2]}`;
-				b = `0x${H[3]}${H[3]}`;
-			} else if (H.length == 7) {
-				r = `0x${H[1]}${H[2]}`;
-				g = `0x${H[3]}${H[4]}`;
-				b = `0x${H[5]}${H[6]}`;
-			}
-            // Then to fractions
-            r = +r / 255;
-            g = +g / 255;
-            b = +b / 255;
-
-            const cmin = Math.min(r, g, b);
-            const cmax = Math.max(r, g, b);
-            const delta = cmax - cmin;
-            let h = 0;
-            let s = 0;
-            let l = 0;
-
-            if (delta == 0) h = 0;
-			else if (cmax == r) h = ((g - b) / delta) % 6;
-			else if (cmax == g) h = (b - r) / delta + 2;
-			else h = (r - g) / delta + 4;
-
-            h = Math.round(h * 60);
-            if (h < 0) h += 360;
-
-            l = (cmax + cmin) / 2;
-            s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-            s = +(s * 100).toFixed(1);
-            l = +(l * 100).toFixed(1);
-
-            return { h, s, l };
-        }
-
-		// Cache wheel renders by lightness to avoid recomputing pixels every time
-		const wheelCache = new Map();
-
-		// Draw Wheel (Dynamic Lightness)
-		function drawWheel(lightness) {
-			if (lightness === undefined) lightness = 50;
-			const key = String(lightness);
-			if (wheelCache.has(key)) {
-				ctx.putImageData(wheelCache.get(key), 0, 0);
-				return;
-			}
-			const image = ctx.createImageData(width, height);
-			const data = image.data;
-
-
-			for (let x = 0; x < width; x++) {
-				for (let y = 0; y < height; y++) {
-					const dx = x - centerX;
-					const dy = y - centerY;
-					const dist = Math.sqrt(dx * dx + dy * dy);
-
-					// Inside Circle
-					if (dist <= radius) {
-						let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-						if (angle < 0) angle += 360;
-
-						// H = Angle, S = Dist/Radius, L = Input
-						const h = angle;
-						const s = (dist / radius) * 100;
-						const l = lightness;
-
-						// HSL to RGB conversion for pixel
-						const c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100);
-						const x_val = c * (1 - Math.abs(((h / 60) % 2) - 1));
-						const m = (l / 100) - c / 2;
-						let r = 0, g = 0, b = 0;
-
-						if (0 <= h && h < 60) { r = c; g = x_val; b = 0; }
-						else if (60 <= h && h < 120) { r = x_val; g = c; b = 0; }
-						else if (120 <= h && h < 180) { r = 0; g = c; b = x_val; }
-						else if (180 <= h && h < 240) { r = 0; g = x_val; b = c; }
-						else if (240 <= h && h < 300) { r = x_val; g = 0; b = c; }
-						else if (300 <= h && h < 360) { r = c; g = 0; b = x_val; }
-
-						const index = (y * width + x) * 4;
-						data[index] = (r + m) * 255;
-						data[index + 1] = (g + m) * 255;
-						data[index + 2] = (b + m) * 255;
-						data[index + 3] = 255; // Alpha
-					}
-				}
-			}
-			ctx.putImageData(image, 0, 0);
-			wheelCache.set(key, image);
-		}
+		const drawWheel = lightness => paintSharedWheel(canvas, lightness === undefined ? 50 : lightness);
 
 		function updateCursorFromHex(hex) {
-			const hsl = hexToHSL(hex);
+			if (!wheelCursor) return;
+			const hsl = hexToHslShared(hex);
 			const angle = (hsl.h - 90) * (Math.PI / 180);
 			const dist = (hsl.s / 100) * radius;
-
-			const cx = centerX + dist * Math.cos(angle);
-			const cy = centerY + dist * Math.sin(angle);
-
-			wheelCursor.style.left = `${cx}px`;
-			wheelCursor.style.top = `${cy}px`;
+			placeDot(canvas, wheelCursor, centerX + dist * Math.cos(angle), centerY + dist * Math.sin(angle));
+			paintWheelDot(wheelCursor, hex);
 		}
 
 		function handleCanvasInput(e) {
 			const rect = canvas.getBoundingClientRect();
-			const scaleX = canvas.width / rect.width;
-			const scaleY = canvas.height / rect.height;
-
-			const x = (e.clientX - rect.left) * scaleX;
-			const y = (e.clientY - rect.top) * scaleY;
-
+			const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+			const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 			const dx = x - centerX;
 			const dy = y - centerY;
-
-			// Direct Cursor Tracking
 			const rawAngle = Math.atan2(dy, dx);
 			const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-
-			// Visual Clamp (Radius - 2)
 			const visualDist = Math.min(distFromCenter, radius - 2);
 			const logicDist = Math.min(distFromCenter, radius);
-
-			const cursorX = centerX + visualDist * Math.cos(rawAngle);
-			const cursorY = centerY + visualDist * Math.sin(rawAngle);
-
-			wheelCursor.style.left = `${cursorX}px`;
-			wheelCursor.style.top = `${cursorY}px`;
-
-			// Calculate Color
+			if (wheelCursor) placeDot(canvas, wheelCursor, centerX + visualDist * Math.cos(rawAngle), centerY + visualDist * Math.sin(rawAngle));
 			let angleDeg = rawAngle * (180 / Math.PI) + 90;
 			if (angleDeg < 0) angleDeg += 360;
-
-			const h = angleDeg;
-			const s = (logicDist / radius) * 100;
-			// Use current slider val if available, else 50
-			const l = valSlider ? parseInt(valSlider.value) : 50;
-
-			const hex = hslToHex(h, s, l);
-			updatePrimary(hex, true, true); // Skip history and wheel update during drag
+			const l = valSlider ? parseInt(valSlider.value, 10) : 50;
+			const hex = hslToHexShared(angleDeg, (logicDist / radius) * 100, l);
+			paintWheelDot(wheelCursor, hex);
+			queueDragPrimary(hex);
 		}
 
-		// Recent Colors Helpers
-		function addToRecent(hex) {
-			if (!hex) return;
-			// 1. Remove if exists (to move to top)
+		function addToRecent(value) {
+			if (!value || !isValidHex(value)) return;
+			const hex = value.toUpperCase();
 			const idx = recentColors.indexOf(hex);
 			if (idx !== -1) recentColors.splice(idx, 1);
-
-			// 2. Add to front
 			recentColors.unshift(hex);
-
-			// 3. Limit to 7
 			if (recentColors.length > 7) recentColors.pop();
-
-			// 4. Save & Render
-			localStorage.setItem('tata_recent_colors', JSON.stringify(recentColors));
+			try { localStorage.setItem('tata_recent_colors', JSON.stringify(recentColors)); } catch (e) { /* storage full or blocked */ }
 			renderRecentColors();
 		}
 
 		function renderRecentColors() {
 			const container = document.getElementById('recent_list');
 			if (!container) return;
-			container.innerHTML = '';
-
+			container.textContent = '';
 			recentColors.forEach(c => {
-				const div = document.createElement('div');
-				div.style.width = "16px";
-				div.style.height = "16px";
-				div.style.borderRadius = "50%"; // Circular
-				div.style.backgroundColor = c;
-				div.style.cursor = "pointer";
-				div.title = c;
-				div.style.border = "1px solid rgba(23,23,23,0.28)";
-				div.style.flex = "none"; // Fix sizing
-
-				div.onclick = () => {
-					updatePrimary(c); // Click restores color
-				};
-				container.appendChild(div);
+				const swatch = document.createElement('button');
+				swatch.type = 'button';
+				swatch.className = 'swatch-btn';
+				swatch.style.setProperty('--swatch', c);
+				swatch.title = c;
+				swatch.setAttribute('aria-label', `Use ${c}`);
+				swatch.addEventListener('click', () => updatePrimary(c));
+				container.appendChild(swatch);
 			});
 		}
-
-		// Init Render
-		renderRecentColors();
 
 		function updatePrimary(hex, skipWheelUpdate, skipHistory, skipSliderUpdate) {
 			primaryHex = hex;
-			if (inputPrimary) {
-				inputPrimary.value = hex.toUpperCase();
-				// Dynamic Text Color
-				const contrastColor = getContrastYIQ(hex);
-				inputPrimary.style.color = contrastColor;
-			}
-
-			// Fix: Target the new .mini-hex-card
-			const bgCard = document.querySelector('.mini-hex-card');
-			if (bgCard) {
-				bgCard.style.backgroundColor = hex;
-				// Update Icon Color too
-				const icon = document.querySelector('#btn_pick_primary svg');
-				if (icon) icon.style.fill = getContrastYIQ(hex);
-			}
-
+			if (inputPrimary) inputPrimary.value = hex.toUpperCase();
+			paintHexSurface(document.querySelector('.mini-hex-card'), hex);
 			if (!skipWheelUpdate) updateCursorFromHex(hex);
 			if (!skipHistory) addToRecent(hex);
-
-			// Update Slider UI
 			if (!skipSliderUpdate && valSlider) {
-				const hsl = hexToHSL(hex);
+				const hsl = hexToHslShared(hex);
 				valSlider.value = hsl.l;
-				// Update Gradient
-				const midColor = hslToHex(hsl.h, hsl.s, 50);
-				valSlider.style.backgroundColor = midColor;
-				// Redraw Wheel with new Lightness
 				drawWheel(hsl.l);
 			}
-
-			generateDashboard();
-		}
-
-		// Helper: Contrast (Black/White)
-		function getContrastYIQ(hexcolor) {
-			hexcolor = hexcolor.replace("#", "");
-			const r = parseInt(hexcolor.substr(0, 2), 16);
-			const g = parseInt(hexcolor.substr(2, 2), 16);
-			const b = parseInt(hexcolor.substr(4, 2), 16);
-			const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-			return (yiq >= 128) ? '#171717' : '#f5f2e9';
-		}
-
-		// Core Generator
-		function generateDashboard() {
-			const baseHSL = hexToHSL(primaryHex);
-			// Defined Rules
-			const rules = [
-				"Analogous", "Complementary", "Triad", "Split Complementary",
-				"Tetradic", "Square",
-				"Shades", "Saturation", "Hue Scale", "Temperature",
-				"Random"
-			];
-
-			harmonyData = {};
-
-			rules.forEach(rule => {
-				const rowColors = [];
-				let count = 5; // Default
-
-				// specific counts
-				if (rule === "Complementary") count = 2;
-				else if (rule === "Triad" || rule === "Split Complementary") count = 3;
-				else if (rule === "Tetradic" || rule === "Square") count = 4;
-				else if (rule === "Shades" || rule === "Saturation" || rule === "Hue Scale" || rule === "Temperature") count = 7;
-
-				// Calculate offsets for Centered Scales (count 7) -> indices: -3, -2, -1, 0, 1, 2, 3
-				const centerIndex = Math.floor(count / 2);
-
-				for (let i = 0; i < count; i++) {
-					let h = baseHSL.h, s = baseHSL.s, l = baseHSL.l;
-
-					if (rule === "Analogous") {
-						h = (baseHSL.h + (i * 30)) % 360;
-					}
-					else if (rule === "Complementary") {
-						if (i === 1) h = (h + 180) % 360;
-					}
-					else if (rule === "Triad") {
-						if (i === 1) h = (h + 120) % 360;
-						else if (i === 2) h = (h + 240) % 360;
-					}
-					else if (rule === "Split Complementary") {
-						if (i === 1) h = (h + 150) % 360;
-						else if (i === 2) h = (h + 210) % 360;
-					}
-					else if (rule === "Tetradic") {
-						if (i === 1) h = (h + 60) % 360;
-						else if (i === 2) h = (h + 180) % 360;
-						else if (i === 3) h = (h + 240) % 360;
-					}
-					else if (rule === "Square") {
-						if (i === 1) h = (h + 90) % 360;
-						else if (i === 2) h = (h + 180) % 360;
-						else if (i === 3) h = (h + 270) % 360;
-					}
-					else if (rule === "Random") {
-						if (i > 0) {
-							h = Math.random() * 360;
-							s = 40 + Math.random() * 60;
-						}
-					}
-					// --- Centered Scales (7 Steps) ---
-					else if (rule === "Shades") {
-						// Lightness Scale: L-45 to L+45
-						var delta = (centerIndex - i) * 15; // +45, +30, +15, 0, -15, -30, -45
-						// Invert logic: i=0 (left) should be Lighter? Or Scale usually left=dark?
-						// Standard Image: Left (Positive %) = Lighter. Right (Negative %) = Darker?
-						// Let's assume Left=Light (High L), Right=Dark (Low L)
-						// i=0 -> delta=3 -> L + 45
-						l = Math.min(100, Math.max(0, l + delta));
-					}
-					else if (rule === "Saturation") {
-						// Saturation Scale: S-45 to S+45
-						var delta = (i - centerIndex) * 15; // -45 ... 0 ... +45
-						// i=0 (left) = Desaturated. i=6 (right) = Saturated.
-						s = Math.min(100, Math.max(0, s + delta));
-					}
-					else if (rule === "Hue Scale") {
-						// Hue Fine-tune: H-45 to H+45
-						var delta = (i - centerIndex) * 15;
-						h = (h + delta + 360) % 360;
-					}
-					else if (rule === "Temperature") {
-						// Cool (Blue 210) <-> Warm (Orange 45)
-						// We need a linear interp between "Coolest" and "Warmest" relative to Base?
-						// Or just Shift Hue towards Blue (Left) and Orange (Right)?
-						// Let's say indices < center shift towards 210.
-						// indices > center shift towards 45.
-						const step = i - centerIndex; // -3, -2, -1, 0, 1, 2, 3
-						if (step < 0) {
-							// Shift towards Cool (210)
-							var target = 210;
-							var dist = (target - h + 540) % 360 - 180;
-							// Strength depends on step magnitude (1, 2, 3)
-							h = (h + (dist * (Math.abs(step) * 0.15))) % 360;
-						} else if (step > 0) {
-							// Shift towards Warm (45)
-							var target = 45;
-							var dist = (target - h + 540) % 360 - 180;
-							h = (h + (dist * (Math.abs(step) * 0.15))) % 360;
-						}
-					}
-
-					rowColors.push(hslToHex(h, s, l));
-				}
-				harmonyData[rule] = rowColors;
-			});
-
 			renderHarmonyList();
 		}
 
-
-
-		// Logic using global shareColorsToExplore if needed for custom UI
-
-
 		function renderHarmonyList() {
+			const base = hexToHslShared(primaryHex);
 			listContainer.innerHTML = '';
-			listContainer.style.padding = "0";
-			// listContainer.style.gap = "25px"; // Gap unreliable in older CEP
-
-			Object.keys(harmonyData).forEach(ruleName => {
-				const colors = harmonyData[ruleName];
+			HARMONY_RULES.forEach(rule => {
+				const colors = harmonyColors(rule, base);
+				// Grid card: name, Place, Swatch, then the strip (css/colors.css).
 				const card = document.createElement('div');
 				card.className = 'harmony-card';
-				card.style.background = "#f5f2e9"; card.style.borderRadius = "6px";
-				card.style.marginBottom = "5px"; // Reduced to 5px
-				card.style.padding = "0";
-				card.style.border = "1px solid rgba(23,23,23,0.28)";
-				card.style.display = "flex"; card.style.flexDirection = "column";
-
-				const header = document.createElement('div');
-				header.style.padding = "8px 10px 4px 10px"; // Move padding here
-				header.style.display = "flex"; header.style.justifyContent = "space-between";
-				header.style.alignItems = "baseline"; // header.style.marginBottom = "4px";
-
 				const title = document.createElement('span');
-				title.innerText = ruleName;
-				title.style.fontWeight = "bold"; title.style.color = "#171717"; title.style.fontSize = "11px";
-				header.appendChild(title);
-
-				// Place Button
-				const btnPlace = document.createElement('button');
-				btnPlace.innerText = "Place";
-				btnPlace.style.border = "none"; btnPlace.style.background = "transparent";
-				btnPlace.style.borderRadius = "4px";
-				btnPlace.style.cursor = "pointer";
-				btnPlace.style.display = "flex";
-				btnPlace.style.alignItems = "center"; btnPlace.style.justifyContent = "center";
-				btnPlace.style.padding = "2px 8px";
-				btnPlace.style.fontSize = "9px"; btnPlace.style.color = "#3f4546";
-				btnPlace.style.whiteSpace = "nowrap";
-				btnPlace.style.flex = "none"; btnPlace.style.width = "auto";
-				btnPlace.style.marginLeft = "auto"; // Push Place to right
-				btnPlace.title = "Place on Artboard";
-				btnPlace.onclick = () => { placePalette(colors); };
-				header.appendChild(btnPlace);
-
-
-				// Swatch Button (Renamed from "Save to Swatches")
-				const btnExp = document.createElement('button');
-				btnExp.innerText = "Swatch"; // Changed Text
-				btnExp.style.border = "none"; btnExp.style.background = "transparent";
-				btnExp.style.borderRadius = "4px";
-				btnExp.style.cursor = "pointer"; btnExp.style.display = "flex";
-				btnExp.style.alignItems = "center"; btnExp.style.justifyContent = "center";
-				btnExp.style.padding = "2px 8px";
-				btnExp.style.fontSize = "9px"; btnExp.style.color = "#3f4546";
-				btnExp.style.whiteSpace = "nowrap"; // Prevent wrap
-				btnExp.style.flex = "none"; btnExp.style.width = "auto";
-				btnExp.style.marginLeft = "4px"; // Small gap between Place and Save
-				btnExp.title = `Export ${ruleName}`;
-				btnExp.onclick = () => { exportPalette(ruleName, colors); };
-				header.appendChild(btnExp);
-				card.appendChild(header);
-
-				const row = document.createElement('div');
-				row.style.display = "flex"; row.style.height = "28px";
-				row.style.borderRadius = "0 0 6px 6px"; row.style.overflow = "hidden";
-				row.style.marginTop = "0px";
-
+				title.className = 'harmony-name';
+				title.textContent = rule;
+				title.title = rule;
+				const strip = document.createElement('div');
+				strip.className = 'harmony-strip';
 				colors.forEach(c => {
-					const box = document.createElement('div');
-					box.style.flex = "1"; box.style.background = c; box.title = c;
-					row.appendChild(box);
+					const box = document.createElement('span');
+					box.style.setProperty('--swatch', c);
+					box.title = c;
+					strip.appendChild(box);
 				});
-				card.appendChild(row);
+				card.appendChild(title);
+				card.appendChild(actionButton('place', 'Place', `Place ${rule} on the artboard`, () => placePalette(colors)));
+				card.appendChild(actionButton('swatch', 'Swatch', `Add ${rule} to Swatches`, () => exportPalette(rule, colors)));
+				card.appendChild(strip);
 				listContainer.appendChild(card);
 			});
 		}
 
-
-
-		// Initial Run
+		renderRecentColors();
 		drawWheel();
 		updatePrimary(primaryHex);
 
-		// Listeners
 		btnDashGen.addEventListener('click', () => {
 			const r = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 			updatePrimary(`#${r.toUpperCase()}`);
 		});
 
-		btnPickPrimary.addEventListener('click', () => {
-			try {
-				if ((localStorage.getItem('tata_picker_mode') || 'os') === 'tool') {
-					// MODE 1: EYEDROPPER TOOL
-					const toolScript = "try { " +
-						"   if(app.selection.length > 0 && app.selection[0].filled && app.selection[0].fillColor) { " +
-						"       var c = app.selection[0].fillColor; " +
-						"       var hex = ''; " +
-						"       if(c.typename === 'RGBColor') { " +
-						"           hex = c.red.toString(16).toUpperCase(); if(hex.length<2) hex='0'+hex; " +
-						"           var g = c.green.toString(16).toUpperCase(); if(g.length<2) g='0'+g; hex += g; " +
-						"           var b = c.blue.toString(16).toUpperCase(); if(b.length<2) b='0'+b; hex += b; " +
-						"           '#' + hex; " +
-						"       } else { 'ERR:Please select an RGB Object'; } " +
-						"   } else { " +
-						"       app.selectTool('Adobe Eyedropper Tool'); " +
-						"       'TOOL_ACTIVATED'; " +
-						"   } " +
-						"} catch(e) { 'ERR:' + e.message; }";
+		if (btnPickPrimary) btnPickPrimary.addEventListener('click', () => pickFromIllustrator(primaryHex, updatePrimary));
 
-					TATA.host.evalCode(toolScript, res => {
-						if (res && res.indexOf('#') === 0) {
-							updatePrimary(res);
-						} else if (res === 'TOOL_ACTIVATED') {
-							// Poll for change in Default Fill Color (since user is picking now)
-							let pollCount = 0;
-							const maxPolls = 15; // 15 seconds
-							const lastHex = primaryHex;
-
-							activePickerInterval = setInterval(() => {
-								pollCount++;
-								if (pollCount > maxPolls) { clearInterval(activePickerInterval); activePickerInterval = null; return; }
-
-								const checkScript = "try { " +
-									"   var c = app.activeDocument.defaultFillColor; " +
-									"   if(c.typename === 'RGBColor') { " +
-									"      var hex = c.red.toString(16).toUpperCase(); if(hex.length<2) hex='0'+hex; " +
-									"      var g = c.green.toString(16).toUpperCase(); if(g.length<2) g='0'+g; hex += g; " +
-									"      var b = c.blue.toString(16).toUpperCase(); if(b.length<2) b='0'+b; hex += b; " +
-									"      '#' + hex; " +
-									"   } else { 'SKIP'; } " +
-									"} catch(e) { 'SKIP'; }";
-
-								TATA.host.evalCode(checkScript, res => {
-									if (res && res.indexOf('#') === 0) {
-										if (res !== lastHex) {
-											updatePrimary(res);
-											clearInterval(activePickerInterval); // Found new color, stop polling
-																																													activePickerInterval = null;
-										}
-									}
-								});
-							}, 1000); // Check every 1.0s
-
-						} else if (res.indexOf('ERR') === 0) {
-							alert(res);
-						}
-					});
+		if (inputPrimary) {
+			inputPrimary.addEventListener('change', e => {
+				if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+					clearHexError(inputPrimary);
+					updatePrimary(e.target.value);
 				} else {
-					// MODE 2: OS PICKER
-					if (!primaryHex) primaryHex = "#e61919";
-					let currentInt = parseInt(primaryHex.replace('#', ''), 16);
-					if (isNaN(currentInt)) currentInt = 0xFF0000;
-
-					const script = `try {    var dec = $.colorPicker(${currentInt});    if(dec > -1) {       var hex = dec.toString(16).toUpperCase();       while(hex.length < 6) hex = '0' + hex;       '#' + hex;    } else { 'CANCELED'; } } catch(e) { 'ERR: ' + e.message; }`;
-
-					TATA.host.evalCode(script, res => {
-						if (res && res.indexOf('#') === 0) updatePrimary(res);
-						else if (res !== 'CANCELED') alert(`Picker Error: ${res}`);
-					});
+					showHexError(inputPrimary, true);
 				}
-			} catch (e) {
-				alert(`Inline Error: ${e}`);
-			}
-		});
+			});
+		}
 
-		inputPrimary.addEventListener('change', e => {
-			if (/^#[0-9A-F]{6}$/i.test(e.target.value)) updatePrimary(e.target.value);
-		});
+		let dragHex = '';
+		let dragPrimaryFrame = 0;
 
-		// Canvas Interaction
+		function queueDragPrimary(hex) {
+			dragHex = hex;
+			if (dragPrimaryFrame) return;
+			dragPrimaryFrame = requestFrame(() => {
+				dragPrimaryFrame = 0;
+				updatePrimary(dragHex, true, true);
+			});
+		}
+
+		function flushDragPrimary() {
+			if (!dragPrimaryFrame) return;
+			if (typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(dragPrimaryFrame);
+			clearTimeout(dragPrimaryFrame);
+			dragPrimaryFrame = 0;
+			updatePrimary(dragHex, true, true);
+		}
+
 		canvas.addEventListener('mousedown', e => { isDragging = true; handleCanvasInput(e); });
 		window.addEventListener('mousemove', e => { if (isDragging) handleCanvasInput(e); });
 		window.addEventListener('mouseup', () => {
-			if (isDragging) {
-				isDragging = false;
-				// Save final color on drag end
-				addToRecent(primaryHex);
-			}
+			if (!isDragging) return;
+			isDragging = false;
+			flushDragPrimary();
+			addToRecent(primaryHex);
 		});
-		// Lightness Slider Interaction
+
 		if (valSlider) {
 			valSlider.addEventListener('input', e => {
-				const l = parseInt(e.target.value);
-				const currentHSL = hexToHSL(primaryHex);
-				const newHex = hslToHex(currentHSL.h, currentHSL.s, l);
-				// Update Primary (Skip: WheelCursor, History, Slider)
-				// We DO NOT skip wheel REDRAW inside updatePrimary
+				if (!isValidHex(primaryHex)) {
+					showHexError(inputPrimary, true);
+					return;
+				}
+				const l = parseInt(e.target.value, 10);
+				const currentHSL = hexToHslShared(primaryHex);
+				const newHex = hslToHexShared(currentHSL.h, currentHSL.s, l);
+				if (!isValidHex(newHex)) {
+					showHexError(inputPrimary, true);
+					return;
+				}
+				clearHexError(inputPrimary);
 				updatePrimary(newHex, true, true, true);
-				drawWheel(l); // Specific redraw
+				drawWheel(l);
 			});
+			valSlider.addEventListener('change', () => addToRecent(primaryHex));
+		}
 
-			valSlider.addEventListener('change', e => {
-				addToRecent(primaryHex);
+		wheelPainter = () => drawWheel(valSlider ? parseInt(valSlider.value, 10) : 50);
+	}
+
+	// Eyedropper: OS picker window, or Illustrator's Eyedropper tool (polled).
+	function pickFromIllustrator(currentHex, onPick) {
+		if (!TATA.host || typeof TATA.host.evalCode !== 'function') {
+			toast('Open the panel in Illustrator to pick colors', 'info');
+			return;
+		}
+		const rgbToHex = [
+			"var hex = c.red.toString(16).toUpperCase(); if(hex.length<2) hex='0'+hex;",
+			"var g = c.green.toString(16).toUpperCase(); if(g.length<2) g='0'+g; hex += g;",
+			"var b = c.blue.toString(16).toUpperCase(); if(b.length<2) b='0'+b; hex += b;"
+		].join(' ');
+
+		if ((localStorage.getItem('tata_picker_mode') || 'os') === 'tool') {
+			const toolScript = "try { if(app.selection.length > 0 && app.selection[0].filled && app.selection[0].fillColor) { " +
+				"var c = app.selection[0].fillColor; if(c.typename === 'RGBColor') { " + rgbToHex + " '#' + hex; } " +
+				"else { 'ERR:Please select an RGB object'; } } else { app.selectTool('Adobe Eyedropper Tool'); 'TOOL_ACTIVATED'; } " +
+				"} catch(e) { 'ERR:' + e.message; }";
+			TATA.host.evalCode(toolScript, res => {
+				const text = String(res || '');
+				if (text.indexOf('#') === 0) {
+					onPick(text);
+				} else if (text === 'TOOL_ACTIVATED') {
+					// The user is picking now: watch the default fill colour for 15s.
+					stopEyeDropper();
+					let pollCount = 0;
+					toast('Click a color with the Eyedropper in Illustrator');
+					activePickerInterval = setInterval(() => {
+						pollCount++;
+						if (pollCount > 15) { stopEyeDropper(); return; }
+						const checkScript = "try { var c = app.activeDocument.defaultFillColor; if(c.typename === 'RGBColor') { " +
+							rgbToHex + " '#' + hex; } else { 'SKIP'; } } catch(e) { 'SKIP'; }";
+						TATA.host.evalCode(checkScript, found => {
+							if (found && String(found).indexOf('#') === 0 && found !== currentHex) {
+								onPick(found);
+								stopEyeDropper();
+							}
+						});
+					}, 1000);
+				} else if (text.indexOf('ERR') === 0) {
+					toast(text.replace(/^ERR:\s*/, ''), 'error');
+				}
 			});
-		}
-	}
-	// ===========================================
-	// CONTRAST CHECKER LOGIC
-	// ===========================================
-	// GLOBAL CUSTOM PICKER STATE (In-App Modal)
-	const customPickerState = {
-		targetInputId: null,
-		hue: 0,
-		sat: 100,
-		val: 100,
-		rgb: { r: 255, g: 0, b: 0 },
-		hex: '#e61919',
-		isDraggingCanvas: false
-	};
-
-	function openCustomColorPicker(inputId) {
-		const inp = document.getElementById(inputId);
-		if (!inp) return;
-
-		customPickerState.targetInputId = inputId;
-
-		// Parse current hex to HSV
-		const currentHex = inp.value;
-		if (isValidHex(currentHex)) {
-			const rgb = hexToRgb(currentHex);
-			const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-			customPickerState.hue = hsv.h * 360;
-			customPickerState.sat = hsv.s * 100;
-			customPickerState.val = hsv.v * 100;
+			return;
 		}
 
-		document.getElementById('custom_picker_modal').style.display = 'flex';
-
-		// Init Controls
-		document.getElementById('custom_picker_hue').value = customPickerState.hue;
-		renderCustomPickerCanvas();
-		updatePickerUI();
-
-		// Add Listeners if not already added
-		if (!window.customPickerListenersAdded) {
-			setupCustomPickerListeners();
-			window.customPickerListenersAdded = true;
-		}
-	}
-
-	function closeCustomPicker() {
-		document.getElementById('custom_picker_modal').style.display = 'none';
-	}
-
-	function confirmCustomPicker() {
-		if (customPickerState.targetInputId) {
-			const inp = document.getElementById(customPickerState.targetInputId);
-			if (inp) {
-				inp.value = customPickerState.hex;
-				// Trigger update
-				updateContrastUI();
-			}
-		}
-		closeCustomPicker();
-	}
-
-	function setupCustomPickerListeners() {
-		const canvas = document.getElementById('custom_picker_canvas');
-		const hueSlider = document.getElementById('custom_picker_hue');
-
-		// Hue Change
-		hueSlider.addEventListener('input', e => {
-			customPickerState.hue = parseFloat(e.target.value);
-			renderCustomPickerCanvas();
-			updatePickerUI();
-		});
-
-		// Canvas Interaction
-		function handleCanvas(e) {
-			const rect = canvas.getBoundingClientRect();
-			let x = e.clientX - rect.left;
-			let y = e.clientY - rect.top;
-
-			// Clamp
-			x = Math.max(0, Math.min(x, rect.width));
-			y = Math.max(0, Math.min(y, rect.height));
-
-			customPickerState.sat = (x / rect.width) * 100;
-			customPickerState.val = 100 - ((y / rect.height) * 100);
-			updatePickerUI();
-		}
-
-		canvas.addEventListener('mousedown', e => {
-			customPickerState.isDraggingCanvas = true;
-			handleCanvas(e);
-		});
-		window.addEventListener('mousemove', e => {
-			if (customPickerState.isDraggingCanvas) handleCanvas(e);
-		});
-		window.addEventListener('mouseup', () => {
-			customPickerState.isDraggingCanvas = false;
+		let currentInt = parseInt(String(currentHex || '#E61919').replace('#', ''), 16);
+		if (isNaN(currentInt)) currentInt = 0xFF0000;
+		const script = `try { var dec = $.colorPicker(${currentInt}); if(dec > -1) { var hex = dec.toString(16).toUpperCase(); while(hex.length < 6) hex = '0' + hex; '#' + hex; } else { 'CANCELED'; } } catch(e) { 'ERR: ' + e.message; }`;
+		TATA.host.evalCode(script, res => {
+			const text = String(res || '');
+			if (text.indexOf('#') === 0) onPick(text);
+			else if (text !== 'CANCELED') toast(`Color picker failed: ${text.replace(/^ERR:\s*/, '')}`, 'error');
 		});
 	}
 
-	function renderCustomPickerCanvas() {
-		const canvas = document.getElementById('custom_picker_canvas');
-		const ctx = canvas.getContext('2d');
-		const w = canvas.width;
-		const h = canvas.height;
-
-		ctx.clearRect(0, 0, w, h);
-
-		// 1. Fill with Hue
-		ctx.fillStyle = `hsl(${customPickerState.hue}, 100%, 50%)`;
-		ctx.fillRect(0, 0, w, h);
-
-		// 2. White Gradient (Left to Right)
-		const gradWhite = ctx.createLinearGradient(0, 0, w, 0);
-		gradWhite.addColorStop(0, 'rgba(255,255,255,1)');
-		gradWhite.addColorStop(1, 'rgba(255,255,255,0)');
-		ctx.fillStyle = gradWhite;
-		ctx.fillRect(0, 0, w, h);
-
-		// 3. Black Gradient (Top to Bottom)
-		const gradBlack = ctx.createLinearGradient(0, 0, 0, h);
-		gradBlack.addColorStop(0, 'rgba(0,0,0,0)');
-		gradBlack.addColorStop(1, 'rgba(0,0,0,1)');
-		ctx.fillStyle = gradBlack;
-		ctx.fillRect(0, 0, w, h);
-	}
-
-	function updatePickerUI() {
-		const h = customPickerState.hue;
-		const s = customPickerState.sat;
-		const v = customPickerState.val;
-
-		const rgb = hsvToRgb(h / 360, s / 100, v / 100);
-		customPickerState.rgb = rgb;
-		const hex = `#${((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1).toUpperCase()}`;
-		customPickerState.hex = hex;
-
-		// Update Cursor Pos
-		const canvas = document.getElementById('custom_picker_canvas');
-		const cursor = document.getElementById('custom_picker_cursor');
-		const x = (s / 100) * canvas.width;
-		const y = (1 - (v / 100)) * canvas.height;
-		cursor.style.left = `${x}px`;
-		cursor.style.top = `${y}px`;
-		cursor.style.borderColor = (v < 50) ? '#f5f2e9' : '#171717';
-
-		// Update Preview
-		const prev = document.getElementById('custom_picker_preview');
-		prev.style.backgroundColor = hex;
-	}
-
-	// Helper: HSV to RGB
-	function hsvToRgb(h, s, v) {
-		let r, g, b;
-		const i = Math.floor(h * 6);
-		const f = h * 6 - i;
-		const p = v * (1 - s);
-		const q = v * (1 - f * s);
-		const t = v * (1 - (1 - f) * s);
-		switch (i % 6) {
-			case 0: r = v, g = t, b = p; break;
-			case 1: r = q, g = v, b = p; break;
-			case 2: r = p, g = v, b = t; break;
-			case 3: r = p, g = q, b = v; break;
-			case 4: r = t, g = p, b = v; break;
-			case 5: r = v, g = p, b = q; break;
-		}
-		return {
-			r: Math.round(r * 255),
-			g: Math.round(g * 255),
-			b: Math.round(b * 255)
-		};
-	}
-
-	function rgbToHsv(r, g, b) {
-        r /= 255, g /= 255, b /= 255;
-        const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h;
-        let s;
-        const v = max;
-        const d = max - min;
-        s = max == 0 ? 0 : d / max;
-        if (max == min) {
-			h = 0; // achromatic
-		} else {
-			switch (max) {
-				case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-				case g: h = (b - r) / d + 2; break;
-				case b: h = (r - g) / d + 4; break;
-			}
-			h /= 6;
-		}
-        return { h, s, v };
-    }
-
-
-
-	// --- DESIGNER TIPS FEATURE ---
-	const designerTips = [
-		"Final_final_v2_REAL.psd",
-		"Make the logo bigger.",
+	// ==========================================
+	// Contrast Checker
+	// ==========================================
+	const DESIGNER_TIPS = [
+		'Final_final_v2_REAL.psd',
+		'Make the logo bigger.',
 		"I want it to 'pop'!",
-		"Can you send the open file? (Sends JPG)",
-		"Payment is exposure.",
-		"Font not found.",
-		"Brief today, due yesterday.",
+		'Can you send the open file? (Sends JPG)',
+		'Payment is exposure.',
+		'Font not found.',
+		'Brief today, due yesterday.',
 		"Can you make it more 'jazz'?",
-		"It looks great, but change everything.",
-		"Ctrl+S is my heartbeat.",
-		"Layer 1 copy copy copy",
-		"Lorem Ipsum Dolor Sit Amet",
-		"Approved... but can we change the color?",
-		"Do you have the vector file? (Sends Word Doc)",
-		"Minimal but with more elements.",
-		"Deadline is a suggestion.",
-		"RGB or CMYK? Yes.",
-		"Can you Photoshop this out?",
-		"Just a quick 5 min change.",
+		'It looks great, but change everything.',
+		'Ctrl+S is my heartbeat.',
+		'Layer 1 copy copy copy',
+		'Lorem Ipsum Dolor Sit Amet',
+		'Approved... but can we change the color?',
+		'Do you have the vector file? (Sends Word Doc)',
+		'Minimal but with more elements.',
+		'Deadline is a suggestion.',
+		'RGB or CMYK? Yes.',
+		'Can you Photoshop this out?',
+		'Just a quick 5 min change.',
 		"I'll know it when I see it."
 	];
 
 	function updateRandomTip() {
 		const el = document.getElementById('daily_tip_text');
 		if (!el) return;
-		const r = Math.floor(Math.random() * designerTips.length);
-		el.innerText = `"${designerTips[r]}"`;
-
-		// Optional: Animate a bit
-		const card = el.closest('.tip-card');
-		if (card) {
-			card.style.transform = "scale(0.98)";
-			setTimeout(() => { card.style.transform = "scale(1)"; }, 100);
-		}
+		el.textContent = `"${DESIGNER_TIPS[Math.floor(Math.random() * DESIGNER_TIPS.length)]}"`;
 	}
+
+	function swapContrastColors() {
+		const bgEl = document.getElementById('cc_bg_hex');
+		const textEl = document.getElementById('cc_text_hex');
+		if (!bgEl || !textEl) return;
+		const temp = bgEl.value;
+		bgEl.value = textEl.value;
+		textEl.value = temp;
+		updateContrastUI(contrastWheels);
+	}
+
+	function bindContrastSide(input, slider, canvas, cursor) {
+		if (slider && isValidHex(input.value)) {
+			slider.value = String(Math.round(hexToHslShared(input.value).l));
+		}
+		let wheel;
+		wheel = mountColorWheel(canvas, cursor, {
+			getHex: () => input.value,
+			lightness: () => {
+				if (slider && isValidHex(input.value)) return parseInt(slider.value, 10);
+				return hexToHslShared(isValidHex(input.value) ? input.value : '#E61919').l;
+			},
+			setHex: hex => {
+				if (!isValidHex(hex)) {
+					showHexError(input, true);
+					return;
+				}
+				input.value = hex;
+				clearHexError(input);
+				updateContrastUI(wheel);
+			}
+		});
+		input._colorWheel = wheel;
+		contrastWheels.push(wheel);
+		extraWheels.push(wheel);
+		if (slider) {
+			slider.addEventListener('input', () => {
+				if (!isValidHex(input.value)) {
+					showHexError(input, true);
+					return;
+				}
+				const hsl = hexToHslShared(input.value);
+				const next = hslToHexShared(hsl.h, hsl.s, parseInt(slider.value, 10));
+				if (!isValidHex(next)) {
+					showHexError(input, true);
+					return;
+				}
+				input.value = next;
+				clearHexError(input);
+				updateContrastUI(wheel);
+			});
+		}
+		return wheel;
+	}
+
+	let contrastBound = false;
 
 	function initContrastChecker() {
 		const bgInput = document.getElementById('cc_bg_hex');
 		const textInput = document.getElementById('cc_text_hex');
-		if (!bgInput || !textInput) return;
+		if (!bgInput || !textInput || contrastBound) return;
+		contrastBound = true;
 
-		// Init Funny Tip
-		if (typeof window.updateRandomTip === 'function') window.updateRandomTip();
+		bindContrastSide(textInput, document.getElementById('cc_text_light'),
+			document.getElementById('cc_text_wheel'), document.getElementById('cc_text_cursor'));
+		bindContrastSide(bgInput, document.getElementById('cc_bg_light'),
+			document.getElementById('cc_bg_wheel'), document.getElementById('cc_bg_cursor'));
 
-		updateContrastUI();
+		const tip = document.getElementById('tip_card');
+		if (tip) tip.addEventListener('click', updateRandomTip);
+		const swap = document.getElementById('btn_contrast_swap');
+		if (swap) swap.addEventListener('click', swapContrastColors);
+
+		updateRandomTip();
+		updateContrastUI(contrastWheels);
 
 		[bgInput, textInput].forEach(inp => {
-			inp.addEventListener('input', updateContrastUI);
-			inp.addEventListener('change', updateContrastUI);
+			const onEdit = () => updateContrastUI(inp._colorWheel);
+			inp.addEventListener('input', onEdit);
+			inp.addEventListener('change', onEdit);
 		});
-
-		// Force Toggle Logic
-		const ccHeader = bgInput.closest('.section-card').querySelector('.section-header');
-		if (ccHeader) {
-			ccHeader.style.cursor = 'pointer';
-			ccHeader.onclick = function (e) {
-				e.stopPropagation();
-				this.closest('.section-card').classList.toggle('collapsed');
-			};
-		}
 	}
 
-	function updateContrastUI() {
+	// WCAG ratio → one overall level and AA/AAA per text size.
+	function overallLevel(ratio) {
+		if (ratio < 3.0) return { level: 'fail', label: 'Very poor', stars: '★☆☆☆☆' };
+		if (ratio < 4.5) return { level: 'fail', label: 'Poor', stars: '★★☆☆☆' };
+		if (ratio < 7.0) return { level: 'warn', label: 'Good', stars: '★★★☆☆' };
+		if (ratio < 12.0) return { level: 'pass', label: 'Very good', stars: '★★★★☆' };
+		return { level: 'pass', label: 'Excellent', stars: '★★★★★' };
+	}
+
+	function boxLevel(ratio, limitAA, limitAAA) {
+		if (ratio < limitAA) return { level: 'fail', stars: '★☆☆', text: 'fails' };
+		if (ratio < limitAAA) return { level: 'aa', stars: '★★☆', text: 'passes AA' };
+		return { level: 'aaa', stars: '★★★', text: 'passes AAA' };
+	}
+
+	function paintBox(boxId, starsId, labelText, state) {
+		const box = document.getElementById(boxId);
+		const stars = document.getElementById(starsId);
+		if (box) {
+			box.setAttribute('data-level', state.level);
+			box.title = `${labelText} ${state.text}`;
+		}
+		if (stars) stars.textContent = state.stars;
+	}
+
+	function updateContrastUI(changedWheels) {
 		const bgEl = document.getElementById('cc_bg_hex');
 		const textEl = document.getElementById('cc_text_hex');
-
 		if (!bgEl || !textEl) return;
 
 		const bgHex = bgEl.value;
 		const textHex = textEl.value;
+		const bgOk = isValidHex(bgHex);
+		const textOk = isValidHex(textHex);
+		if (bgOk) clearHexError(bgEl);
+		else showHexError(bgEl, false);
+		if (textOk) clearHexError(textEl);
+		else showHexError(textEl, false);
+		if (!bgOk || !textOk) return;
 
-		if (!isValidHex(bgHex) || !isValidHex(textHex)) return;
-
-		// 1. Update Tip Card (Real-time Preview)
-		const tipCard = document.querySelector('.tip-card');
+		// Live preview: the tip card shows the pair as text on background.
+		const tipCard = document.getElementById('tip_card');
 		if (tipCard) {
-			tipCard.style.backgroundColor = bgHex;
-			tipCard.style.color = textHex;
-			tipCard.style.border = (bgHex.toLowerCase() === textHex.toLowerCase()) ? "1px solid #171717" : "none";
+			tipCard.style.setProperty('--tip-bg', bgHex);
+			tipCard.style.setProperty('--tip-fg', textHex);
+			tipCard.classList.toggle('is-same', bgHex.toLowerCase() === textHex.toLowerCase());
 		}
 
 		const ratio = getContrastRatio(bgHex, textHex);
+		const overall = overallLevel(ratio);
+		const card = document.getElementById('score_card');
 		const scoreVal = document.getElementById('cc_score_val');
 		const scoreText = document.getElementById('cc_score_text');
 		const scoreStars = document.getElementById('cc_score_stars');
-		const card = document.getElementById('score_card');
-
-		// Update Number
+		if (card) card.setAttribute('data-level', overall.level);
 		if (scoreVal) scoreVal.textContent = ratio.toFixed(2);
+		if (scoreText) scoreText.textContent = overall.label;
+		if (scoreStars) scoreStars.textContent = overall.stars;
 
-		// --- MAIN CARD LOGIC (User Defined 5-Tiers) ---
-		function getMainState(r) {
-			const failBg = '#e61919', failText = '#f5f2e9';
-			const warnBg = '#ff8709', warnText = '#171717';
-			const passBg = '#b8f55f', passText = '#171717';
+		paintBox('cc_small_box', 'cc_small_stars', 'Small text', boxLevel(ratio, 4.5, 7.0));
+		paintBox('cc_large_box', 'cc_large_stars', 'Large text', boxLevel(ratio, 3.0, 4.5));
 
-			if (r < 3.0) return { label: 'Very poor', bg: failBg, text: failText, stars: '★☆☆☆☆' };
-			if (r < 4.5) return { label: 'Poor', bg: failBg, text: failText, stars: '★★☆☆☆' };
-			if (r < 7.0) return { label: 'Good', bg: warnBg, text: warnText, stars: '★★★☆☆' };
-			if (r < 12.0) return { label: 'Very good', bg: passBg, text: passText, stars: '★★★★☆' };
-			return { label: 'Excellent', bg: passBg, text: passText, stars: '★★★★★' };
-		}
+		paintHexSurface(bgEl.parentElement, bgHex);
+		paintHexSurface(textEl.parentElement, textHex);
 
-		const mainState = getMainState(ratio);
-
-		// Update Main Card
-		if (card) card.style.backgroundColor = mainState.bg;
-		if (scoreText) {
-			scoreText.textContent = mainState.label;
-			scoreText.style.color = mainState.text;
-		}
-		if (scoreVal) scoreVal.style.color = mainState.text;
-		if (scoreStars) {
-			scoreStars.textContent = mainState.stars;
-			scoreStars.style.color = mainState.text;
-		}
-
-		// --- DETAIL BOX LOGIC (Strict WCAG Fail/AA/AAA) ---
-		function getBoxState(r, limitAA, limitAAA) {
-			if (r < limitAA) return { bg: '#e61919', text: '#f5f2e9', stars: '★☆☆' }; // Fail
-			if (r < limitAAA) return { bg: '#ff8709', text: '#171717', stars: '★★★' }; // AA Pass
-			return { bg: '#b8f55f', text: '#171717', stars: '★★★' }; // AAA Pass
-		}
-
-		// Small Text: AA=4.5, AAA=7
-		const smallState = getBoxState(ratio, 4.5, 7.0);
-		// Large Text: AA=3.0, AAA=4.5
-		const largeState = getBoxState(ratio, 3.0, 4.5);
-
-		// Update Small Box
-		const sBox = document.getElementById('cc_small_box');
-		const sLabel = document.getElementById('cc_s_label');
-		const sStars = document.getElementById('cc_small_stars');
-		if (sBox) sBox.style.backgroundColor = smallState.bg;
-		if (sLabel) sLabel.style.color = smallState.text;
-		if (sStars) sStars.style.color = smallState.text;
-
-		// Update Large Box
-		const lBox = document.getElementById('cc_large_box');
-		const lLabel = document.getElementById('cc_l_label');
-		const lStars = document.getElementById('cc_large_stars');
-		if (lBox) lBox.style.backgroundColor = largeState.bg;
-		if (lLabel) lLabel.style.color = largeState.text;
-		if (lStars) lStars.style.color = largeState.text;
-
-		// Update Input Backgrounds and ICON CONTRAST
-		if (bgEl.parentElement) bgEl.parentElement.style.backgroundColor = bgHex;
-		// Update Input Backgrounds
-		if (bgEl.parentElement) bgEl.parentElement.style.backgroundColor = bgHex;
-		const bgContrast = getContrastYIQ(bgHex);
-		bgEl.style.color = bgContrast;
-
-		if (textEl.parentElement) textEl.parentElement.style.backgroundColor = textHex;
-		const textContrast = getContrastYIQ(textHex);
-		textEl.style.color = textContrast;
-	}
-
-	function getContrastYIQ(hexcolor) {
-		hexcolor = hexcolor.replace("#", "");
-		if (hexcolor.length === 3) {
-			hexcolor = hexcolor.split('').map(c => { return c + c; }).join('');
-		}
-		const r = parseInt(hexcolor.substr(0, 2), 16);
-		const g = parseInt(hexcolor.substr(2, 2), 16);
-		const b = parseInt(hexcolor.substr(4, 2), 16);
-		const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-		return (yiq >= 128) ? '#171717' : '#f5f2e9';
-	}
-
-	function getContrastRatio(hex1, hex2) {
-		const lum1 = getLuminance(hex1);
-		const lum2 = getLuminance(hex2);
-		const bright = Math.max(lum1, lum2);
-		const dark = Math.min(lum1, lum2);
-		return (bright + 0.05) / (dark + 0.05);
-	}
-
-	function getLuminance(hex) {
-		const rgb = hexToRgb(hex);
-		const a = [rgb.r, rgb.g, rgb.b].map(v => {
-			v /= 255;
-			return v <= 0.03928
-				? v / 12.92
-				: Math.pow((v + 0.055) / 1.055, 2.4);
+		['cc_text', 'cc_bg'].forEach(id => {
+			const field = document.getElementById(id + '_hex');
+			const slider = document.getElementById(id + '_light');
+			if (field && slider && isValidHex(field.value)) {
+				slider.value = String(Math.round(hexToHslShared(field.value).l));
+			}
 		});
-		return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+		scheduleWheelRefresh(changedWheels || contrastWheels);
 	}
 
-	function hexToRgb(hex) {
-		const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-		hex = hex.replace(shorthandRegex, (m, r, g, b) => {
-			return r + r + g + g + b + b;
-		});
+	// ==========================================
+	// Custom Colors (2–8 slots)
+	// ==========================================
+	const CUSTOM_COLOR_KEY = 'tata_custom_colors';
+	const DEFAULT_CUSTOM_COLORS = ['#e61919', '#ff8709', '#ffe500', '#b8f55f', '#9d95ff', '#ff9ecd'];
+	const EXTRA_CUSTOM_COLORS = ['#00bae2', '#3a5bd9']; // used past the default six
+	const MIN_CUSTOM_COLORS = 2;
+	const MAX_CUSTOM_COLORS = 8;
 
-		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-		return result ? {
-			r: parseInt(result[1], 16),
-			g: parseInt(result[2], 16),
-			b: parseInt(result[3], 16)
-		} : { r: 0, g: 0, b: 0 };
+	function fallbackCustomColor(index) {
+		const all = DEFAULT_CUSTOM_COLORS.concat(EXTRA_CUSTOM_COLORS);
+		return all[index % all.length];
 	}
 
-	function isValidHex(hex) {
-		return /^#[0-9A-F]{6}$/i.test(hex) || /^#[0-9A-F]{3}$/i.test(hex);
-	}
-	function exportPalette(name, colors) {
-		const script = `try { var doc = app.activeDocument; var grp = doc.swatchGroups.add(); grp.name = '${name} Theme'; var cols = ${JSON.stringify(colors)}; for(var i=0; i<cols.length; i++){ var hex = cols[i].replace('#',''); var r = parseInt(hex.substring(0,2), 16); var g = parseInt(hex.substring(2,4), 16); var b = parseInt(hex.substring(4,6), 16); var c = new RGBColor(); c.red=r; c.green=g; c.blue=b; var s = doc.swatches.add(); s.color = c; s.name = 'Hex '+hex; grp.addSwatch(s); } 'Success'; } catch(e){e.toString();}`;
-		TATA.host.evalCode(script, res => { if (res !== 'Success') alert(res); });
+	function clampCustomCount(count) {
+		const n = Math.round(Number(count));
+		if (!isFinite(n)) return DEFAULT_CUSTOM_COLORS.length;
+		return Math.max(MIN_CUSTOM_COLORS, Math.min(MAX_CUSTOM_COLORS, n));
 	}
 
-	function placePalette(colors) {
-		const script = // Start 100pt above artboard
-        // Helper: Hex to RGBColor object
-        // Helper: Create Gradient
-        // Create Main Group
-        // 1. Draw Solid Colors (Row 1)
-        // 2. Draw Pairwise Gradients (Row 2) => Below Row 1
-        // 3. Draw Global Gradient (Row 3) => Below Row 2
-        `try { var doc = app.activeDocument;var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()];var rect = ab.artboardRect;var x = rect[0];var y = rect[1];var topFunc = y + 100;var size = 80;var gap = 10;var cols = ${JSON.stringify(colors)};function getRGB(hex) {   hex = hex.replace('#','');   var r = parseInt(hex.substring(0,2), 16);   var g = parseInt(hex.substring(2,4), 16);   var b = parseInt(hex.substring(4,6), 16);   var c = new RGBColor(); c.red=r; c.green=g; c.blue=b;   return c;}function createGrad(name, colorsArr) {   var gName = name + '_' + Math.round(Math.random()*10000);   try { var existing = doc.gradients.getByName(gName); existing.remove(); } catch(e){}   var newGrad = doc.gradients.add();   newGrad.name = gName;   newGrad.type = GradientType.LINEAR;      /* Safe Logic: Reuse Existing Stops */   var stops = newGrad.gradientStops;   var targetLen = colorsArr.length;      /* 1. Add if needed */   while(stops.length < targetLen) { stops.add(); }   /* 2. Remove if too many (reverse loop) */   while(stops.length > targetLen) { stops[stops.length-1].remove(); }      /* 3. Assign Values */   for(var i=0; i<targetLen; i++) {       var s = stops[i];       s.rampPoint = (i / (targetLen - 1)) * 100;       s.color = getRGB(colorsArr[i]);       s.midPoint = 50;   }   var gc = new GradientColor();   gc.gradient = newGrad;   return gc;}var mainGroup = doc.groupItems.add();mainGroup.name = 'TATA Palette';for(var i=0; i<cols.length; i++){   var box = mainGroup.pathItems.rectangle(topFunc, x + (i * (size + gap)), size, size);   box.fillColor = getRGB(cols[i]);   box.stroked = false;}var row2Top = topFunc - (size + gap);if(cols.length > 1) {   for(var i=0; i<cols.length-1; i++){       var gCol = createGrad('Pair_'+i, [cols[i], cols[i+1]]);       var box = mainGroup.pathItems.rectangle(row2Top, x + (i * (size + gap)), size, size);       box.fillColor = gCol;       box.stroked = false;       /* Rotate Gradient 0 deg default */   }}var row3Top = row2Top - (size + gap);if(cols.length > 1) {   var totalWidth = (cols.length * size) + ((cols.length-1) * gap);   var gAll = createGrad('Global', cols);   var box = mainGroup.pathItems.rectangle(row3Top, x, totalWidth, size);   box.fillColor = gAll;   box.stroked = false;}'Success';} catch(e) { e.message + ' line:' + e.line; }`;
-
-		TATA.host.evalCode(script, res => {
-			if (res !== 'Success') alert(`Place Error: ${res}`);
-		});
+	function normalizeCustomColor(value) {
+		const text = String(value == null ? '' : value).trim();
+		if (/^#[0-9A-F]{6}$/i.test(text)) return text.toLowerCase();
+		const short = /^#([0-9A-F])([0-9A-F])([0-9A-F])$/i.exec(text);
+		if (!short) return '';
+		return ('#' + short[1] + short[1] + short[2] + short[2] + short[3] + short[3]).toLowerCase();
 	}
+
+	// The saved list's length is the slot count (2–8); invalid entries fall back.
+	function loadCustomColors() {
+		let stored = null;
+		try {
+			stored = JSON.parse(localStorage.getItem(CUSTOM_COLOR_KEY) || 'null');
+		} catch (e) {
+			stored = null;
+		}
+		const count = Array.isArray(stored) && stored.length ? clampCustomCount(stored.length) : DEFAULT_CUSTOM_COLORS.length;
+		const colors = [];
+		for (let i = 0; i < count; i++) {
+			const next = Array.isArray(stored) ? normalizeCustomColor(stored[i]) : '';
+			colors.push(next || fallbackCustomColor(i));
+		}
+		return colors;
+	}
+
+	// Saves `colors`; its length sets the slot count. Invalid entries keep the
+	// colour already in that slot.
+	function saveCustomColors(colors) {
+		const current = loadCustomColors();
+		const list = Array.isArray(colors) && colors.length ? colors : current;
+		const count = clampCustomCount(list.length);
+		const next = [];
+		for (let i = 0; i < count; i++) {
+			next.push(normalizeCustomColor(list[i]) || current[i] || fallbackCustomColor(i));
+		}
+		try {
+			localStorage.setItem(CUSTOM_COLOR_KEY, JSON.stringify(next));
+		} catch (e) { /* storage can be unavailable in the panel */ }
+		return next;
+	}
+
 	function initCustomColors() {
-		// Default custom colors
-		const customColors = ["#e61919", "#ff8709", "#ffe500", "#b8f55f", "#9d95ff", "#ff9ecd"];
-	
-		// Check if we are on the Colors panel
+		const customColors = loadCustomColors();
 		const container = document.getElementById('custom_colors_container');
-		if (!container) return; // Not on Colors panel or elements not ready
-	
-		// Initialize Slots
-		function updateSlots() {
-			const slots = document.querySelectorAll('.custom-color-slot');
+		if (!container) return;
+
+		let activeSlot = 0;
+		const slotName = document.getElementById('custom_slot_name');
+		const slotHex = document.getElementById('custom_slot_hex');
+		const slotLight = document.getElementById('custom_slot_light');
+		const countValue = document.getElementById('custom_count_value');
+		const btnAdd = document.getElementById('btn_custom_add');
+		const btnRemove = document.getElementById('btn_custom_remove');
+		let slots = [];
+		let customWheel = null;
+
+		// One slot element per colour; rebuilt when the count changes.
+		function buildSlots() {
+			while (container.children.length > customColors.length) container.removeChild(container.lastElementChild);
+			while (container.children.length < customColors.length) {
+				const slot = document.createElement('button');
+				slot.type = 'button';
+				slot.className = 'custom-color-slot';
+				container.appendChild(slot);
+			}
+			slots = Array.prototype.slice.call(container.children);
 			slots.forEach((slot, index) => {
-				slot.style.backgroundColor = customColors[index];
-				slot.title = `Click to Edit: ${customColors[index]}`;
-				slot.onclick = () => {
-					// Use GLOBAL Picker (New Script Style) as requested
-					const currentColor = customColors[index];
-					openGlobalColorPicker(newColor => {
-						if (newColor) {
-							customColors[index] = newColor;
-							updateSlots();
-						}
-					}, currentColor);
+				slot.classList.add('custom-color-slot');
+				slot.dataset.index = String(index);
+				if (slot.tagName !== 'BUTTON') {
+					slot.setAttribute('role', 'button');
+					slot.setAttribute('tabindex', '0');
+				}
+				slot.setAttribute('aria-label', 'สีที่ ' + (index + 1));
+				slot.onclick = () => selectSlot(index);
+				slot.onkeydown = e => {
+					if (slot.tagName !== 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) {
+						e.preventDefault();
+						selectSlot(index);
+					}
 				};
 			});
+			if (countValue) countValue.textContent = String(customColors.length);
+			if (btnAdd) btnAdd.disabled = customColors.length >= MAX_CUSTOM_COLORS;
+			if (btnRemove) btnRemove.disabled = customColors.length <= MIN_CUSTOM_COLORS;
 		}
-	
-		// Attach Button Events
+
+		function paintSlots() {
+			slots.forEach((slot, index) => {
+				// The slot is the colour: this is data, not styling.
+				slot.style.backgroundColor = customColors[index];
+				slot.title = customColors[index];
+				slot.classList.toggle('is-selected', index === activeSlot);
+				slot.setAttribute('aria-pressed', index === activeSlot ? 'true' : 'false');
+			});
+			if (slotName) slotName.textContent = `Slot ${activeSlot + 1}`;
+			if (slotHex) slotHex.value = customColors[activeSlot];
+		}
+
+		function selectSlot(index) {
+			activeSlot = index;
+			if (slotLight) slotLight.value = String(Math.round(hexToHslShared(customColors[index]).l));
+			paintSlots();
+			if (customWheel) customWheel.refresh();
+		}
+
+		if (slotLight) slotLight.value = String(Math.round(hexToHslShared(customColors[0]).l));
+		customWheel = mountColorWheel(
+			document.getElementById('custom_wheel_canvas'),
+			document.getElementById('custom_wheel_cursor'),
+			{
+				getHex: () => customColors[activeSlot],
+				lightness: () => (slotLight ? parseInt(slotLight.value, 10) : hexToHslShared(customColors[activeSlot]).l),
+				setHex: hex => {
+					const safe = normalizeCustomColor(hex);
+					if (!safe) return;
+					customColors[activeSlot] = safe;
+					saveCustomColors(customColors);
+					paintSlots();
+				}
+			}
+		);
+		extraWheels.push(customWheel);
+		buildSlots();
+
+		function setCount(count) {
+			const target = clampCustomCount(count);
+			if (target === customColors.length) return;
+			while (customColors.length < target) customColors.push(fallbackCustomColor(customColors.length));
+			customColors.length = target;
+			saveCustomColors(customColors);
+			buildSlots();
+			selectSlot(Math.min(activeSlot, customColors.length - 1));
+		}
+		if (btnAdd) btnAdd.onclick = () => setCount(customColors.length + 1);
+		if (btnRemove) btnRemove.onclick = () => setCount(customColors.length - 1);
+
+		if (slotHex) {
+			slotHex.addEventListener('change', () => {
+				const safe = normalizeCustomColor(slotHex.value);
+				if (!safe) {
+					showHexError(slotHex, true);
+					return;
+				}
+				clearHexError(slotHex);
+				customColors[activeSlot] = safe;
+				saveCustomColors(customColors);
+				if (slotLight) slotLight.value = String(Math.round(hexToHslShared(safe).l));
+				paintSlots();
+				customWheel.refresh();
+			});
+		}
+		if (slotLight) {
+			slotLight.addEventListener('input', () => {
+				if (!isValidHex(customColors[activeSlot])) {
+					showHexError(slotHex, true);
+					return;
+				}
+				const hsl = hexToHslShared(customColors[activeSlot]);
+				const safe = normalizeCustomColor(hslToHexShared(hsl.h, hsl.s, parseInt(slotLight.value, 10)));
+				if (!safe) return;
+				customColors[activeSlot] = safe;
+				saveCustomColors(customColors);
+				paintSlots();
+				customWheel.refresh();
+			});
+		}
+
 		const btnPlace = document.getElementById('btn_custom_place');
-		if (btnPlace) {
-			btnPlace.onclick = () => {
-				// Reuse TATA.run router if available, or direct eval
-				// Host script must implement placePalette logic. 
-				// existing 'placePalette' function in main.js (line 3351) generates a script string.
-				// Let's reuse that if possible, or call logic directly.
-				// Ideally we use a centralized place function.
-				// main.js has 'placePalette(colors)' function defined around line 3351.
-				if (typeof placePalette === 'function') {
-					placePalette(customColors);
-				} else {
-					showToast(' Place function missing');
-				}
-			};
-		}
-	
+		if (btnPlace) btnPlace.onclick = () => placePalette(customColors);
 		const btnSwatch = document.getElementById('btn_custom_swatch');
-		if (btnSwatch) {
-			btnSwatch.onclick = () => {
-				// main.js has 'exportPalette(name, colors)' defined around line 3346.
-				if (typeof exportPalette === 'function') {
-					exportPalette("Custom Colors", customColors);
-				} else {
-					showToast(' Export function missing');
-				}
-			};
-		}
-	
-	
-		// Initial Render
-		updateSlots();
-	
+		if (btnSwatch) btnSwatch.onclick = () => exportPalette('Custom Colors', customColors);
+
+		TATA.colorTools.setPalette = function (colors) {
+			const next = saveCustomColors(colors);
+			customColors.length = 0;
+			next.forEach(color => customColors.push(color));
+			buildSlots();
+			selectSlot(0);
+		};
+
+		paintSlots();
 	}
 
+	// ==========================================
+	// Illustrator scripts: swatches and placed palettes
+	// ==========================================
+	function reportResult(res, failure) {
+		if (res === 'Success') return;
+		const text = String(res || '').trim();
+		toast(text ? `${failure}: ${text}` : failure, 'error');
+	}
+
+	function exportPalette(name, colors) {
+		const paletteName = JSON.stringify(String(name || 'Palette') + ' Theme');
+		const script = `try { var doc = app.activeDocument; var grp = doc.swatchGroups.add(); grp.name = ${paletteName}; var cols = ${JSON.stringify(colors)}; for(var i=0; i<cols.length; i++){ var hex = cols[i].replace('#',''); var r = parseInt(hex.substring(0,2), 16); var g = parseInt(hex.substring(2,4), 16); var b = parseInt(hex.substring(4,6), 16); var c = new RGBColor(); c.red=r; c.green=g; c.blue=b; var s = doc.swatches.add(); s.color = c; s.name = 'Hex '+hex; grp.addSwatch(s); } 'Success'; } catch(e){e.toString();}`;
+		TATA.host.evalCode(script, res => {
+			if (res === 'Success') toast('Added to Swatches', 'success');
+			else reportResult(res, 'Could not add swatches');
+		});
+	}
+
+	// Row 1 solid squares, row 2 pairwise gradients, row 3 one gradient of all,
+	// 100pt above the active artboard, grouped as "TATA Palette".
+	function placePalette(colors) {
+		const script = [
+			'try {',
+			'var doc = app.activeDocument;',
+			'var ab = doc.artboards[doc.artboards.getActiveArtboardIndex()];',
+			'var rect = ab.artboardRect;',
+			'var x = rect[0]; var top = rect[1] + 100; var size = 80; var gap = 10;',
+			`var cols = ${JSON.stringify(colors)};`,
+			"function getRGB(hex) { hex = hex.replace('#',''); var c = new RGBColor();",
+			'  c.red = parseInt(hex.substring(0,2), 16); c.green = parseInt(hex.substring(2,4), 16); c.blue = parseInt(hex.substring(4,6), 16); return c; }',
+			"function createGrad(name, list) { var g = doc.gradients.add(); g.name = name + '_' + Math.round(Math.random()*10000); g.type = GradientType.LINEAR;",
+			'  var stops = g.gradientStops; while (stops.length < list.length) { stops.add(); } while (stops.length > list.length) { stops[stops.length-1].remove(); }',
+			'  for (var i = 0; i < list.length; i++) { stops[i].rampPoint = (i / (list.length - 1)) * 100; stops[i].color = getRGB(list[i]); stops[i].midPoint = 50; }',
+			'  var gc = new GradientColor(); gc.gradient = g; return gc; }',
+			"var group = doc.groupItems.add(); group.name = 'TATA Palette';",
+			'for (var i = 0; i < cols.length; i++) { var box = group.pathItems.rectangle(top, x + i * (size + gap), size, size); box.fillColor = getRGB(cols[i]); box.stroked = false; }',
+			'var row2 = top - (size + gap);',
+			"if (cols.length > 1) { for (var j = 0; j < cols.length - 1; j++) { var pair = group.pathItems.rectangle(row2, x + j * (size + gap), size, size); pair.fillColor = createGrad('Pair_' + j, [cols[j], cols[j+1]]); pair.stroked = false; } }",
+			'var row3 = row2 - (size + gap);',
+			"if (cols.length > 1) { var all = group.pathItems.rectangle(row3, x, cols.length * size + (cols.length - 1) * gap, size); all.fillColor = createGrad('Global', cols); all.stroked = false; }",
+			"'Success';",
+			"} catch(e) { e.message + ' line:' + e.line; }"
+		].join('\n');
+		TATA.host.evalCode(script, res => {
+			if (res === 'Success') toast('Palette placed', 'success');
+			else reportResult(res, 'Could not place the palette');
+		});
+	}
+
+	// ==========================================
+	// Tab lifecycle
+	// ==========================================
+	function refreshWheel() {
+		if (typeof wheelPainter === 'function') wheelPainter();
+		scheduleWheelRefresh(extraWheels);
+	}
 
 	function stopEyeDropper() {
 		if (activePickerInterval) {
@@ -1197,35 +1053,29 @@
 		}
 	}
 
-	// Expose color tools on TATA namespace
-	TATA.colorTools = {
-		init,
-		openGlobalColorPicker,
-		openCustomColorPicker,
-		swapContrastColors,
-		initContrastChecker,
-		setupCreative,
-		exportPalette,
-		placePalette,
-		stopEyeDropper
-	};
-
-	// Keep window references for inline HTML onclick attributes
-	window.openGlobalColorPicker = openGlobalColorPicker;
-	window.openCustomColorPicker = openCustomColorPicker;
-	window.closeCustomPicker = closeCustomPicker;
-	window.confirmCustomPicker = confirmCustomPicker;
-	window.updateRandomTip = updateRandomTip;
-	window.swapContrastColors = swapContrastColors;
-	window.setupCreative = setupCreative;
-	window.exportPalette = exportPalette;
-	window.placePalette = placePalette;
-
 	function init() {
 		setupCreative();
 		initContrastChecker();
 		initCustomColors();
 	}
+
+	TATA.colorTools = {
+		init,
+		swapContrastColors,
+		initContrastChecker,
+		setupCreative,
+		exportPalette,
+		placePalette,
+		loadCustomColors,
+		saveCustomColors,
+		normalizeCustomColor,
+		hslToHex: hslToHexShared,
+		hexToHsl: hexToHslShared,
+		isValidHex,
+		contrastRatio: getContrastRatio,
+		stopEyeDropper,
+		refreshWheel
+	};
 
 	window.TATA = TATA;
 })();

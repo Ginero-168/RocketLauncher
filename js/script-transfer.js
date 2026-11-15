@@ -7,6 +7,10 @@
 
     const fs = window.require('fs');
 
+    function trackedSource(source) {
+        return source === 'ai' || source === 'auto-fix' ? source : '';
+    }
+
     function exportScript() {
         const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
         let hasExportable = false;
@@ -23,21 +27,28 @@
             return;
         }
 
-        TATA.showToast && TATA.showToast("Click a button to export it", "info");
-        document.body.classList.add('export-mode');
-
         const btns = document.querySelectorAll('.grid-btn');
+        let exitMode = null;
+
+        function endExportMode() {
+            btns.forEach(b => { b.removeEventListener('click', handler, true); });
+            if (exitMode) {
+                const exit = exitMode;
+                exitMode = null;
+                exit();
+            }
+            document.body.classList.remove('export-mode');
+        }
+
         const handler = function (e) {
             e.preventDefault();
             e.stopPropagation();
 
             const item = TATA.getItemDataFromElement(this);
-            const defaultName = item.label;
-
-            const result = window.cep.fs.showSaveDialogEx("Export Script", "", ["json"], defaultName);
+            const result = window.cep.fs.showSaveDialogEx('Export Script', '', ['json'], item.label);
             if (result.data) {
                 const payload = {
-                    tata_version: "2.0",
+                    tata_version: '2.0',
                     name: item.label,
                     icon: item.icon,
                     script: item.script,
@@ -45,18 +56,38 @@
                     type: item.type,
                     color: item.color
                 };
+                const origin = trackedSource(item.source);
+                if (origin) payload.source = origin;
                 let finalPath = result.data;
                 if (!finalPath.toLowerCase().endsWith('.json')) finalPath += '.json';
 
                 fs.writeFileSync(finalPath, JSON.stringify(payload, null, 2));
-                TATA.showToast && TATA.showToast("Exported!", "success");
+                TATA.showToast && TATA.showToast('Exported', 'success');
             }
-
-            document.body.classList.remove('export-mode');
-            btns.forEach(b => { b.removeEventListener('click', handler, true); });
+            endExportMode();
         };
 
         btns.forEach(b => { b.addEventListener('click', handler, true); });
+        if (typeof TATA.enterPickMode === 'function') {
+            exitMode = TATA.enterPickMode({
+                bodyClass: 'export-mode',
+                message: 'Click a script to export it',
+                cancelId: 'btn_cancel_export',
+                onCancel: endExportMode
+            });
+        } else {
+            document.body.classList.add('export-mode');
+        }
+    }
+
+    function runnableImport(data) {
+        if (!data || typeof data !== 'object') return null;
+        const code = typeof data.code === 'string' ? data.code : '';
+        const scriptName = typeof data.script === 'string' ? data.script.trim() : '';
+        const codeOk = code.trim().length > 0;
+        const scriptOk = /^[^/\\]+\.jsx$/i.test(scriptName) && scriptName.indexOf('..') === -1;
+        if (!codeOk && !scriptOk) return null;
+        return { code: codeOk ? code : '', script: scriptOk ? scriptName : '' };
     }
 
     function importScript() {
@@ -66,6 +97,11 @@
             try {
                 const content = fs.readFileSync(filePath, 'utf8');
                 const data = JSON.parse(content);
+                const runnable = runnableImport(data);
+                if (!runnable) {
+                    TATA.showToast && TATA.showToast('Import Failed: no code or JSX script', 'error');
+                    return;
+                }
                 const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
                 const activeTab = 'tab_button';
                 if (!v2Layout[activeTab]) v2Layout[activeTab] = [];
@@ -73,12 +109,14 @@
                 const newItem = {
                     id: `imported_${new Date().getTime()}`,
                     label: data.name || "Imported",
-                    icon: data.icon || (TATA.ICONS && TATA.ICONS.stars),
-                    script: data.script,
-                    code: data.code,
+                    icon: importedIcon(data.icon),
+                    script: runnable.script,
+                    code: runnable.code,
                     type: data.type,
                     color: data.color
                 };
+                const origin = trackedSource(data.source);
+                if (origin) newItem.source = origin;
 
                 v2Layout[activeTab].push(newItem);
                 TATA.setV2Layout && TATA.setV2Layout(v2Layout);
@@ -89,6 +127,18 @@
                 TATA.showToast && TATA.showToast(`Import Failed: ${e}`, "error");
             }
         }
+    }
+
+    function importedIcon(icon) {
+        if (typeof TATA.sanitizeSvg === 'function') {
+            const safe = TATA.sanitizeSvg(icon);
+            if (safe) return safe;
+        }
+        if (typeof TATA.plainIconText === 'function') {
+            const plain = TATA.plainIconText(icon);
+            if (plain) return plain;
+        }
+        return (TATA.ICONS && TATA.ICONS.stars) || '';
     }
 
     function initScriptTransfer() {

@@ -57,19 +57,18 @@ describe('js/color-tools.js module', () => {
         expect(typeof window.TATA.colorTools.setupCreative).toBe('function');
         expect(typeof window.TATA.colorTools.exportPalette).toBe('function');
         expect(typeof window.TATA.colorTools.placePalette).toBe('function');
-        expect(typeof window.TATA.colorTools.openGlobalColorPicker).toBe('function');
         expect(typeof window.TATA.colorTools.swapContrastColors).toBe('function');
     });
 
     test('exportPalette executes a swatch creation script via host.evalCode', () => {
         const { evalCodeMock } = setupWindow();
         loadColorTools();
-        window.exportPalette('Test', ['#FF0000', '#00FF00']);
+        window.TATA.colorTools.exportPalette('Test', ['#FF0000', '#00FF00']);
 
         expect(evalCodeMock).toHaveBeenCalledTimes(1);
         const script = evalCodeMock.mock.calls[0][0];
         expect(script).toContain('var grp = doc.swatchGroups.add();');
-        expect(script).toContain("'Test Theme'");
+        expect(script).toContain('"Test Theme"');
         expect(script).toContain('#FF0000');
         expect(script).toContain('#00FF00');
     });
@@ -77,7 +76,7 @@ describe('js/color-tools.js module', () => {
     test('placePalette executes a place script via host.evalCode', () => {
         const { evalCodeMock } = setupWindow();
         loadColorTools();
-        window.placePalette(['#FF0000', '#00FF00']);
+        window.TATA.colorTools.placePalette(['#FF0000', '#00FF00']);
 
         expect(evalCodeMock).toHaveBeenCalledTimes(1);
         const script = evalCodeMock.mock.calls[0][0];

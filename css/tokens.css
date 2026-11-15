@@ -1,0 +1,135 @@
+/* ==========================================================================
+   Rocket Launcher — design tokens
+   The only place colours, type, spacing, radii, layers and motion are set.
+   Every other stylesheet reads these custom properties; none redefines them.
+
+   Load order (index.html): tokens → base → components → shell → tools →
+   library → colors. Later files style their own areas only; nothing in
+   this project relies on !important except the [hidden] utility in base.css.
+   ========================================================================== */
+
+:root {
+    color-scheme: dark;
+
+    /* --- ground ------------------------------------------------------ */
+    --c-bg: #0a0a0a;
+    --c-bg-sunken: #050505;
+    --c-chrome: rgba(5, 5, 5, 0.6);       /* hotkey bar, tab bar */
+    --c-panel: #0c0c0c;                   /* modals, menus, toasts */
+    --c-field: #000000;
+
+    /* --- ink (all pass 4.5:1 on --c-bg) ------------------------------ */
+    --c-text: #ffffff;
+    --c-text-2: #d4d4d4;
+    --c-text-3: #a1a1a1;
+    --c-text-4: #8a8a8a;
+
+    /* --- lines & surfaces -------------------------------------------- */
+    --c-line: rgba(255, 255, 255, 0.10);
+    --c-line-2: rgba(255, 255, 255, 0.18);
+    --c-line-3: rgba(255, 255, 255, 0.32);
+    --c-surface: rgba(255, 255, 255, 0.035);
+    --c-surface-2: rgba(255, 255, 255, 0.06);
+    --c-surface-hover: rgba(255, 255, 255, 0.10);
+
+    /* --- signal colours ---------------------------------------------- */
+    --c-accent: #00e5ff;
+    --c-accent-rgb: 0, 229, 255;
+    --c-accent-2-rgb: 37, 99, 235;
+    --c-success: #7cff6b;
+    --c-warning: #ffd60a;
+    --c-danger: #ff3b30;
+    --c-danger-ink: #ff6b61;
+    --c-danger-rgb: 255, 59, 48;
+    --c-danger-2-rgb: 220, 38, 38;
+
+    /* contrast-checker levels (WCAG fail / AA / AAA) */
+    --c-level-fail: #e61919;
+    --c-level-aa: #ff8709;
+    --c-level-aaa: #b8f55f;
+
+    /* --- type -------------------------------------------------------- */
+    /* UI sans for names people read; tech mono for system chrome. */
+    --font-ui: "SF Pro Text", "Helvetica Neue", "Segoe UI", Thonburi, "Leelawadee UI", sans-serif;
+    --font-tech: "IBM Plex Mono", "SF Mono", Menlo, Consolas, Thonburi, "Leelawadee UI", monospace;
+    --font-code: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --fs-2xs: 9px;
+    --fs-xs: 10px;
+    --fs-sm: 11px;
+    --fs-md: 12px;
+    --fs-lg: 14px;
+    --fs-xl: 18px;
+    --fs-display: 34px;
+    --track-caps: 0.1em;
+    --track-wide: 0.16em;
+
+    /* --- space ------------------------------------------------------- */
+    --sp-1: 2px;
+    --sp-2: 4px;
+    --sp-3: 6px;
+    --sp-4: 8px;
+    --sp-5: 10px;
+    --sp-6: 12px;
+    --sp-7: 16px;
+    --gutter: 10px;
+
+    /* --- radii: sharp chrome, rounded glass -------------------------- */
+    --r-chrome: 0;
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-tile: 14px;
+    --r-pill: 999px;
+
+    /* --- control heights --------------------------------------------- */
+    --h-ctl-sm: 22px;
+    --h-ctl: 28px;
+    --h-ctl-lg: 36px;
+    --h-hotkey: 36px;
+    --h-tabs: 34px;
+    --h-footer: 40px;
+
+    /* --- liquid glass ------------------------------------------------ */
+    --glass-fill: rgba(255, 255, 255, 0.06);
+    --glass-fill-hover: rgba(255, 255, 255, 0.11);
+    --glass-rim: rgba(255, 255, 255, 0.18);
+    --glass-rim-hover: rgba(255, 255, 255, 0.32);
+    --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.08) 28%, rgba(255, 255, 255, 0) 46%);
+    --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    --glass-drop: 0 4px 14px -6px rgba(0, 0, 0, 0.55);
+    --glass-drop-hover: 0 8px 20px -8px rgba(0, 0, 0, 0.7);
+    --glass-blur: blur(14px) saturate(160%);
+
+    /* --- motion ------------------------------------------------------ */
+    --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+    --ease-out: cubic-bezier(.2, .8, .2, 1);
+    --t-press: .08s;
+    --t-fast: .12s;
+    --t-base: .18s;
+    --t-slow: .3s;
+    --lift: -2px;
+    --press: .96;
+
+    /* --- layers ------------------------------------------------------ */
+    --z-raised: 10;
+    --z-popover: 100;
+    --z-menu: 200;
+    --z-banner: 300;
+    --z-modal: 1000;
+    --z-toast: 1100;
+    --z-alert: 1200;
+
+    /* --- focus ------------------------------------------------------- */
+    --focus-ring: rgba(0, 229, 255, 0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --t-press: 0s;
+        --t-fast: 0s;
+        --t-base: 0s;
+        --t-slow: 0s;
+        --lift: 0px;
+        --press: 1;
+    }
+}

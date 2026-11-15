@@ -13,18 +13,16 @@
     // ==========================================
     const ICONS = {
         fit: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v2H4v4H2V4a2 2 0 0 1 2-2zm16 0h-4v2h4v4h2V4a2 2 0 0 0-2-2zM4 20h4v-2H4v-4H2v4a2 2 0 0 0 2 2zm16 0h-4v-2h4v-4h2v4a2 2 0 0 0-2 2z" /></svg>',
-        resize: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 12h-2.26l2.03-2.03l-1.41-1.41L15.31 10.6V8.34h-2v4.66h4.66v-2h-2.66zM7 12h2.26L7.23 14.03l1.41 1.41L10.69 13.4v2.26h2v-4.66H8.03v2H10.69z" /></svg>',
+        resize: '<svg class="icon" viewBox="0 0 24 24"><path d="M21 11V3h-8l3.29 3.29-10 10L3 13v8h8l-3.29-3.29 10-10z" /></svg>',
         follow: '<svg class="icon" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" /></svg>',
         arrange: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z" /></svg>',
         stars: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>',
         palette: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" /></svg>',
         embed: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z" /></svg>',
         preview: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>',
-        dimension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 21l-4.486-4.494M19 10H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM10 3v4M14 3v4M8 5h8" /></svg>',
-        clean: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>',
-        colors: '<svg class="icon" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10" /></svg>',
-        folder: '<svg class="icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" /></svg>',
-        explore: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></svg>'
+        dimension: '<svg class="icon" viewBox="0 0 24 24"><path d="M21 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8Z" /></svg>',
+        clean: '<svg class="icon" viewBox="0 0 24 24"><path d="M16 11h-1V3a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v8H8a5 5 0 0 0-5 5v7h18v-7a5 5 0 0 0-5-5Zm3 10h-2v-3a1 1 0 0 0-2 0v3h-2v-3a1 1 0 0 0-2 0v3H9v-3a1 1 0 0 0-2 0v3H5v-5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5Z" /></svg>',
+        folder: '<svg class="icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" /></svg>'
     };
 
     // ==========================================
@@ -57,6 +55,10 @@
         const normalized = isLayoutObject ? layout : {};
         let changed = !isLayoutObject;
         const allLayoutIds = {};
+        const defaultsById = {};
+        Object.keys(v2Defaults).forEach(tabName => {
+            v2Defaults[tabName].forEach(def => { defaultsById[def.id] = def; });
+        });
 
         ['tab_button'].forEach(tabName => {
             if (!Array.isArray(normalized[tabName])) {
@@ -64,7 +66,18 @@
                 changed = true;
             }
             normalized[tabName].forEach(item => {
-                if (item && item.id) allLayoutIds[item.id] = true;
+                if (!item || !item.id) return;
+                allLayoutIds[item.id] = true;
+                // Built-in tools cannot be edited, so their label, icon and
+                // script always come from this release (the colour is kept).
+                const def = defaultsById[item.id];
+                if (!def) return;
+                ['label', 'icon', 'script'].forEach(key => {
+                    if (item[key] !== def[key]) {
+                        item[key] = def[key];
+                        changed = true;
+                    }
+                });
             });
         });
 
@@ -90,7 +103,12 @@
 
         const safeParse = TATA.safeParse || JSON.parse;
         const saved = localStorage.getItem('tata_v2_layout');
-        const parsed = saved ? safeParse(saved, null) : cloneDefaults();
+        let parsed = cloneDefaults();
+        if (saved && typeof TATA.readStoredLayout === 'function') {
+            parsed = TATA.readStoredLayout() || cloneDefaults();
+        } else if (saved) {
+            parsed = safeParse(saved, null);
+        }
         const result = normalizeLayout(parsed);
         v2Layout = result.layout;
         layoutLoaded = true;
@@ -143,7 +161,8 @@
 
                     const titleEl = document.createElement('h3');
                     titleEl.className = 'section-title';
-                    titleEl.innerText = title;
+                    titleEl.lang = 'th';
+                    titleEl.textContent = title === 'User Script' ? 'สคริปต์ของคุณ' : 'เครื่องมือ';
                     header.appendChild(titleEl);
 
                     const grid = document.createElement('div');
@@ -161,13 +180,28 @@
                 const grid = getOrCreateSection(title);
                 if (!grid) return;
 
-                // Hide empty sections, show non-empty
+                // The user section always shows (with a hint when empty);
+                // the tools section hides when it has nothing in it.
                 const sectionWrap = grid.parentElement;
                 if (sectionItems.length === 0) {
-                    if (sectionWrap) sectionWrap.style.display = 'none';
+                    if (title === 'User Script' && sectionWrap) {
+                        sectionWrap.hidden = false;
+                        grid.querySelectorAll('.grid-btn').forEach(el => el.remove());
+                        if (!grid.querySelector('.tool-empty')) {
+                            const note = document.createElement('p');
+                            note.className = 'tool-empty';
+                            note.lang = 'th';
+                            note.textContent = 'กด New เพื่อเพิ่มสคริปต์ของคุณ';
+                            grid.appendChild(note);
+                        }
+                        return;
+                    }
+                    if (sectionWrap) sectionWrap.hidden = true;
                     return;
                 }
-                if (sectionWrap) sectionWrap.style.display = '';
+                if (sectionWrap) sectionWrap.hidden = false;
+                const staleNote = grid.querySelector('.tool-empty');
+                if (staleNote) staleNote.remove();
 
                 // Track which buttons should remain
                 const activeIds = new Set();
@@ -197,6 +231,15 @@
 
             renderSection('User Script', userItems);
             renderSection('Default Script', defaultItems);
+
+            let hint = container.querySelector('.tool-hint');
+            if (!hint) {
+                hint = document.createElement('p');
+                hint.className = 'tool-hint';
+                hint.lang = 'th';
+                hint.textContent = 'ลากเครื่องมือไปวางที่ช่องด้านบนเพื่อปักหมุด';
+            }
+            container.appendChild(hint);
         });
 
         // Setup event delegation (once only)
@@ -204,105 +247,62 @@
     }
 
     // ==========================================
-    // Create Grid Button (no per-element listeners)
+    // Create / Update Grid Button (no per-element listeners)
     // ==========================================
-    function getButtonTextColor(color) {
-        const match = String(color || '').replace('#', '').match(/^[0-9a-f]{6}$/i);
-        if (!match) return '#f5f2e9';
+    function setButtonIcon(iconEl, markup) {
+        if (typeof TATA.mountSanitizedIcon === 'function') {
+            TATA.mountSanitizedIcon(iconEl, markup, '');
+        } else {
+            iconEl.textContent = '';
+        }
+    }
 
-        const hex = match[0];
-        const r = parseInt(hex.slice(0, 2), 16);
-        const g = parseInt(hex.slice(2, 4), 16);
-        const b = parseInt(hex.slice(4, 6), 16);
-        return ((r * 299 + g * 587 + b * 114) / 1000) > 155 ? '#171717' : '#f5f2e9';
+    // A user colour becomes tinted glass (see TATA.applyTint in state.js).
+    function paintButton(btn, item) {
+        const color = TATA.resolveColor ? TATA.resolveColor(item.color) : item.color;
+        if (typeof TATA.applyTint === 'function') TATA.applyTint(btn, color);
+        btn.classList.toggle('default-script', !!(item.id && item.id.indexOf('btn_') === 0));
+    }
+
+    function fillButton(btn, item, tabName, index) {
+        btn.dataset.index = index;
+        btn.dataset.tab = tabName;
+        btn.setAttribute('aria-label', item.label);
+        btn.title = item.label;
+        paintButton(btn, item);
+
+        let iconEl = btn.querySelector('.grid-icon');
+        if (!iconEl) {
+            iconEl = document.createElement('span');
+            iconEl.className = 'grid-icon';
+            iconEl.setAttribute('aria-hidden', 'true');
+            btn.insertBefore(iconEl, btn.firstChild);
+        }
+        setButtonIcon(iconEl, item.icon || ICONS.stars);
+
+        let lbl = btn.querySelector('.grid-label');
+        if (!lbl) {
+            lbl = document.createElement('span');
+            lbl.className = 'grid-label';
+            btn.appendChild(lbl);
+        }
+        lbl.textContent = item.label;
+        return btn;
     }
 
     function createGridButton(item, tabName, index) {
         const btn = document.createElement('div');
-        btn.className = 'grid-btn';
+        btn.className = 'grid-btn tile';
         btn.id = item.id;
         btn.draggable = true;
-        btn.dataset.index = index;
-        btn.dataset.tab = tabName;
         btn.setAttribute('role', 'button');
         btn.setAttribute('tabindex', '0');
-        btn.setAttribute('aria-label', item.label);
-
-        // Use CSS custom property for hover color (handled by CSS, no JS listeners needed)
-        const resolvedColor = TATA.resolveColor ? TATA.resolveColor(item.color) : item.color;
-        if (resolvedColor) {
-            btn.classList.add('has-custom-color');
-            btn.style.borderColor = '#171717';
-            btn.style.backgroundColor = resolvedColor;
-            btn.style.color = getButtonTextColor(resolvedColor);
-            btn.style.setProperty('--btn-color', resolvedColor);
-        }
-
-        if (item.id && item.id.indexOf('btn_') === 0) {
-            btn.classList.add('default-script');
-        }
-
-        const iconDiv = document.createElement('div');
-        iconDiv.innerHTML = item.icon || ICONS.stars;
-        const svg = iconDiv.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('width', '24');
-            svg.setAttribute('height', '24');
-        }
-        btn.appendChild(iconDiv);
-
-        const lbl = document.createElement('span');
-        lbl.innerText = item.label;
-        btn.appendChild(lbl);
-
-        return btn;
+        return fillButton(btn, item, tabName, index);
     }
 
     function updateGridButton(btn, item, tabName, index) {
-        btn.dataset.index = index;
-        btn.dataset.tab = tabName;
-        btn.setAttribute('aria-label', item.label);
-
-        const resolvedColor = TATA.resolveColor ? TATA.resolveColor(item.color) : item.color;
-        if (resolvedColor) {
-            btn.classList.add('has-custom-color');
-            btn.style.borderColor = '#171717';
-            btn.style.backgroundColor = resolvedColor;
-            btn.style.color = getButtonTextColor(resolvedColor);
-            btn.style.setProperty('--btn-color', resolvedColor);
-        } else {
-            btn.classList.remove('has-custom-color');
-            btn.style.borderColor = '';
-            btn.style.backgroundColor = '';
-            btn.style.color = '';
-            btn.style.removeProperty('--btn-color');
-        }
-
-        if (item.id && item.id.indexOf('btn_') === 0) {
-            btn.classList.add('default-script');
-        } else {
-            btn.classList.remove('default-script');
-        }
-
-        // Update icon
-        const iconDiv = btn.querySelector('div') || document.createElement('div');
-        iconDiv.innerHTML = item.icon || ICONS.stars;
-        const svg = iconDiv.querySelector('svg');
-        if (svg) {
-            svg.setAttribute('width', '24');
-            svg.setAttribute('height', '24');
-        }
-        if (!iconDiv.parentNode) btn.appendChild(iconDiv);
-
-        // Update label
-        let lbl = iconDiv.nextElementSibling;
-        if (!lbl || lbl.tagName !== 'SPAN') {
-            lbl = document.createElement('span');
-            btn.appendChild(lbl);
-        }
-        lbl.innerText = item.label;
-
-        return btn;
+        btn.classList.add('tile');
+        return fillButton(btn, item, tabName, index);
     }
 
     // ==========================================
@@ -325,17 +325,10 @@
                 const item = v2Layout[tab] && v2Layout[tab][idx];
                 if (!item) return;
 
-                btn.classList.remove('is-launching');
-                void btn.offsetWidth;
-                btn.classList.add('is-launching');
-                setTimeout(() => btn.classList.remove('is-launching'), 460);
-
-                if (item.type === 'subpanel') {
-                    CSInterface.prototype.requestOpenExtension(item.target, '');
-                } else if (item.script) {
+                if (item.script) {
                     if (typeof TATA.runScript === 'function') TATA.runScript(item.script);
                 } else if (item.code) {
-                    TATA.host.evalCode(item.code);
+                    runGridCode(item);
                 }
             });
 
@@ -361,21 +354,8 @@
                 window.currentContextScriptId = item.id;
                 TATA.setCurrentContextId && TATA.setCurrentContextId(item.id);
 
-                const menu = document.getElementById('context_menu');
-                if (menu) {
-                    const isDefault = (item.id.indexOf('btn_') === 0);
-                    const editBtn = document.getElementById('ctx_edit');
-                    const delBtn = document.getElementById('ctx_delete');
-                    const colorRow = document.getElementById('ctx_colors');
-                    if (editBtn) editBtn.style.display = isDefault ? 'none' : 'block';
-                    if (delBtn) delBtn.style.display = isDefault ? 'none' : 'block';
-                    if (colorRow) colorRow.style.display = 'flex';
-                    menu.style.display = 'block';
-                    const menuWidth = 140;
-                    let x = e.clientX;
-                    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
-                    menu.style.left = `${x}px`;
-                    menu.style.top = `${e.clientY}px`;
+                if (typeof TATA.openContextMenu === 'function') {
+                    TATA.openContextMenu(e.clientX, e.clientY, { isDefault: item.id.indexOf('btn_') === 0 });
                 }
             });
 
@@ -451,6 +431,27 @@
     // ==========================================
     // Utility Functions
     // ==========================================
+    // AI-written, auto-fixed and Marketplace code shows its source and asks first.
+    function needsConfirmation(source) {
+        if (typeof TATA.shouldConfirmJsxRun === 'function') return TATA.shouldConfirmJsxRun(source);
+        return source === 'ai' || source === 'auto-fix' || source === 'market';
+    }
+
+    function runGridCode(item) {
+        if (!item || !item.code) return;
+        const source = item.source;
+        if (needsConfirmation(source)) {
+            if (typeof TATA.runConfirmedJsx !== 'function') {
+                if (typeof TATA.showToast === 'function') {
+                    TATA.showToast('Confirmation is unavailable, so this script was not run', 'error');
+                }
+                return;
+            }
+            return TATA.runConfirmedJsx(item.code, source);
+        }
+        if (TATA.host && typeof TATA.host.evalCode === 'function') TATA.host.evalCode(item.code);
+    }
+
     function getItemDataFromElement(el) {
         const tab = el.dataset.tab;
         const idx = el.dataset.index;
@@ -495,5 +496,6 @@
     TATA.setV2Layout = setV2Layout;
     TATA.reloadV2Layout = reloadV2Layout;
     TATA.getItemDataFromElement = getItemDataFromElement;
+    TATA.runGridCode = runGridCode;
 
 })();

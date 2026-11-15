@@ -1,6 +1,6 @@
 /**
  * Rocket Launcher - Core Module
- * Contains: CSInterface, globals, utilities, storage versioning
+ * Contains: CSInterface, globals, utilities, storage versioning, size-capped fetch
  */
 (() => {
     'use strict';
@@ -34,25 +34,6 @@
     }
 
     // ==========================================
-    // DOM Cache
-    // ==========================================
-    const DOM = {};
-    function cacheDOM() {
-        DOM.hotkeyBar = document.getElementById('hotkey-bar');
-        DOM.footerToolbar = document.querySelector('.footer-toolbar');
-        DOM.collapsedStrip = document.getElementById('collapsed_strip');
-        DOM.tabs = document.querySelector('.tabs');
-        DOM.tabContainer = document.getElementById('tab-container');
-        DOM.settingsModal = document.getElementById('settings_modal');
-        DOM.inputModal = document.getElementById('input_modal');
-        DOM.confirmModal = document.getElementById('confirm_modal');
-        DOM.contextMenu = document.getElementById('context_menu');
-        DOM.ctxEdit = document.getElementById('ctx_edit');
-        DOM.ctxDelete = document.getElementById('ctx_delete');
-        DOM.ctxColors = document.getElementById('ctx_colors');
-    }
-
-    // ==========================================
     // Safe JSON Parse Utility
     // ==========================================
     function safeParse(jsonString, fallback) {
@@ -61,18 +42,6 @@
         } catch (e) {
             console.error('[TATA] JSON Parse Error:', e);
             return fallback;
-        }
-    }
-
-    // ==========================================
-    // Safe Function Wrapper
-    // ==========================================
-    function safeCall(fn, context, fallbackValue) {
-        try {
-            return fn.call(context);
-        } catch (e) {
-            console.error(`[TATA] Error in ${fn.name || 'anonymous'}:`, e);
-            return fallbackValue;
         }
     }
 
@@ -103,7 +72,7 @@
         const currentVersion = parseInt(localStorage.getItem('tata_storage_version') || '0', 10);
         if (currentVersion < STORAGE_VERSION) {
             console.log('[TATA] Migrating to V7 Layout (4-tab restructure)...');
-            TATA.backupBeforeSave(`tata_v2_layout_v${currentVersion}`);
+            TATA.backupBeforeSave('tata_v2_layout');
 
             // Migrate: merge old tabs into single 'tab_button'
             const oldLayout = localStorage.getItem('tata_v2_layout');
@@ -114,7 +83,7 @@
                     ['swift', 'creative', 'organize', 'tools'].forEach((tab) => {
                         if (parsed[tab] && Array.isArray(parsed[tab])) {
                             parsed[tab].forEach((item) => {
-                                if (item.id && item.id.startsWith('btn_')) return;
+                                if (!item || (item.id && String(item.id).startsWith('btn_'))) return;
                                 if (item.type === 'subpanel') return;
                                 merged.push(item);
                             });
@@ -179,10 +148,178 @@
     // ==========================================
     function fetchWithTimeout(url, options, timeoutMs) {
         const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeoutMs || 30000);
-        options = options || {};
-        options.signal = controller.signal;
-        return fetch(url, options).finally(() => clearTimeout(id));
+        const timeout = timeoutMs || 30000;
+        const timer = setTimeout(() => controller.abort(), timeout);
+        const request = Object.assign({}, options || {});
+        const maxBytes = request.maxBytes > 0 ? request.maxBytes : 2 * 1024 * 1024;
+        delete request.maxBytes;
+        request.signal = controller.signal;
+
+        function finish() {
+            clearTimeout(timer);
+        }
+
+        return fetch(url, request).then(response => readCappedBody(response, maxBytes, controller).then(text => {
+            finish();
+            return {
+                ok: response.ok,
+                status: response.status,
+                headers: response.headers,
+                text: () => Promise.resolve(text),
+                json: () => Promise.resolve(text ? JSON.parse(text) : null)
+            };
+        }, error => {
+            finish();
+            throw error;
+        }), error => {
+            finish();
+            throw error;
+        });
+    }
+
+    function decodeBytes(bytes) {
+        if (typeof TextDecoder === 'function') return new TextDecoder().decode(bytes);
+        let text = '';
+        for (let i = 0; i < bytes.length; i++) text += String.fromCharCode(bytes[i]);
+        return text;
+    }
+
+    function contentLength(response) {
+        if (!response.headers || typeof response.headers.get !== 'function') return 0;
+        const size = parseInt(response.headers.get('content-length'), 10);
+        return size > 0 ? size : 0;
+    }
+
+    function oversized(controller, maxBytes) {
+        try { if (controller) controller.abort(); } catch (e) { /* already aborted */ }
+        throw new Error(`Response exceeds ${maxBytes} bytes`);
+    }
+
+    function asBytes(chunk) {
+        if (chunk instanceof Uint8Array) return chunk;
+        if (typeof Buffer !== 'undefined' && Buffer.isBuffer(chunk)) {
+            return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+        }
+        if (typeof chunk === 'string') {
+            const bytes = new Uint8Array(chunk.length);
+            for (let i = 0; i < chunk.length; i++) bytes[i] = chunk.charCodeAt(i) & 255;
+            return bytes;
+        }
+        return new Uint8Array(chunk || 0);
+    }
+
+    function mergeChunks(chunks, received) {
+        const merged = new Uint8Array(received);
+        let offset = 0;
+        chunks.forEach(chunk => {
+            merged.set(chunk, offset);
+            offset += chunk.byteLength;
+        });
+        return decodeBytes(merged);
+    }
+
+    function readReader(reader, maxBytes, controller) {
+        const chunks = [];
+        let received = 0;
+        function pump() {
+            return reader.read().then(step => {
+                if (step.done) return mergeChunks(chunks, received);
+                const bytes = asBytes(step.value);
+                received += bytes.byteLength;
+                if (received > maxBytes) oversized(controller, maxBytes);
+                chunks.push(bytes);
+                return pump();
+            });
+        }
+        return pump();
+    }
+
+    function readAsyncIterable(body, maxBytes, controller) {
+        const iterator = body[Symbol.asyncIterator]();
+        const chunks = [];
+        let received = 0;
+        function pump() {
+            return iterator.next().then(step => {
+                if (step.done) return mergeChunks(chunks, received);
+                const bytes = asBytes(step.value);
+                received += bytes.byteLength;
+                if (received > maxBytes) {
+                    if (typeof iterator.return === 'function') {
+                        try { iterator.return(); } catch (e) { /* stop the source */ }
+                    }
+                    oversized(controller, maxBytes);
+                }
+                chunks.push(bytes);
+                return pump();
+            });
+        }
+        return pump();
+    }
+
+    function readNodeStream(body, maxBytes, controller) {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            let received = 0;
+            let settled = false;
+            function fail() {
+                if (settled) return;
+                settled = true;
+                try { body.destroy(); } catch (e) { /* source may already be closed */ }
+                try { if (controller) controller.abort(); } catch (e2) { /* already aborted */ }
+                reject(new Error(`Response exceeds ${maxBytes} bytes`));
+            }
+            body.on('data', chunk => {
+                if (settled) return;
+                const bytes = asBytes(chunk);
+                received += bytes.byteLength;
+                if (received > maxBytes) {
+                    fail();
+                    return;
+                }
+                chunks.push(bytes);
+            });
+            body.on('end', () => {
+                if (settled) return;
+                settled = true;
+                resolve(mergeChunks(chunks, received));
+            });
+            body.on('error', err => {
+                if (settled) return;
+                settled = true;
+                reject(err);
+            });
+        });
+    }
+
+    function oversizedError(controller, maxBytes) {
+        try { if (controller) controller.abort(); } catch (e) { /* already aborted */ }
+        return new Error(`Response exceeds ${maxBytes} bytes`);
+    }
+
+    function readCappedBody(response, maxBytes, controller) {
+        if (contentLength(response) > maxBytes) {
+            return Promise.reject(oversizedError(controller, maxBytes));
+        }
+        const body = response.body;
+        if (body && typeof body.getReader === 'function') {
+            return readReader(body.getReader(), maxBytes, controller);
+        }
+        if (body && typeof body.on === 'function') {
+            return readNodeStream(body, maxBytes, controller);
+        }
+        if (body && typeof body[Symbol.asyncIterator] === 'function') {
+            return readAsyncIterable(body, maxBytes, controller);
+        }
+        if (body && typeof body.byteLength === 'number') {
+            const bytes = asBytes(body);
+            if (bytes.byteLength > maxBytes) return Promise.reject(oversizedError(controller, maxBytes));
+            return Promise.resolve(decodeBytes(bytes));
+        }
+        if (typeof response.blob === 'function' || typeof response.text === 'function') {
+            try { if (controller) controller.abort(); } catch (e) { /* already aborted */ }
+            return Promise.reject(new Error('Response body cannot be size-capped'));
+        }
+        return Promise.resolve('');
     }
 
     // ==========================================
@@ -190,9 +327,6 @@
     // ==========================================
     TATA.debounce = debounce;
     TATA.safeParse = safeParse;
-    TATA.safeCall = safeCall;
-    TATA.cacheDOM = cacheDOM;
-    TATA.DOM = DOM;
     TATA.csInterface = csInterface;
     TATA.extensionPath = extensionPath;
     TATA.userScripts = userScripts;

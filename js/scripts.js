@@ -28,7 +28,26 @@
     // ==========================================
     // Save User Script
     // ==========================================
-    function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender) {
+    // Code from AI, auto-fix or the Marketplace keeps its source so every run asks first.
+    function trackedSource(source) {
+        return source === 'ai' || source === 'auto-fix' || source === 'market' ? source : '';
+    }
+
+    function applyProvenance(record, origin) {
+        if (origin) record.source = origin;
+        else delete record.source;
+    }
+
+    function writeLayout(v2Layout) {
+        if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
+        if (TATA.saveV2Layout) {
+            TATA.saveV2Layout(true);
+        } else {
+            localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+        }
+    }
+
+    function saveUserScript(name, icon, code, color, isUpdate, targetId, skipRender, source) {
         const userScripts = TATA.getUserScripts ? TATA.getUserScripts() : {};
 
         // Use targetId if provided, otherwise generate a new script_ ID
@@ -36,8 +55,9 @@
 
         const isScriptFile = (typeof code === 'string' && code.endsWith('.jsx'));
         const filePath = isScriptFile ? code.trim() : null;
+        const origin = trackedSource(source);
 
-        userScripts[id] = {
+        const record = {
             name,
             icon,
             code: isScriptFile ? '' : code,
@@ -45,36 +65,45 @@
             color,
             date: Date.now()
         };
+        applyProvenance(record, origin);
+        userScripts[id] = record;
 
         if (TATA.setUserScripts) TATA.setUserScripts(userScripts);
         localStorage.setItem('tata_user_scripts', JSON.stringify(userScripts));
 
-        // Add to V2 Layout if new
-        if (!isUpdate) {
-            const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
-            if (!v2Layout['tab_button']) v2Layout['tab_button'] = [];
+        const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
+        if (!v2Layout['tab_button']) v2Layout['tab_button'] = [];
 
-            const newButtonSettings = {
-                id,
-                label: name,
-                icon,
-                type: isScriptFile ? 'script' : 'code',
-                color
-            };
-
+        function fillButton(button) {
+            button.id = id;
+            button.label = name;
+            button.icon = icon;
+            button.type = isScriptFile ? 'script' : 'code';
+            button.color = color;
             if (isScriptFile) {
-                newButtonSettings.script = filePath;
+                button.script = filePath;
+                delete button.code;
             } else {
-                newButtonSettings.code = code;
+                button.code = code;
+                delete button.script;
             }
+            applyProvenance(button, origin);
+        }
 
+        // New buttons join the grid. Updates keep the same provenance on the existing button.
+        if (!isUpdate) {
+            const newButtonSettings = {};
+            fillButton(newButtonSettings);
             v2Layout['tab_button'].push(newButtonSettings);
-            if (TATA.setV2Layout) TATA.setV2Layout(v2Layout);
-            if (TATA.saveV2Layout) {
-                TATA.saveV2Layout(true);
-            } else {
-                localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
-            }
+            writeLayout(v2Layout);
+        } else if (targetId) {
+            let layoutDirty = false;
+            v2Layout['tab_button'].forEach(item => {
+                if (!item || item.id !== id) return;
+                fillButton(item);
+                layoutDirty = true;
+            });
+            if (layoutDirty) writeLayout(v2Layout);
         }
 
         if (!skipRender) {
@@ -125,6 +154,21 @@
                 TATA.saveV2Layout(true);
             } else {
                 localStorage.setItem('tata_v2_layout', JSON.stringify(v2Layout));
+            }
+        }
+
+        const hotkeys = TATA.getHotkeys ? TATA.getHotkeys() : null;
+        if (Array.isArray(hotkeys)) {
+            let hotkeysDirty = false;
+            hotkeys.forEach((hotkey, index) => {
+                if (!hotkey || hotkey.id !== id) return;
+                hotkeys[index] = null;
+                hotkeysDirty = true;
+            });
+
+            if (hotkeysDirty) {
+                if (TATA.saveHotkeys) TATA.saveHotkeys();
+                if (TATA.renderHotkeys) TATA.renderHotkeys();
             }
         }
 

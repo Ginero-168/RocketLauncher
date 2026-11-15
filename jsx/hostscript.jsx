@@ -508,14 +508,20 @@ var TATA = {
     },
 
     saveSelectionAsRichSvg: function (params) {
-        if (app.documents.length === 0) return "No Doc";
-        var doc = app.activeDocument;
-        if (!doc.selection || doc.selection.length === 0) return "No Selection";
+        var previousInteractionLevel = app.userInteractionLevel;
         var tempDoc = null;
+        var doc = null;
         var stage = "prepare";
 
         try {
-            // Create Temp Doc matching Source Color Space to prevent Flattening/Expansion on Paste
+            app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+            if (app.documents.length === 0) return "No Doc";
+
+            doc = app.activeDocument;
+            if (!doc.selection || doc.selection.length === 0) return "No Selection";
+            params = params || {};
+
+            // Create a temporary document matching the source color space.
             var colorSpace = doc.documentColorSpace;
             var sourceItems = [];
             for (var sourceIndex = 0; sourceIndex < doc.selection.length; sourceIndex++) {
@@ -525,35 +531,50 @@ var TATA = {
             stage = "create temporary document";
             tempDoc = app.documents.add(colorSpace);
 
-            if (params.useClipboard === false) {
-                // Canvas drops happen inside Illustrator's own drag transaction.
-                // Avoid app.copy/app.paste here because the shared clipboard call
-                // raises [PARM] while Illustrator is settling the drop.
-                stage = "duplicate selection";
-                tempDoc.selection = null;
-                var targetLayer = tempDoc.layers[0];
-                doc.activate();
-                for (var duplicateIndex = 0; duplicateIndex < sourceItems.length; duplicateIndex++) {
-                    var duplicate = sourceItems[duplicateIndex].duplicate(
-                        targetLayer,
-                        ElementPlacement.PLACEATEND
-                    );
-                    try { duplicate.selected = true; } catch (selectDuplicateErr) { }
-                }
-                tempDoc.activate();
-            } else {
+            if (params.useClipboard === true) {
                 stage = "copy selection";
                 doc.activate();
                 app.copy();
                 stage = "paste selection";
                 tempDoc.activate();
                 app.paste();
+            } else {
+                stage = "duplicate selection";
+                var targetLayer = tempDoc.layers[0];
+                var copiedCount = 0;
+                doc.activate();
+                for (var duplicateIndex = 0; duplicateIndex < sourceItems.length; duplicateIndex++) {
+                    var sourceItem = sourceItems[duplicateIndex];
+                    var canDuplicate = true;
+                    try {
+                        if (sourceItem.locked || sourceItem.hidden) canDuplicate = false;
+                    } catch (stateError) {
+                        canDuplicate = false;
+                    }
+                    if (!canDuplicate) continue;
+
+                    try {
+                        sourceItem.duplicate(targetLayer, ElementPlacement.PLACEATEND);
+                        copiedCount++;
+                    } catch (duplicateError) {
+                        // Ignore individual items that Illustrator cannot duplicate.
+                    }
+                }
+
+                tempDoc.activate();
+                var copiedItems = tempDoc.pageItems;
+                if (copiedCount === 0 || !copiedItems || copiedItems.length === 0) {
+                    return "Error at duplicate selection: nothing copied";
+                }
+                for (var selectIndex = 0; selectIndex < copiedItems.length; selectIndex++) {
+                    copiedItems[selectIndex].selected = true;
+                }
             }
 
             // Resize Artboard to fit selection (Fixes small preview issue)
             stage = "fit artboard";
             try {
-                if (tempDoc.selection.length > 0) {
+                if (tempDoc.selection && tempDoc.selection.length > 0) {
                     var sel = tempDoc.selection;
                     var bounds = [Infinity, -Infinity, -Infinity, Infinity]; // [Left, Top, Right, Bottom]
                     // Iterate to find bounds (Geometric bounds for visual accuracy)
@@ -585,6 +606,9 @@ var TATA = {
             // Output File
             var filePath = params.path;
             var f = new File(filePath);
+            var outputFolder = new Folder(f.parent);
+            if (!outputFolder.exists) outputFolder.create();
+            if (f.exists) f.remove();
 
             // Use ExportOptionsSVG (Standard API) with preserveEditability
             var opts = new ExportOptionsSVG();
@@ -594,22 +618,40 @@ var TATA = {
             opts.preserveEditability = true; // This keeps AI data (Appearances)
 
             // Export
+            app.userInteractionLevel = previousInteractionLevel;
             stage = "export SVG";
-            tempDoc.exportFile(f, ExportType.SVG, opts);
+            tempDoc.activate();
+            try {
+                tempDoc.exportFile(f, ExportType.SVG, opts);
+            } catch (exportError) {
+                stage = "export SVG (retry)";
+                var retryOpts = new ExportOptionsSVG();
+                retryOpts.preserveEditability = false;
+                retryOpts.embedRasterImages = true;
+                retryOpts.fontType = SVGFontType.SVGFONT;
+                if (typeof SVGDocumentEncoding !== "undefined") {
+                    try { retryOpts.documentEncoding = SVGDocumentEncoding.UTF8; } catch (encodingError) { }
+                }
+                tempDoc.activate();
+                tempDoc.exportFile(f, ExportType.SVG, retryOpts);
+            }
 
             stage = "close temporary document";
             tempDoc.close(SaveOptions.DONOTSAVECHANGES);
             tempDoc = null;
-            try { doc.activate(); } catch (activateErr) { }
 
             // Read content is done in JS side? No, better here to verify success, or JS side reads it.
             return "Success";
         } catch (e) {
+            return "Error at " + stage + ": " + e.toString();
+        } finally {
             if (tempDoc) {
                 try { tempDoc.close(SaveOptions.DONOTSAVECHANGES); } catch (closeErr) { }
             }
-            try { doc.activate(); } catch (activateErr2) { }
-            return "Error at " + stage + ": " + e.toString();
+            if (doc) {
+                try { doc.activate(); } catch (activateErr) { }
+            }
+            try { app.userInteractionLevel = previousInteractionLevel; } catch (interactionError) { }
         }
     },
 

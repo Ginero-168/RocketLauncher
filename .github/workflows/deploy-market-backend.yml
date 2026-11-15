@@ -1,0 +1,51 @@
+name: Publish Marketplace site
+
+# The Marketplace site lives in market-backend/. Hostinger's Git deploy
+# pulls a whole branch into the site root, so this job republishes that
+# one folder as the root of the `market-deploy` branch. Point Hostinger's
+# Git deployment at this repository, branch `market-deploy`.
+#
+# The branch only ever moves forward (no force push), so Hostinger's pull
+# is always a fast-forward. config.json and storage/ are not in the
+# repository and are never touched.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'market-backend/**'
+      - '.github/workflows/deploy-market-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl
+
+      - name: Test the site before publishing
+        working-directory: market-backend
+        run: |
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/run.php
+
+      - name: Publish market-backend/ as the market-deploy branch
+        run: |
+          git subtree split --prefix=market-backend -b market-deploy
+          git push origin market-deploy
