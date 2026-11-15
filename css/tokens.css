@@ -4,7 +4,7 @@
    Every other stylesheet reads these custom properties; none redefines them.
 
    Load order (index.html): tokens → base → components → shell → tools →
-   library → colors. Later files style their own areas only; nothing in
+   library → colors → insight. Later files style their own areas only; nothing in
    this project relies on !important except the [hidden] utility in base.css.
    ========================================================================== */
 
