@@ -23,6 +23,10 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
+- Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place
+  of the button grid (New, or Edit on a button), with a Tools button to go back. Pressing the Tool tab again also
+  returns to the buttons; visiting another tab and coming back keeps the workbench open.
+- The Tool action row shows icons only below 480px, so five actions no longer run off the panel.
 - The Marketplace site now lives in `market-backend/` in this repository (was `RocketLauncher-backend`).
   It is published to the `market-deploy` branch for Hostinger and left out of the ZXP.
 - Removed `chat-backend/` and its deploy workflow; the panel has had no chat since 3.1.0.

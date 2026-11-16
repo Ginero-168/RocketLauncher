@@ -30,6 +30,10 @@
     "before you install" dialog for Marketplace scripts. The scan reads text only; keep it conservative (anything
     it cannot read is reported, never passed as clean).
   - `main.js`, `bootstrap.js` — startup
+- Tabs are Tool, Style, Color, Keep (plus Market in the footer). The script editor and the AI are one **workbench**
+  inside the Tool tab (`#workbench` holding `#tab_editor` and `#tab_ai`), shown in place of the button grid while
+  `body.workbench-open` is set. `TATA.activateTab('tab_editor' | 'tab_ai')` still works and opens it;
+  `TATA.activateTab('tab_button')` returns to the buttons. Use `TATA.workbench.isOpen()` to ask.
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
 - Team chat was removed in 3.1.0; its backend folder and deploy workflow are gone from the repository.

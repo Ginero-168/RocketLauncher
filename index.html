@@ -35,14 +35,6 @@
 			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm10 0h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM5 14h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Zm10 0h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" /></svg>
 			<span class="tab-label">Tool</span>
 		</button>
-		<button type="button" class="tab-btn" id="tabbtn_tab_editor" role="tab" aria-selected="false" aria-controls="tab_editor" tabindex="-1" data-tab="tab_editor" aria-label="Editor" title="Editor">
-			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z" /></svg>
-			<span class="tab-label">Edit</span>
-		</button>
-		<button type="button" class="tab-btn" id="tabbtn_tab_ai" role="tab" aria-selected="false" aria-controls="tab_ai" tabindex="-1" data-tab="tab_ai" aria-label="AI" title="AI">
-			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5 12 8l5.5 2L12 12l-2 5.5L8 12l-5.5-2L8 8l2-5.5Zm8 10 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" /></svg>
-			<span class="tab-label">AI</span>
-		</button>
 		<button type="button" class="tab-btn" id="tabbtn_tab_styles" role="tab" aria-selected="false" aria-controls="tab_styles" tabindex="-1" data-tab="tab_styles" aria-label="Graphic Style" title="Graphic Style">
 			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 4v3h5v12h3V7h5V4h-13Zm19 5h-9v3h3v7h3v-7h3V9Z" /></svg>
 			<span class="tab-label">Style</span>
@@ -59,7 +51,7 @@
 
 	<!-- Tools actions (shown on the Tools tab only) -->
 	<div class="tab-actions" role="toolbar" aria-label="Script actions">
-		<button type="button" id="btn_add_script" class="btn btn--primary" title="New script (AI)" aria-label="New script">
+		<button type="button" id="btn_add_script" class="btn btn--primary" title="เขียนสคริปต์ใหม่ด้วยตัวแก้โค้ดและ AI" aria-label="New script" lang="th">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z" /></svg>
 			<span class="btn-label">New</span>
 		</button>
@@ -85,48 +77,86 @@
 		<!-- TOOLS: script grid (rendered by js/grid.js) -->
 		<section id="tab_button" class="tab-content active" role="tabpanel" aria-labelledby="tabbtn_tab_button" aria-hidden="false"></section>
 
-		<!-- EDITOR -->
-		<section id="tab_editor" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_editor" aria-hidden="true">
-			<div class="editor-header">
-				<div class="editor-status">
-					<span class="status-dot" id="editor_status_dot" aria-hidden="true"></span>
-					<span id="editor_status" class="editor-status-text" aria-live="polite">New Script</span>
+		<!-- WORKBENCH: the script editor and the AI that writes into it.
+		     Part of the Tool tab; shown in place of the button grid (js/tabs.js). -->
+		<section id="workbench" class="workbench" aria-label="Script workbench">
+			<div id="tab_editor" class="workbench-pane workbench-editor" role="group" aria-label="Script editor">
+				<div class="editor-header">
+					<div class="editor-status">
+						<span class="status-dot" id="editor_status_dot" aria-hidden="true"></span>
+						<span id="editor_status" class="editor-status-text" aria-live="polite">New Script</span>
+					</div>
+					<div class="editor-actions">
+						<button type="button" id="btn_workbench_close" class="btn" lang="th" title="กลับไปที่ปุ่มเครื่องมือ (โค้ดที่พิมพ์ไว้ยังอยู่)" aria-label="กลับไปที่ปุ่มเครื่องมือ">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2Z" /></svg>
+							<span class="btn-label">Tools</span>
+						</button>
+						<button type="button" id="btn_test" class="btn btn--primary" title="Run in Illustrator (Ctrl+Enter)" aria-label="Run in Illustrator">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+							<span class="btn-label">Run</span>
+						</button>
+						<button type="button" id="btn_editor_import" class="btn" title="Save to Tools (Ctrl+S)" aria-label="Save to Tools">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4v6Zm-4 2h14v2H5v-2Z" /></svg>
+							<span class="btn-label">Import</span>
+						</button>
+					</div>
 				</div>
-				<div class="editor-actions">
-					<button type="button" id="btn_test" class="btn btn--primary" title="Run in Illustrator (Ctrl+Enter)" aria-label="Run in Illustrator">
-						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-						<span class="btn-label">Run</span>
-					</button>
-					<button type="button" id="btn_editor_import" class="btn" title="Save to Tools (Ctrl+S)" aria-label="Save to Tools">
-						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4v6Zm-4 2h14v2H5v-2Z" /></svg>
-						<span class="btn-label">Import</span>
-					</button>
+
+				<div class="editor-meta">
+					<label for="script_name_input" class="sr-only">Script name</label>
+					<input type="text" id="script_name_input" class="field editor-name" placeholder="Script name…" spellcheck="false" autocomplete="off">
+					<input type="hidden" id="icon_value" value="★">
+					<button type="button" id="icon_trigger" class="picker-btn" title="Choose icon" aria-label="Choose icon" aria-haspopup="true" aria-expanded="false" aria-controls="icon_grid_popover">★</button>
+					<button type="button" id="color_trigger" class="picker-btn picker-btn--color" title="Choose color" aria-label="Choose color" aria-haspopup="dialog"></button>
+					<div id="icon_grid_popover" class="popover icon-popover" role="menu" aria-label="Icons" hidden></div>
+				</div>
+
+				<div class="editor-container">
+					<label for="code_editor" class="sr-only">Script code</label>
+					<textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
+				</div>
+
+				<div id="recent_code_section" class="recent-code">
+					<div class="recent-code-header">
+						<span class="recent-code-label">Recent code</span>
+						<button type="button" id="btn_clear_recent" class="btn btn--icon btn--sm" title="Clear history" aria-label="Clear recent code">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" /></svg>
+						</button>
+					</div>
+					<div id="recent_code_list" class="recent-code-list">
+						<div class="recent-code-empty">No recent code yet</div>
+					</div>
 				</div>
 			</div>
 
-			<div class="editor-meta">
-				<label for="script_name_input" class="sr-only">Script name</label>
-				<input type="text" id="script_name_input" class="field editor-name" placeholder="Script name…" spellcheck="false" autocomplete="off">
-				<input type="hidden" id="icon_value" value="★">
-				<button type="button" id="icon_trigger" class="picker-btn" title="Choose icon" aria-label="Choose icon" aria-haspopup="true" aria-expanded="false" aria-controls="icon_grid_popover">★</button>
-				<button type="button" id="color_trigger" class="picker-btn picker-btn--color" title="Choose color" aria-label="Choose color" aria-haspopup="dialog"></button>
-				<div id="icon_grid_popover" class="popover icon-popover" role="menu" aria-label="Icons" hidden></div>
-			</div>
-
-			<div class="editor-container">
-				<label for="code_editor" class="sr-only">Script code</label>
-				<textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
-			</div>
-
-			<div id="recent_code_section" class="recent-code">
-				<div class="recent-code-header">
-					<span class="recent-code-label">Recent code</span>
-					<button type="button" id="btn_clear_recent" class="btn btn--icon btn--sm" title="Clear history" aria-label="Clear recent code">
-						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" /></svg>
+			<div id="tab_ai" class="workbench-pane workbench-ai" role="group" aria-label="AI assistant">
+				<div id="chat_header" class="ai-header">
+					<span class="ai-mode">Code</span>
+					<span id="ai_model_name" class="ai-model"></span>
+					<button type="button" id="btn_clear_chat" class="btn btn--icon btn--sm" title="Clear chat and context" aria-label="Clear chat">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
 					</button>
 				</div>
-				<div id="recent_code_list" class="recent-code-list">
-					<div class="recent-code-empty">No recent code yet</div>
+
+				<div id="api_key_section" class="api-key" hidden>
+					<label for="api_key_inline_input" class="api-key-label">Key</label>
+					<input id="api_key_inline_input" class="field" type="password" placeholder="Paste your Replicate API token…" autocomplete="off" spellcheck="false">
+					<button type="button" id="btn_paste_api_key" class="btn btn--sm">Paste</button>
+					<button type="button" id="btn_save_api_key" class="btn btn--primary btn--sm">Save</button>
+				</div>
+
+				<div class="chat-area" id="chat_history" role="log" aria-live="polite">
+					<div class="chat-message-row ai">
+						<div class="chat-bubble ai">Hello! I'm your AI assistant. Try: "Create a circle of 50px"</div>
+					</div>
+				</div>
+
+				<div class="prompt-box">
+					<label for="prompt_input" class="sr-only">Prompt</label>
+					<textarea id="prompt_input" class="prompt-input" rows="2" placeholder="Ask AI to create or edit a script…"></textarea>
+					<button type="button" id="btn_send_prompt" class="btn btn--primary btn--icon prompt-send" title="Send (Enter)" aria-label="Send">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" /></svg>
+					</button>
 				</div>
 			</div>
 		</section>
@@ -158,37 +188,6 @@
 		</section>
 
 		<!-- AI -->
-		<section id="tab_ai" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_ai" aria-hidden="true">
-			<div id="chat_header" class="ai-header">
-				<span class="ai-mode">Code</span>
-				<span id="ai_model_name" class="ai-model"></span>
-				<button type="button" id="btn_clear_chat" class="btn btn--icon btn--sm" title="Clear chat and context" aria-label="Clear chat">
-					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
-				</button>
-			</div>
-
-			<div id="api_key_section" class="api-key" hidden>
-				<label for="api_key_inline_input" class="api-key-label">Key</label>
-				<input id="api_key_inline_input" class="field" type="password" placeholder="Paste your Replicate API token…" autocomplete="off" spellcheck="false">
-				<button type="button" id="btn_paste_api_key" class="btn btn--sm">Paste</button>
-				<button type="button" id="btn_save_api_key" class="btn btn--primary btn--sm">Save</button>
-			</div>
-
-			<div class="chat-area" id="chat_history" role="log" aria-live="polite">
-				<div class="chat-message-row ai">
-					<div class="chat-bubble ai">Hello! I'm your AI assistant. Try: "Create a circle of 50px"</div>
-				</div>
-			</div>
-
-			<div class="prompt-box">
-				<label for="prompt_input" class="sr-only">Prompt</label>
-				<textarea id="prompt_input" class="prompt-input" rows="2" placeholder="Ask AI to create or edit a script…"></textarea>
-				<button type="button" id="btn_send_prompt" class="btn btn--primary btn--icon prompt-send" title="Send (Enter)" aria-label="Send">
-					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" /></svg>
-				</button>
-			</div>
-		</section>
-
 		<!-- COLORS -->
 		<section id="tab_colors" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_colors" aria-hidden="true">
 			<div class="section-card">

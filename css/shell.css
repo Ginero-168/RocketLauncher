@@ -253,7 +253,8 @@ body[data-tab="tab_button"] .tab-actions {
     padding: 0 var(--sp-5);
 }
 
-@media (max-width: 339px) {
+/* Five actions with labels need about 480px; below that they are icons. */
+@media (max-width: 479px) {
     .tab-actions .btn-label {
         display: none;
     }

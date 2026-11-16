@@ -58,7 +58,7 @@
 		if (typeof TATA.bindSettings === 'function') TATA.bindSettings();
 		if (typeof TATA.bindUpdates === 'function') TATA.bindUpdates();
 
-		// "New" opens the AI tab: describe the script, review it, then save it.
+		// "New" opens the workbench on the AI prompt: describe the script, review it, save it.
 		const btnAdd = document.getElementById('btn_add_script');
 		if (btnAdd && btnAdd.dataset.bound !== '1') {
 			btnAdd.dataset.bound = '1';
