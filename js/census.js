@@ -158,7 +158,7 @@
     // ------------------------------------------------------------------
     // Panel UI
     // ------------------------------------------------------------------
-    const view = { scope: 'artboard', report: null, picked: '', busy: false, close: null, truncated: false };
+    const view = { scope: 'artboard', report: null, picked: '', busy: false, truncated: false };
 
     function byId(id) {
         return document.getElementById(id);
@@ -324,22 +324,16 @@
         });
     }
 
-    function open() {
-        const modal = byId('census_modal');
-        if (!modal || typeof TATA.openDialog !== 'function') return;
-        if (view.close) view.close();
-        view.close = TATA.openDialog(modal, { focus: byId('btn_census_rescan') });
+    // Called when the Selector tab is shown (js/tabs.js): the document may
+    // have changed since the last look, so it is surveyed again.
+    function refresh() {
         paintScope();
-        scan();
+        return scan();
     }
 
     function bind() {
-        const opener = byId('btn_census');
-        if (opener) opener.addEventListener('click', open);
         const rescan = byId('btn_census_rescan');
         if (rescan) rescan.addEventListener('click', scan);
-        const close = byId('btn_census_close');
-        if (close) close.addEventListener('click', () => { if (view.close) view.close(); });
         document.querySelectorAll('[data-census-scope]').forEach(chip => {
             chip.addEventListener('click', () => {
                 view.scope = chip.dataset.censusScope === 'document' ? 'document' : 'artboard';
@@ -352,5 +346,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
     else bind();
 
-    TATA.census = { build: build, open: open, MAX_ITEMS: MAX_ITEMS };
+    TATA.census = { build: build, refresh: refresh, MAX_ITEMS: MAX_ITEMS };
 })();

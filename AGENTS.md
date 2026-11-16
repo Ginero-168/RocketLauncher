@@ -23,17 +23,22 @@
   - `scripting.js` — editor and Replicate AI assistant (CodeMirror is loaded on first use)
   - `color-tools.js`, `graphic-styles.js`, `keep.js` — Color, Style and Keep tabs
   - `market.js` — Marketplace; `settings.js`, `updates.js` — settings dialog and update check
-  - `census.js` — document census (groups objects by stroke, fill and font; click selects the set). No AI, no
+  - `census.js` — the Selector tab: document census (groups objects by stroke, fill and font; click selects the set). No AI, no
     network. Host side: `censusScan` / `censusSelect` / `censusFix` at the end of `jsx/hostscript.jsx`, which keep
     object references in the ExtendScript engine between calls and answer `{"error":"stale"}` when the document changed.
   - `script-scan.js` — static scan of a script for file, network and system access; `script-review.js` — the
     "before you install" dialog for Marketplace scripts. The scan reads text only; keep it conservative (anything
     it cannot read is reported, never passed as clean).
   - `main.js`, `bootstrap.js` — startup
-- Tabs are Tool, Style, Color, Keep (plus Market in the footer). The script editor and the AI are one **workbench**
-  inside the Tool tab (`#workbench` holding `#tab_editor` and `#tab_ai`), shown in place of the button grid while
-  `body.workbench-open` is set. `TATA.activateTab('tab_editor' | 'tab_ai')` still works and opens it;
-  `TATA.activateTab('tab_button')` returns to the buttons. Use `TATA.workbench.isOpen()` to ask.
+- The strip has three tabs: **Tool**, **Selector**, **Library** (plus Market in the footer).
+  - Tool: the button grid. The script editor and the AI are one **workbench** inside it (`#workbench` holding
+    `#tab_editor` and `#tab_ai`), shown in place of the grid while `body.workbench-open` is set.
+    `TATA.activateTab('tab_editor' | 'tab_ai')` opens it; `TATA.activateTab('tab_button')` returns to the buttons.
+    `TATA.workbench.isOpen()` asks.
+  - Selector (`#tab_selector`): the document census. It surveys again each time the tab is shown.
+  - Library: Style, Color and Keep. They keep their own panels and ids (`tab_styles`, `tab_colors`, `tab_keep`);
+    the one strip button `#tabbtn_library` points its `data-tab` at whichever is in use, and the `.subtabs` chips
+    switch between them. `body[data-tab]` is still the section id, so `TATA.activateTab('tab_keep')` etc. work.
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
 - Team chat was removed in 3.1.0; its backend folder and deploy workflow are gone from the repository.

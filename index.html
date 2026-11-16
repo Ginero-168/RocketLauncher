@@ -35,19 +35,23 @@
 			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm10 0h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM5 14h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Zm10 0h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Z" /></svg>
 			<span class="tab-label">Tool</span>
 		</button>
-		<button type="button" class="tab-btn" id="tabbtn_tab_styles" role="tab" aria-selected="false" aria-controls="tab_styles" tabindex="-1" data-tab="tab_styles" aria-label="Graphic Style" title="Graphic Style">
-			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 4v3h5v12h3V7h5V4h-13Zm19 5h-9v3h3v7h3v-7h3V9Z" /></svg>
-			<span class="tab-label">Style</span>
+		<button type="button" class="tab-btn" id="tabbtn_tab_selector" role="tab" aria-selected="false" aria-controls="tab_selector" tabindex="-1" data-tab="tab_selector" aria-label="Selector" title="Selector: เลือกวัตถุที่เหมือนกันทั้งชุด">
+			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8v2H3V5Zm0 6h8v2H3v-2Zm0 6h8v2H3v-2Zm11.5-9.5 2 2 4-4L22 7l-5.5 5.5L13 9l1.5-1.5ZM14 16h7v2h-7v-2Z" /></svg>
+			<span class="tab-label">Selector</span>
 		</button>
-		<button type="button" class="tab-btn" id="tabbtn_tab_colors" role="tab" aria-selected="false" aria-controls="tab_colors" tabindex="-1" data-tab="tab_colors" aria-label="Colors" title="Colors">
-			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0 0 18 1.5 1.5 0 0 0 1.1-2.5 1.5 1.5 0 0 1 1.1-2.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8Zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" /></svg>
-			<span class="tab-label">Color</span>
-		</button>
-		<button type="button" class="tab-btn" id="tabbtn_tab_keep" role="tab" aria-selected="false" aria-controls="tab_keep" tabindex="-1" data-tab="tab_keep" aria-label="Keep" title="Keep">
-			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2Z" /></svg>
-			<span class="tab-label">Keep</span>
+		<!-- One tab for Style, Color and Keep. data-tab follows the section in use (js/tabs.js). -->
+		<button type="button" class="tab-btn" id="tabbtn_library" role="tab" aria-selected="false" aria-controls="tab_styles" tabindex="-1" data-tab="tab_styles" aria-label="Library: Style, Color, Keep" title="Library: Style, Color, Keep">
+			<svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4V6Zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm0 14H8V4h12v12Z" /></svg>
+			<span class="tab-label">Library</span>
 		</button>
 	</nav>
+
+	<!-- Library sections: Style, Color and Keep share the Library tab -->
+	<div class="chips subtabs" role="group" aria-label="Library sections">
+		<button type="button" class="chip is-on" data-subtab="tab_styles" aria-pressed="true">Style</button>
+		<button type="button" class="chip" data-subtab="tab_colors" aria-pressed="false">Color</button>
+		<button type="button" class="chip" data-subtab="tab_keep" aria-pressed="false">Keep</button>
+	</div>
 
 	<!-- Tools actions (shown on the Tools tab only) -->
 	<div class="tab-actions" role="toolbar" aria-label="Script actions">
@@ -62,10 +66,6 @@
 		<button type="button" id="btn_export_script" class="btn" title="Export a script to a file" aria-label="Export script">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4v6Zm-4 2h14v2H5v-2Z" /></svg>
 			<span class="btn-label">Export</span>
-		</button>
-		<button type="button" id="btn_census" class="btn" lang="th" title="สำรวจเอกสาร: จัดกลุ่มวัตถุที่เหมือนกัน แล้วเลือกทั้งชุด" aria-label="สำรวจเอกสาร">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8v2H3V5Zm0 6h8v2H3v-2Zm0 6h8v2H3v-2Zm11.5-9.5 2 2 4-4L22 7l-5.5 5.5L13 9l1.5-1.5ZM14 16h7v2h-7v-2Z" /></svg>
-			<span class="btn-label">Census</span>
 		</button>
 		<button type="button" id="btn_upload_script" class="btn" title="ขึ้น Marketplace" aria-label="Upload script to Marketplace">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96ZM14 13v4h-4v-4H7l5-5 5 5h-3Z" /></svg>
@@ -161,8 +161,24 @@
 			</div>
 		</section>
 
+		<!-- SELECTOR: what the document holds, grouped; a click selects the group (js/census.js) -->
+		<section id="tab_selector" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_selector" aria-hidden="true" lang="th">
+			<div class="selector-head">
+				<div class="chips census-scope" role="group" aria-label="ขอบเขตการสำรวจ">
+					<button type="button" class="chip is-on" data-census-scope="artboard" aria-pressed="true">Artboard นี้</button>
+					<button type="button" class="chip" data-census-scope="document" aria-pressed="false">ทั้งเอกสาร</button>
+				</div>
+				<button type="button" id="btn_census_rescan" class="btn btn--icon" title="สำรวจใหม่" aria-label="สำรวจใหม่">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z" /></svg>
+				</button>
+			</div>
+			<p id="census_summary" class="control-hint"></p>
+			<div id="census_list" class="census-list"></div>
+			<p id="census_status" class="census-status" role="status"></p>
+		</section>
+
 		<!-- GRAPHIC STYLE -->
-		<section id="tab_styles" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_styles" aria-hidden="true">
+		<section id="tab_styles" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_library" aria-hidden="true">
 			<div class="style-head">
 				<div class="style-actions">
 					<button type="button" id="btn_add_style" class="btn style-collect" title="Save the selection's appearance as a style" aria-label="Collect style">
@@ -189,7 +205,7 @@
 
 		<!-- AI -->
 		<!-- COLORS -->
-		<section id="tab_colors" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_colors" aria-hidden="true">
+		<section id="tab_colors" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_library" aria-hidden="true">
 			<div class="section-card">
 				<button type="button" class="section-header" aria-expanded="true" aria-controls="colors_custom_content">
 					<span>Custom Colors</span>
@@ -339,7 +355,7 @@
 		</section>
 
 		<!-- KEEP -->
-		<section id="tab_keep" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_tab_keep" aria-hidden="true">
+		<section id="tab_keep" class="tab-content" role="tabpanel" aria-labelledby="tabbtn_library" aria-hidden="true">
 			<div class="style-head keep-toolbar">
 				<div class="style-actions">
 					<button type="button" id="btn_add_selection" class="btn style-collect" lang="th" title="บันทึกสิ่งที่เลือกเป็น SVG" aria-label="บันทึกสิ่งที่เลือกเป็น SVG">
@@ -572,24 +588,6 @@
 			<div class="modal-actions">
 				<button type="button" id="btn_confirm_cancel" class="btn">Cancel</button>
 				<button type="button" id="btn_confirm_ok" class="btn btn--primary">OK</button>
-			</div>
-		</div>
-	</div>
-
-	<!-- Document census (js/census.js) -->
-	<div id="census_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="census_title">
-		<div class="modal-content" lang="th">
-			<h3 id="census_title" class="modal-title">สำรวจเอกสาร</h3>
-			<div class="chips census-scope" role="group" aria-label="ขอบเขตการสำรวจ">
-				<button type="button" class="chip is-on" data-census-scope="artboard" aria-pressed="true">Artboard นี้</button>
-				<button type="button" class="chip" data-census-scope="document" aria-pressed="false">ทั้งเอกสาร</button>
-			</div>
-			<p id="census_summary" class="control-hint"></p>
-			<div id="census_list" class="census-list"></div>
-			<p id="census_status" class="census-status" role="status"></p>
-			<div class="modal-actions">
-				<button type="button" id="btn_census_rescan" class="btn">สำรวจใหม่</button>
-				<button type="button" id="btn_census_close" class="btn btn--primary">ปิด</button>
 			</div>
 		</div>
 	</div>

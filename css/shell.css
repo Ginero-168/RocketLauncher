@@ -235,6 +235,21 @@ body {
     }
 }
 
+/* ================================================= Library section row */
+
+.subtabs {
+    flex: none;
+    display: none;
+    justify-content: center;
+    padding: var(--sp-4) var(--gutter) 0;
+}
+
+body[data-tab="tab_styles"] .subtabs,
+body[data-tab="tab_colors"] .subtabs,
+body[data-tab="tab_keep"] .subtabs {
+    display: flex;
+}
+
 /* ===================================================== Tools action row */
 
 .tab-actions {

@@ -12,7 +12,7 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - A full panel storage now shows an error instead of dropping the change silently.
 
 ### Added
-- Census (Tool tab): lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
+- Selector tab: lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
   and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
   much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
   Works offline and without AI. Locked and hidden objects are counted but never selected.
@@ -23,6 +23,8 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
+- The panel has three tabs: Tool, Selector and Library. Library holds Style, Color and Keep behind a row of
+  chips and reopens on the one used last.
 - Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place
   of the button grid (New, or Edit on a button), with a Tools button to go back. Pressing the Tool tab again also
   returns to the buttons; visiting another tab and coming back keeps the workbench open.

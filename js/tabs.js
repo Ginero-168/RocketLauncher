@@ -50,6 +50,10 @@
             if (typeof TATA.keep.refresh === 'function') return TATA.keep.refresh();
         }
 
+        if (targetId === 'tab_selector' && TATA.census && typeof TATA.census.refresh === 'function') {
+            TATA.census.refresh();
+        }
+
         if (targetId === 'tab_editor') {
             if (TATA.ensureCodeMirror) {
                 TATA.ensureCodeMirror(() => {
@@ -96,6 +100,32 @@
         }
     }
 
+    // Style, Color and Keep share one tab, "Library". Its strip button points
+    // at whichever of the three is in use, so each keeps its own panel, id
+    // and behaviour; the row of chips under the strip switches between them.
+    const LIBRARY = ['tab_styles', 'tab_colors', 'tab_keep'];
+    const LIBRARY_KEY = 'tata_library_tab';
+
+    function libraryButton() {
+        return document.getElementById('tabbtn_library');
+    }
+
+    function pointLibraryAt(tabId, remember) {
+        const button = libraryButton();
+        if (button) {
+            button.setAttribute('data-tab', tabId);
+            button.setAttribute('aria-controls', tabId);
+        }
+        document.querySelectorAll('[data-subtab]').forEach(chip => {
+            const on = chip.getAttribute('data-subtab') === tabId;
+            chip.classList.toggle('is-on', on);
+            chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        if (remember) {
+            try { localStorage.setItem(LIBRARY_KEY, tabId); } catch (e) { /* not essential */ }
+        }
+    }
+
     /**
      * @param {string} tabId
      * @param {{user?: boolean}} [opts] user: the tab strip was used. Coming
@@ -111,6 +141,7 @@
         } else if (tabId === 'tab_button' && (!(opts && opts.user) || current === 'tab_button')) {
             setWorkbench(false);
         }
+        if (LIBRARY.indexOf(tabId) !== -1) pointLibraryAt(tabId, true);
         const buttons = tabButtons();
         buttons.forEach(button => {
             const on = button.getAttribute('data-tab') === tabId;
@@ -178,6 +209,12 @@
         if (!list || list.dataset.tabsBound === '1') return;
         list.dataset.tabsBound = '1';
         list.setAttribute('role', 'tablist');
+        let lastLibrary = '';
+        try { lastLibrary = localStorage.getItem(LIBRARY_KEY) || ''; } catch (e) { /* keep the default */ }
+        if (LIBRARY.indexOf(lastLibrary) !== -1) pointLibraryAt(lastLibrary, false);
+        document.querySelectorAll('[data-subtab]').forEach(chip => {
+            chip.addEventListener('click', () => activateTab(chip.getAttribute('data-subtab')));
+        });
         tabButtons(list).forEach(button => {
             const panelId = button.getAttribute('data-tab');
             if (!button.id) button.id = 'tabbtn_' + panelId;
