@@ -39,5 +39,9 @@ RocketLauncher.p12
 ZXPSignCmd
 
 # Generated / runtime artifacts
-package-lock.json
 jsx/cloud_sync/
+
+# Agent skills installed locally (npx skills add)
+.agents/
+.claude/
+skills-lock.json
