@@ -860,7 +860,7 @@ function hexToRgb(hex) {
 // Object references are kept in this engine between calls; every later call
 // checks that the document is still the one that was scanned.
 
-TATA._census = { refs: [], doc: "", count: -1 };
+TATA._census = { refs: [], sigs: [], doc: "", count: -1 };
 
 TATA._censusHex = function (r, g, b) {
     function h(n) { var s = Math.max(0, Math.min(255, Math.round(n))).toString(16).toUpperCase(); return s.length === 1 ? "0" + s : s; }
@@ -899,13 +899,33 @@ TATA._censusBlocked = function (item) {
     return false;
 };
 
+// What the census groups an object by. Null when the object has no paint or
+// no text to report. Scan stores it; select and fix compare against it.
+TATA._censusDescribe = function (item, kind) {
+    if (kind === "text") {
+        if (item.contents === "") return null;
+        var attrs = item.textRange.characterAttributes;
+        var tfill = TATA._censusColor(attrs.fillColor);
+        return { k: "text", font: attrs.textFont.family + " " + attrs.textFont.style, size: Math.round(attrs.size * 1000) / 1000, fc: tfill[0], fh: tfill[1] };
+    }
+    var stroke = item.stroked ? TATA._censusColor(item.strokeColor) : ["", ""];
+    var fill = item.filled ? TATA._censusColor(item.fillColor) : ["", ""];
+    if (!stroke[0] && !fill[0]) return null;
+    return { k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
+};
+
+TATA._censusSignature = function (rec) {
+    if (!rec) return "";
+    return rec.k === "text" ? "text|" + rec.font + "|" + rec.size + "|" + rec.fc : "path|" + rec.sc + "|" + rec.sw + "|" + rec.fc;
+};
+
 TATA.censusScan = function (params) {
     if (app.documents.length === 0) return JSON.stringify({ error: "nodoc" });
     var doc = app.activeDocument;
     var max = parseInt(params.max, 10) || 4000;
     var whole = params.scope === "document";
     var board = whole ? null : doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
-    var refs = [], items = [], truncated = false;
+    var refs = [], sigs = [], items = [], truncated = false;
 
     function inScope(item) {
         if (!board) return true;
@@ -921,12 +941,12 @@ TATA.censusScan = function (params) {
         try {
             item = doc.pathItems[i];
             if (item.guides || item.clipping || !inScope(item)) continue;
-            var stroke = item.stroked ? TATA._censusColor(item.strokeColor) : ["", ""];
-            var fill = item.filled ? TATA._censusColor(item.fillColor) : ["", ""];
-            if (!stroke[0] && !fill[0]) continue;
-            rec = { i: refs.length, k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
+            rec = TATA._censusDescribe(item, "path");
+            if (!rec) continue;
+            rec.i = refs.length;
             if (TATA._censusBlocked(item)) rec.skip = 1;
             refs.push(item);
+            sigs.push(TATA._censusSignature(rec));
             items.push(rec);
         } catch (e1) { }
     }
@@ -934,32 +954,43 @@ TATA.censusScan = function (params) {
         if (refs.length >= max) { truncated = true; break; }
         try {
             item = doc.textFrames[i];
-            if (!inScope(item) || item.contents === "") continue;
-            var attrs = item.textRange.characterAttributes;
-            var tfill = TATA._censusColor(attrs.fillColor);
-            rec = { i: refs.length, k: "text", font: attrs.textFont.family + " " + attrs.textFont.style, size: Math.round(attrs.size * 1000) / 1000, fc: tfill[0], fh: tfill[1] };
+            if (!inScope(item)) continue;
+            rec = TATA._censusDescribe(item, "text");
+            if (!rec) continue;
+            rec.i = refs.length;
             if (TATA._censusBlocked(item)) rec.skip = 1;
             refs.push(item);
+            sigs.push(TATA._censusSignature(rec));
             items.push(rec);
         } catch (e2) { }
     }
 
-    TATA._census = { refs: refs, doc: doc.name, count: doc.pageItems.length };
+    TATA._census = { refs: refs, sigs: sigs, doc: doc.name, count: doc.pageItems.length };
     return JSON.stringify({ doc: doc.name, scope: whole ? "document" : "artboard", truncated: truncated, items: items });
 };
 
-TATA._censusCurrent = function () {
+// The document the last scan saw, or null when it has changed since. The name
+// and object count catch a switched or edited document; the signatures catch
+// a restyled object, which would otherwise still be selected or changed as
+// part of the group it has left.
+TATA._censusCurrent = function (ids) {
     if (app.documents.length === 0) return null;
     var doc = app.activeDocument;
     var c = TATA._census;
     if (!c || c.doc !== doc.name || c.count !== doc.pageItems.length) return null;
+    for (var i = 0; i < ids.length; i++) {
+        try {
+            var kind = c.sigs[ids[i]].indexOf("text|") === 0 ? "text" : "path";
+            if (TATA._censusSignature(TATA._censusDescribe(c.refs[ids[i]], kind)) !== c.sigs[ids[i]]) return null;
+        } catch (e) { return null; }
+    }
     return doc;
 };
 
 TATA.censusSelect = function (params) {
-    var doc = TATA._censusCurrent();
-    if (!doc) return JSON.stringify({ error: "stale" });
     var ids = params.ids || [];
+    var doc = TATA._censusCurrent(ids);
+    if (!doc) return JSON.stringify({ error: "stale" });
     var done = 0, missed = 0;
     doc.selection = null;
     for (var i = 0; i < ids.length; i++) {
@@ -970,11 +1001,11 @@ TATA.censusSelect = function (params) {
 
 // Evens out a near-miss: kind "stroke" sets the stroke width, "size" the font size (points).
 TATA.censusFix = function (params) {
-    var doc = TATA._censusCurrent();
+    var ids = params.ids || [];
+    var doc = TATA._censusCurrent(ids);
     if (!doc) return JSON.stringify({ error: "stale" });
     var value = parseFloat(params.value);
     if (!(value > 0)) return JSON.stringify({ error: "value" });
-    var ids = params.ids || [];
     var done = 0;
     for (var i = 0; i < ids.length; i++) {
         try {
