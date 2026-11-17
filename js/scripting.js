@@ -11,7 +11,8 @@
 
     let csInterface = null; // Lazy init
     let extensionPath = '';
-    let currentScriptId = 'default_script';
+    // The grid button this editor saves to; null until one is opened or saved.
+    let editingId = null;
     let editorOrigin = 'user';
 
     function getCS() {
@@ -354,7 +355,7 @@
     function handleEditScriptEvent(event) {
         const data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
 
-        if (data.id) currentScriptId = data.id;
+        if (data.id) editingId = data.id;
 
         if (data.code) {
             const origin = TATA.trackedSource(data.source) || 'user';
@@ -437,13 +438,10 @@
                 showToast('Code generated', 'success');
                 const nameInput = byId('script_name_input');
                 saveRecentCode(result.name || (nameInput && nameInput.value) || 'AI Script', result.code, 'ai');
-                if (!currentScriptId) currentScriptId = `ai_script_${Date.now()}`;
             }
             if (result.name) {
                 const nameInput = byId('script_name_input');
                 if (nameInput) nameInput.value = result.name;
-                const slug = result.name.replace(/\s+/g, '_').toLowerCase();
-                if (!String(currentScriptId).includes(slug)) currentScriptId = `${slug}_${Date.now()}`;
             }
         } catch (e) {
             const lb = byId(loadingId);
@@ -533,8 +531,13 @@
             return;
         }
         const origin = typeof TATA.getEditorOrigin === 'function' ? TATA.getEditorOrigin() : 'user';
-        TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor, false, null, false, origin);
-        showToast(`Added "${scriptName}" to Tools`, 'success');
+        const layout = typeof TATA.getV2Layout === 'function' ? TATA.getV2Layout() : {};
+        const stillThere = !!editingId && (layout.tab_button || []).some(item => item && item.id === editingId);
+        const id = TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor,
+            stillThere, stillThere ? editingId : null, false, origin);
+        editingId = stillThere ? editingId : id;
+        updateEditorStatus('edit', scriptName);
+        showToast(stillThere ? `Updated "${scriptName}"` : `Added "${scriptName}" to Tools`, 'success');
         setTimeout(() => activateTab('tab_button'), 150);
     }
 
