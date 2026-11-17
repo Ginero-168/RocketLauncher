@@ -334,12 +334,17 @@
     }
 
     let connecting = null;
+    let pendingCode = '';
 
     function paintAccount() {
         const settings = marketSettings();
         const status = document.getElementById('market_account');
         const button = document.getElementById('btn_market_connect');
-        if (status) status.textContent = settings.token ? ('เชื่อมต่อแล้ว · ' + settings.name) : 'ยังไม่ได้เชื่อมต่อ';
+        if (status) {
+            if (settings.token) status.textContent = 'เชื่อมต่อแล้ว · ' + settings.name;
+            else if (connecting && pendingCode) status.textContent = 'รอยืนยันในเบราว์เซอร์ · รหัส ' + pendingCode;
+            else status.textContent = 'ยังไม่ได้เชื่อมต่อ';
+        }
         if (button) {
             button.textContent = settings.token ? 'ออกจากบัญชี' : 'เชื่อมต่อด้วย Google';
             button.disabled = !!connecting;
@@ -433,6 +438,10 @@
             if (!data.device_code || !/^[a-f0-9]{32}$/.test(data.device_code) || !allowedVerifyUrl(settings.url, data.verify_url)) {
                 throw new Error('เชื่อมต่อไม่ได้');
             }
+            // Shown here so the member can check it against the browser page;
+            // a link someone else sent carries a code no panel of theirs shows.
+            pendingCode = /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(String(data.user_code || '')) ? data.user_code : '';
+            paintAccount();
             if (!openBrowser(data.verify_url)) toast('เปิดเบราว์เซอร์ไม่สำเร็จ', 'error');
             return pollGrant(data.device_code, data.interval, data.expires_in);
         }).then(session => {
@@ -445,6 +454,7 @@
             return false;
         }).then(result => {
             connecting = null;
+            pendingCode = '';
             paintAccount();
             return result;
         });

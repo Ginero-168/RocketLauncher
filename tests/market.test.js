@@ -24,4 +24,24 @@ describe('Marketplace requests (js/market.js)', function () {
         TATA.market.refresh();
         expect(global.fetch).toHaveBeenCalledTimes(2);
     });
+
+    test('while connecting, the panel shows the code the browser page must match', async function () {
+        document.body.innerHTML = '<p id="market_account"></p><button id="btn_market_connect"></button>';
+        const opened = [];
+        const pending = { setTimeout() {}, on() {}, write() {}, end() {} };
+        window.require = name => (name === 'http' || name === 'https') ? { request: () => pending } : require(name);
+        TATA.getCSInterface = () => ({ openURLInDefaultBrowser: url => opened.push(url) });
+        TATA.marketRequest = () => Promise.resolve({
+            ok: true, device_code: 'a'.repeat(32), user_code: 'ABCD-EF23',
+            verify_url: 'https://rl.kirita.me/auth/panel.php?code=ABCD-EF23', interval: 2, expires_in: 600
+        });
+        window.loadPanelScript('js/market.js');
+
+        document.getElementById('btn_market_connect').click();
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(opened).toHaveLength(1);
+        expect(document.getElementById('market_account').textContent).toContain('ABCD-EF23');
+        delete window.require;
+    });
 });
