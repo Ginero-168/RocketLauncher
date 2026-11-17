@@ -2,7 +2,10 @@
 
 All notable changes to the Rocket Launcher extension will be documented in this file.
 
-## Unreleased
+## 3.1.1 - 2026-11-17
+
+The first release built from this repository rather than recovered from the 3.1.0 package. It replaces 3.1.0, so
+the update check offers it to every 3.1.0 install.
 
 ### Security
 - Marketplace scripts always ask before each run. Three ways around the confirmation are closed: code ending in

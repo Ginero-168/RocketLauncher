@@ -31,8 +31,8 @@ Releases are signed ZXP files on GitHub Releases. The panel shows the matching *
 **Settings → Extension updates**; it never overwrites its own files.
 
 ```bash
-git tag v3.1.0
-git push origin v3.1.0
+git tag v3.1.1
+git push origin v3.1.1
 ```
 
 GitHub Actions checks that the tag matches `CSXS/manifest.xml`, runs the tests and creates

@@ -3,7 +3,7 @@
 ## Project Identity
 - **Bundle ID:** `com.tata.pro`
 - **Product Name:** Rocket Launcher
-- **Version:** 3.1.0
+- **Version:** 3.1.1
 - **Location:** `/Library/Application Support/Adobe/CEP/extensions/TATA/`
 - **Panels:** `index.html` only. Color tools and the SVG keeper are tabs inside it since 3.1.0.
 
