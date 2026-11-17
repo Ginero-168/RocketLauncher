@@ -28,6 +28,7 @@ describe('script import and export', function () {
             ICONS: { stars: '<svg></svg>' }
         };
         global.TATA = window.TATA;
+        window.loadPanelScript('js/sanitize.js');
         window.loadPanelScript('js/script-transfer.js');
         return { fs: fs, getLayout: function () { return layout; } };
     }
@@ -46,6 +47,16 @@ describe('script import and export', function () {
         expect(context.getLayout().tab_button[0].label).toBe('Imported');
         expect(TATA.saveV2Layout).toHaveBeenCalledTimes(1);
         expect(TATA.renderGrid).toHaveBeenCalledTimes(1);
+    });
+
+    test('an imported Marketplace script still asks before each run', function () {
+        var context = setupModule({
+            openResult: { data: ['/tmp/example.json'] },
+            importContent: JSON.stringify({ name: 'From market', code: 'alert(1);', type: 'code', source: 'market' })
+        });
+        TATA.initScriptTransfer();
+        document.getElementById('btn_import_script').click();
+        expect(context.getLayout().tab_button[0].source).toBe('market');
     });
 
     test('initialization is idempotent', function () {

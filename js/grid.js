@@ -433,8 +433,7 @@
     // ==========================================
     // AI-written, auto-fixed and Marketplace code shows its source and asks first.
     function needsConfirmation(source) {
-        if (typeof TATA.shouldConfirmJsxRun === 'function') return TATA.shouldConfirmJsxRun(source);
-        return source === 'ai' || source === 'auto-fix' || source === 'market';
+        return TATA.shouldConfirmJsxRun(source);
     }
 
     function runGridCode(item) {

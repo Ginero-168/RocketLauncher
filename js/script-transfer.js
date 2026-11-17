@@ -7,10 +7,6 @@
 
     const fs = window.require('fs');
 
-    function trackedSource(source) {
-        return source === 'ai' || source === 'auto-fix' ? source : '';
-    }
-
     function exportScript() {
         const v2Layout = TATA.getV2Layout ? TATA.getV2Layout() : {};
         let hasExportable = false;
@@ -56,7 +52,7 @@
                     type: item.type,
                     color: item.color
                 };
-                const origin = trackedSource(item.source);
+                const origin = TATA.trackedSource(item.source);
                 if (origin) payload.source = origin;
                 let finalPath = result.data;
                 if (!finalPath.toLowerCase().endsWith('.json')) finalPath += '.json';
@@ -115,7 +111,7 @@
                     type: data.type,
                     color: data.color
                 };
-                const origin = trackedSource(data.source);
+                const origin = TATA.trackedSource(data.source);
                 if (origin) newItem.source = origin;
 
                 v2Layout[activeTab].push(newItem);

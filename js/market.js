@@ -882,7 +882,7 @@
             if (typeof TATA.saveUserScript !== 'function') throw new Error('ดาวน์โหลดได้เมื่อเปิดพาเนลใน Illustrator');
             const review = TATA.scriptReview
                 ? TATA.scriptReview.open({ name: item.name, by: item.owner_name, code: code, credits: item.credits })
-                : Promise.resolve('install');
+                : Promise.resolve('');
             return review.then(choice => {
                 if (!choice) return false;
                 const icon = (TATA.ICONS && TATA.ICONS.stars) || '★';

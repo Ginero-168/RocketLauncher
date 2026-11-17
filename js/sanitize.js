@@ -85,6 +85,11 @@
         return source === 'ai' || source === 'auto-fix' || source === 'market';
     }
 
+    // The one list of sources whose code must be confirmed before each run.
+    function trackedSource(source) {
+        return isTrackedSource(source) ? source : '';
+    }
+
     function elementKey(node) {
         return String(node && (node.localName || node.nodeName) || '').toLowerCase();
     }
@@ -397,6 +402,7 @@
     window.TATA.plainIconText = plainIconText;
     window.TATA.mountSanitizedIcon = mountSanitizedIcon;
     window.TATA.shouldConfirmJsxRun = shouldConfirmJsxRun;
+    window.TATA.trackedSource = trackedSource;
     window.TATA.buildJsxConfirmDetails = buildJsxConfirmDetails;
     window.TATA.requestJsxConfirmation = requestJsxConfirmation;
     window.TATA.runConfirmedJsx = runConfirmedJsx;

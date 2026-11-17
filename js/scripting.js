@@ -357,7 +357,7 @@
         if (data.id) currentScriptId = data.id;
 
         if (data.code) {
-            const origin = data.source === 'ai' || data.source === 'auto-fix' ? data.source : 'user';
+            const origin = TATA.trackedSource(data.source) || 'user';
             setEditorCode(data.code, origin);
         }
         const nameInput = byId('script_name_input');
@@ -746,7 +746,7 @@
         list.unshift({
             name: name || 'Untitled',
             code,
-            origin: origin === 'ai' || origin === 'auto-fix' ? origin : 'user',
+            origin: TATA.trackedSource(origin) || 'user',
             timestamp: Date.now()
         });
         localStorage.setItem(RECENT_CODE_KEY, JSON.stringify(list.slice(0, MAX_RECENT)));
@@ -787,7 +787,7 @@
             const timeEl = document.createElement('span');
             timeEl.className = 'rc-time';
             timeEl.textContent = getTimeAgo(item.timestamp);
-            if (item.origin === 'ai' || item.origin === 'auto-fix') {
+            if (TATA.trackedSource(item.origin)) {
                 const source = document.createElement('span');
                 source.className = 'rc-source';
                 source.textContent = 'AI';
@@ -803,7 +803,7 @@
             row.appendChild(info);
             row.appendChild(load);
             row.addEventListener('click', () => {
-                const origin = item.origin === 'ai' || item.origin === 'auto-fix' ? item.origin : 'user';
+                const origin = TATA.trackedSource(item.origin) || 'user';
                 setEditorCode(item.code, origin);
                 const nameInput = byId('script_name_input');
                 if (nameInput) nameInput.value = item.name;
@@ -882,8 +882,7 @@
     }
 
     function setEditorCode(code, origin) {
-        if (origin === 'ai' || origin === 'auto-fix') editorOrigin = origin;
-        else if (origin) editorOrigin = 'user';
+        if (origin) editorOrigin = TATA.trackedSource(origin) || 'user';
         if (cmEditor) {
             cmEditor.setValue(code);
             setTimeout(() => cmEditor.refresh(), 10);
@@ -902,7 +901,7 @@
     TATA.addChatBubble = addChatBubble;
     TATA.runEditorScript = runCodeWithAutoFix;
     TATA.markEditorOrigin = origin => {
-        editorOrigin = origin === 'ai' || origin === 'auto-fix' ? origin : 'user';
+        editorOrigin = TATA.trackedSource(origin) || 'user';
     };
     TATA.getEditorOrigin = () => editorOrigin;
     TATA.withWorkspaceContext = withWorkspaceContext;
