@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-17 — security and correctness fixes
+
+- Wrong admin tokens on `api/upload.php` and `api/delete.php` are limited to 10 per 10 minutes per
+  address. The count is checked before the comparison, so a blocked address learns nothing more.
+- `storage/` refuses every direct request. Stored files are only served through `download.php` and
+  `api/preview.php`, which check expiry and set the download headers.
+- Upload limits (items per day, total storage) are checked again under the lock that saves the item,
+  so parallel uploads cannot exceed them.
+- `config.json` is written under the lock, so two Admin saves at once cannot drop each other's keys.
+- An AI request that fails while it is being polled is given back to the member's daily quota, once.
+
 ## 2026-10-22 — homepage, Admin, central AI
 
 ### Homepage
