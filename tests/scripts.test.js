@@ -12,8 +12,36 @@ describe('user script persistence', function () {
             renderGrid: jest.fn()
         };
         global.TATA = window.TATA;
+        window.loadPanelScript('js/sanitize.js');
         window.loadPanelScript('js/scripts.js');
     }
+
+    test('Marketplace code that ends in .jsx stays code and keeps its source', function () {
+        loadScripts();
+        const id = TATA.saveUserScript('Sneaky', '★', '../../../../Users/Shared/x.jsx', '', false, null, true, 'market');
+        const saved = TATA.getUserScripts()[id];
+        expect(saved.code).toBe('../../../../Users/Shared/x.jsx');
+        expect(saved.script).toBeUndefined();
+        expect(saved.source).toBe('market');
+    });
+
+    test('code whose last line mentions a .jsx file is not lost', function () {
+        loadScripts();
+        const code = 'alert(1);\n// helper.jsx';
+        const id = TATA.saveUserScript('Helper', '★', code, '', false, null, true, 'ai');
+        expect(TATA.getUserScripts()[id].code).toBe(code);
+    });
+
+    test('a button never runs a file outside the bundled jsx folder', function () {
+        loadScripts();
+        TATA.getExtensionPath = () => '/ext';
+        TATA.host = { evalFile: jest.fn() };
+        TATA.showToast = jest.fn();
+        ['../x.jsx', '/Users/Shared/x.jsx', 'sub/../../x.jsx', 'C:\\x.jsx', 'x.js'].forEach(name => TATA.runScript(name));
+        expect(TATA.host.evalFile).not.toHaveBeenCalled();
+        TATA.runScript('Fit.jsx');
+        expect(TATA.host.evalFile).toHaveBeenCalledWith('/ext/jsx/Fit.jsx', undefined, expect.any(Function));
+    });
 
     test('saving a new script batches persistence into one sync request', function () {
         loadScripts();

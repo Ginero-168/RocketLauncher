@@ -1,5 +1,5 @@
 Options -Indexes
 
-<FilesMatch "\.(php|phtml|phar|json|lock|bak|tmp|zxp)$">
-    Require all denied
-</FilesMatch>
+# Every stored file is served through download.php, which checks expiry,
+# counts downloads and sets attachment and nosniff headers.
+Require all denied

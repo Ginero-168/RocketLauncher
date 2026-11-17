@@ -79,7 +79,23 @@
 
 		<!-- WORKBENCH: the script editor and the AI that writes into it.
 		     Part of the Tool tab; shown in place of the button grid (js/tabs.js). -->
-		<section id="workbench" class="workbench" aria-label="Script workbench">
+		<section id="workbench" class="workbench" data-view="editor" aria-label="Script workbench">
+			<div class="workbench-bar" lang="th">
+				<button type="button" id="btn_workbench_close" class="btn btn--icon" title="กลับไปที่ปุ่มเครื่องมือ (โค้ดที่พิมพ์ไว้ยังอยู่)" aria-label="กลับไปที่ปุ่มเครื่องมือ">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2Z" /></svg>
+				</button>
+				<div class="workbench-switch" role="group" aria-label="มุมมอง">
+					<button type="button" class="workbench-switch-btn is-on" data-workbench-view="editor" aria-pressed="true">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z" /></svg>
+						<span>Code</span>
+					</button>
+					<button type="button" class="workbench-switch-btn" data-workbench-view="ai" aria-pressed="false">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9Zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5ZM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15Z" /></svg>
+						<span>AI</span>
+					</button>
+				</div>
+			</div>
+
 			<div id="tab_editor" class="workbench-pane workbench-editor" role="group" aria-label="Script editor">
 				<div class="editor-header">
 					<div class="editor-status">
@@ -87,10 +103,6 @@
 						<span id="editor_status" class="editor-status-text" aria-live="polite">New Script</span>
 					</div>
 					<div class="editor-actions">
-						<button type="button" id="btn_workbench_close" class="btn" lang="th" title="กลับไปที่ปุ่มเครื่องมือ (โค้ดที่พิมพ์ไว้ยังอยู่)" aria-label="กลับไปที่ปุ่มเครื่องมือ">
-							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2Z" /></svg>
-							<span class="btn-label">Tools</span>
-						</button>
 						<button type="button" id="btn_test" class="btn btn--primary" title="Run in Illustrator (Ctrl+Enter)" aria-label="Run in Illustrator">
 							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
 							<span class="btn-label">Run</span>
@@ -111,28 +123,72 @@
 					<div id="icon_grid_popover" class="popover icon-popover" role="menu" aria-label="Icons" hidden></div>
 				</div>
 
+				<!-- Editing helpers (js/editor-tools.js) -->
+				<div class="editor-tools" role="toolbar" aria-label="เครื่องมือแก้โค้ด" lang="th">
+					<div class="editor-tools-group">
+						<button type="button" class="btn btn--icon btn--sm" data-edit="undo" title="ย้อนกลับ (⌘Z)" aria-label="ย้อนกลับ">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 8c-2.65 0-5.05 1-6.9 2.6L2 7v9h9l-3.62-3.62A7.95 7.95 0 0 1 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78A10.5 10.5 0 0 0 12.5 8Z" /></svg>
+						</button>
+						<button type="button" class="btn btn--icon btn--sm" data-edit="redo" title="ทำซ้ำ (⇧⌘Z)" aria-label="ทำซ้ำ">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.4 10.6A10.4 10.4 0 0 0 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16a8 8 0 0 1 7.6-5.5c1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6Z" /></svg>
+						</button>
+					</div>
+					<div class="editor-tools-group">
+						<div class="editor-snippets">
+							<button type="button" class="btn btn--icon btn--sm" id="btn_edit_snippets" data-edit="snippets" title="แทรกโค้ดสำเร็จรูป" aria-label="แทรกโค้ดสำเร็จรูป" aria-haspopup="menu" aria-expanded="false" aria-controls="edit_snippet_menu">
+								<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z" /></svg>
+							</button>
+							<div id="edit_snippet_menu" class="popover editor-snippet-menu" role="menu" aria-label="โค้ดสำเร็จรูป" hidden></div>
+						</div>
+						<button type="button" class="btn btn--icon btn--sm editor-tools-text" data-edit="comment" title="เปิด/ปิดคอมเมนต์บรรทัดที่เลือก (⌘/)" aria-label="เปิดหรือปิดคอมเมนต์">//</button>
+						<button type="button" class="btn btn--icon btn--sm" data-edit="indent" title="จัดย่อหน้าใหม่ (ส่วนที่เลือก หรือทั้งหมด)" aria-label="จัดย่อหน้าใหม่">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18v-2H3v2ZM3 8v8l4-4-4-4Zm8 9h10v-2H11v2ZM3 3v2h18V3H3Zm8 6h10V7H11v2Zm0 4h10v-2H11v2Z" /></svg>
+						</button>
+						<button type="button" class="btn btn--icon btn--sm" data-edit="check" title="ตรวจ syntax โดยไม่รัน" aria-label="ตรวจ syntax">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z" /></svg>
+						</button>
+					</div>
+					<div class="editor-tools-group">
+						<button type="button" class="btn btn--icon btn--sm" data-edit="copy" title="คัดลอกโค้ดทั้งหมด" aria-label="คัดลอกโค้ดทั้งหมด">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z" /></svg>
+						</button>
+						<button type="button" class="btn btn--icon btn--sm" data-edit="paste" title="วางแทนโค้ดทั้งหมด" aria-label="วางแทนโค้ดทั้งหมด">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm7 18H5V4h2v3h10V4h2v16Z" /></svg>
+						</button>
+						<button type="button" class="btn btn--icon btn--sm editor-tools-danger" data-edit="clear" title="ล้างโค้ดทั้งหมด (ย้อนกลับได้)" aria-label="ล้างโค้ดทั้งหมด">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 16h4v2h-4v-2Zm0-8h7v2h-7V8Zm0 4h6v2h-6v-2ZM3 18a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V8H3v10ZM14 5h-3l-1-1H6L5 5H2v2h12V5Z" /></svg>
+						</button>
+					</div>
+					<div class="editor-tools-group editor-tools-view">
+						<button type="button" class="btn btn--icon btn--sm editor-tools-text" data-edit="smaller" title="ตัวอักษรเล็กลง" aria-label="ตัวอักษรเล็กลง">A−</button>
+						<button type="button" class="btn btn--icon btn--sm editor-tools-text" data-edit="bigger" title="ตัวอักษรใหญ่ขึ้น" aria-label="ตัวอักษรใหญ่ขึ้น">A+</button>
+						<button type="button" class="btn btn--icon btn--sm" data-edit="wrap" title="ตัดบรรทัดยาว" aria-label="ตัดบรรทัดยาว" aria-pressed="true">
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h6v-2H4v2ZM20 5H4v2h16V5Zm-3 6H4v2h13.25a2 2 0 0 1 0 4H15v-2l-3 3 3 3v-2h2a4 4 0 0 0 0-8Z" /></svg>
+						</button>
+					</div>
+				</div>
+
 				<div class="editor-container">
 					<label for="code_editor" class="sr-only">Script code</label>
 					<textarea id="code_editor" spellcheck="false">// Your code will appear here...</textarea>
 				</div>
 
-				<div id="recent_code_section" class="recent-code">
-					<div class="recent-code-header">
-						<span class="recent-code-label">Recent code</span>
-						<button type="button" id="btn_clear_recent" class="btn btn--icon btn--sm" title="Clear history" aria-label="Clear recent code">
-							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" /></svg>
-						</button>
-					</div>
-					<div id="recent_code_list" class="recent-code-list">
-						<div class="recent-code-empty">No recent code yet</div>
-					</div>
+				<div class="editor-foot" lang="th">
+					<span id="editor_position" class="editor-position"></span>
+					<span id="editor_check" class="editor-check" role="status"></span>
+					<button type="button" id="btn_edit_ask_ai" class="btn btn--sm" hidden>ให้ AI ช่วยแก้</button>
 				</div>
+
 			</div>
 
 			<div id="tab_ai" class="workbench-pane workbench-ai" role="group" aria-label="AI assistant">
 				<div id="chat_header" class="ai-header">
 					<span class="ai-mode">Code</span>
 					<span id="ai_model_name" class="ai-model"></span>
+					<button type="button" id="btn_recent_code" class="btn btn--icon btn--sm" lang="th" title="โค้ดล่าสุดที่ AI เขียน" aria-label="โค้ดล่าสุด" aria-haspopup="dialog" aria-controls="recent_code_modal">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3Zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12Z" /></svg>
+						<span id="recent_code_count" class="icon-badge" hidden></span>
+					</button>
 					<button type="button" id="btn_clear_chat" class="btn btn--icon btn--sm" title="Clear chat and context" aria-label="Clear chat">
 						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
 					</button>
@@ -592,6 +648,21 @@
 		</div>
 	</div>
 
+	<!-- Recent code the AI wrote (list drawn by js/scripting.js, dialog by js/editor-tools.js) -->
+	<div id="recent_code_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="recent_code_title">
+		<div class="modal-content" lang="th">
+			<h3 id="recent_code_title" class="modal-title">โค้ดล่าสุด</h3>
+			<p class="control-hint">กดรายการเพื่อเปิดในตัวแก้โค้ด</p>
+			<div id="recent_code_list" class="recent-code-list">
+				<div class="recent-code-empty">No recent code yet</div>
+			</div>
+			<div class="modal-actions">
+				<button type="button" id="btn_clear_recent" class="btn btn--danger-quiet">ล้างประวัติ</button>
+				<button type="button" id="btn_recent_close" class="btn btn--primary">ปิด</button>
+			</div>
+		</div>
+	</div>
+
 	<!-- Before installing a Marketplace script (js/script-review.js) -->
 	<div id="script_review_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="script_review_title">
 		<div class="modal-content" lang="th">
@@ -657,6 +728,7 @@
 	<script src="js/hotkeys.js"></script>
 	<script src="js/script-transfer.js"></script>
 	<script src="js/scripting.js"></script>
+	<script src="js/editor-tools.js"></script>
 	<script src="js/color-tools.js"></script>
 	<script src="js/graphic-styles.js"></script>
 	<script src="js/census.js"></script>

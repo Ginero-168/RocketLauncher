@@ -10,7 +10,7 @@ Adobe Illustrator CEP 11 panel (bundle `com.tata.pro`) and its Marketplace websi
 ## Local development
 
 ```bash
-npm install
+npm ci
 npm test -- --runInBand
 cd market-backend && php tests/run.php
 ```
@@ -56,4 +56,4 @@ root of the `market-deploy` branch. Hostinger's Git deployment pulls that branch
 `main`. `config.json` and the data in `storage/` exist only on the server.
 
 ## License
-MIT
+Proprietary. See [LICENSE](LICENSE).

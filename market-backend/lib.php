@@ -215,8 +215,14 @@ function rl_require_token()
     if ($config === null) {
         rl_json(array('ok' => false, 'error' => 'Marketplace is not set up'), 503);
     }
+    // Only wrong tokens are counted, and the count is checked before the
+    // comparison, so a blocked address learns nothing from further guesses.
+    if (rl_rate_limited('token-fail', 10, 600, false)) {
+        rl_json(array('ok' => false, 'error' => 'Too many wrong tokens, try again later'), 429);
+    }
     $given = rl_request_token();
     if ($given === '' || !hash_equals($config['upload_token'], $given)) {
+        rl_rate_limited('token-fail', 10, 600);
         rl_json(array('ok' => false, 'error' => 'Invalid upload token'), 401);
     }
 }
@@ -462,11 +468,14 @@ function rl_update_config($patch)
     if (rl_config_damaged()) {
         return false;
     }
-    $config = rl_config_raw();
-    foreach ($patch as $key => $value) {
-        $config[$key] = $value;
-    }
-    return rl_write_json_file(rl_config_path(), $config, false);
+    // Under the lock, so two admin saves at once cannot drop each other's keys.
+    return rl_locked(function () use ($patch) {
+        $config = rl_config_raw();
+        foreach ($patch as $key => $value) {
+            $config[$key] = $value;
+        }
+        return rl_write_json_file(rl_config_path(), $config, false);
+    }) === true;
 }
 
 function rl_base_url()
@@ -556,12 +565,12 @@ function rl_visitor_key()
 }
 
 // True when this address already did $limit of $bucket within $window
-// seconds; otherwise records the attempt. The counters are disposable: a
-// damaged file simply starts over.
-function rl_rate_limited($bucket, $limit, $window)
+// seconds; otherwise records the attempt unless $record is false. The
+// counters are disposable: a damaged file simply starts over.
+function rl_rate_limited($bucket, $limit, $window, $record = true)
 {
     $key = $bucket . ':' . substr(hash_hmac('sha256', rl_client_ip(), rl_secret()), 0, 24);
-    $result = rl_locked(function () use ($key, $limit, $window) {
+    $result = rl_locked(function () use ($key, $limit, $window, $record) {
         $path = rl_storage_dir() . '/limits.json';
         $data = rl_read_json_file($path, array());
         if (!is_array($data)) {
@@ -576,6 +585,9 @@ function rl_rate_limited($bucket, $limit, $window)
         }
         if (count($recent) >= $limit) {
             return true;
+        }
+        if (!$record) {
+            return false;
         }
         $recent[] = $now;
         $data[$key] = $recent;
@@ -1273,14 +1285,28 @@ function rl_create_item($user)
         $item['credits'] = $credits;
     }
 
-    $saved = rl_locked(function () use ($item) {
+    // The limits were checked before the files arrived; parallel uploads
+    // could all pass that check, so they are checked again under the lock.
+    $saved = rl_locked(function () use ($item, $user, $limits) {
+        if ($user && rl_uploads_today($user['id']) >= $limits['per_day']) {
+            return 'day';
+        }
+        if (rl_storage_used() + $item['bytes'] + $item['preview_bytes'] > $limits['storage']) {
+            return 'full';
+        }
         $catalog = rl_catalog();
         $catalog['items'][] = $item;
         return rl_save_catalog($catalog);
     });
-    if (!$saved) {
+    if ($saved !== true) {
         rl_unlink_stored($stored);
         rl_unlink_stored($preview);
+        if ($saved === 'day') {
+            return array('ok' => false, 'error' => 'Upload limit reached: ' . $limits['per_day'] . ' items a day', 'status' => 429);
+        }
+        if ($saved === 'full') {
+            return array('ok' => false, 'error' => 'Marketplace storage is full', 'status' => 507);
+        }
         return array('ok' => false, 'error' => 'Could not update the catalog');
     }
     return array('ok' => true, 'item' => $item);

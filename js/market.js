@@ -230,6 +230,21 @@
         return target.protocol + '://' + target.hostname + (target.port ? ':' + target.port : '') + target.path;
     }
 
+    const REQUEST_TIMEOUT_MS = 30000;
+    const TIMEOUT_TEXT = 'Marketplace ไม่ตอบ ลองใหม่อีกครั้ง';
+
+    function timedFetch(url, options) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        return fetch(url, Object.assign({}, options, { signal: controller.signal })).then(res => {
+            clearTimeout(timer);
+            return res;
+        }, err => {
+            clearTimeout(timer);
+            throw err && err.name === 'AbortError' ? new Error(TIMEOUT_TEXT) : err;
+        });
+    }
+
     function transfer(target, method, body, headers) {
         const https = nodeRequire('https');
         const http = nodeRequire('http');
@@ -250,6 +265,9 @@
                     resolve({ status: res.statusCode, buffer: Buffer.concat(parts) });
                 });
             });
+            // A server that accepts the connection and never answers must not
+            // leave sign-in or a download waiting until the panel reloads.
+            req.setTimeout(REQUEST_TIMEOUT_MS, () => req.destroy(new Error(TIMEOUT_TEXT)));
             req.on('error', reject);
             if (body) req.write(body);
             req.end();
@@ -316,12 +334,17 @@
     }
 
     let connecting = null;
+    let pendingCode = '';
 
     function paintAccount() {
         const settings = marketSettings();
         const status = document.getElementById('market_account');
         const button = document.getElementById('btn_market_connect');
-        if (status) status.textContent = settings.token ? ('เชื่อมต่อแล้ว · ' + settings.name) : 'ยังไม่ได้เชื่อมต่อ';
+        if (status) {
+            if (settings.token) status.textContent = 'เชื่อมต่อแล้ว · ' + settings.name;
+            else if (connecting && pendingCode) status.textContent = 'รอยืนยันในเบราว์เซอร์ · รหัส ' + pendingCode;
+            else status.textContent = 'ยังไม่ได้เชื่อมต่อ';
+        }
         if (button) {
             button.textContent = settings.token ? 'ออกจากบัญชี' : 'เชื่อมต่อด้วย Google';
             button.disabled = !!connecting;
@@ -380,7 +403,7 @@
             paintAccount();
         };
         if (typeof fetch === 'function') {
-            fetch(absoluteUrl(target), {
+            timedFetch(absoluteUrl(target), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: body
@@ -415,6 +438,10 @@
             if (!data.device_code || !/^[a-f0-9]{32}$/.test(data.device_code) || !allowedVerifyUrl(settings.url, data.verify_url)) {
                 throw new Error('เชื่อมต่อไม่ได้');
             }
+            // Shown here so the member can check it against the browser page;
+            // a link someone else sent carries a code no panel of theirs shows.
+            pendingCode = /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(String(data.user_code || '')) ? data.user_code : '';
+            paintAccount();
             if (!openBrowser(data.verify_url)) toast('เปิดเบราว์เซอร์ไม่สำเร็จ', 'error');
             return pollGrant(data.device_code, data.interval, data.expires_in);
         }).then(session => {
@@ -427,6 +454,7 @@
             return false;
         }).then(result => {
             connecting = null;
+            pendingCode = '';
             paintAccount();
             return result;
         });
@@ -811,7 +839,7 @@
         const target = endpoint(marketSettings().url, apiPath);
         if (!target) return Promise.reject(new Error('ที่อยู่ Marketplace ไม่ถูกต้อง'));
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => res.text().then(text => ({ status: res.status, text: text })));
+            return timedFetch(absoluteUrl(target)).then(res => res.text().then(text => ({ status: res.status, text: text })));
         }
         return transfer(target, 'GET').then(res => ({ status: res.status, text: textFrom(res) }));
     }
@@ -820,7 +848,7 @@
         const target = endpoint(marketSettings().url, '/api/download.php?id=' + id);
         if (!target) return Promise.reject(new Error('ที่อยู่ Marketplace ไม่ถูกต้อง'));
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => {
+            return timedFetch(absoluteUrl(target)).then(res => {
                 if (!res.ok) {
                     return res.text().then(text => {
                         let message = 'ดาวน์โหลดไม่สำเร็จ';
@@ -882,7 +910,7 @@
             if (typeof TATA.saveUserScript !== 'function') throw new Error('ดาวน์โหลดได้เมื่อเปิดพาเนลใน Illustrator');
             const review = TATA.scriptReview
                 ? TATA.scriptReview.open({ name: item.name, by: item.owner_name, code: code, credits: item.credits })
-                : Promise.resolve('install');
+                : Promise.resolve('');
             return review.then(choice => {
                 if (!choice) return false;
                 const icon = (TATA.ICONS && TATA.ICONS.stars) || '★';
@@ -942,7 +970,7 @@
             return Promise.resolve();
         }
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => {
+            return timedFetch(absoluteUrl(target)).then(res => {
                 if (!res.ok) throw new Error('preview');
                 return res.arrayBuffer();
             }).then(buf => {

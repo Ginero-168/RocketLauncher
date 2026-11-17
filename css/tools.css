@@ -131,9 +131,9 @@
 
 /* ============================================================= editor */
 
-/* The workbench replaces the button grid inside the Tool tab: the editor
-   on top, the AI that writes into it below. It scrolls as one column when
-   the panel is too short for both. */
+/* The workbench replaces the button grid inside the Tool tab. It shows one
+   of two full-height views, Code or AI, chosen by the switch in its bar
+   (#workbench[data-view], set by js/tabs.js). */
 .workbench {
     display: none;
 }
@@ -142,10 +142,9 @@ body[data-tab="tab_button"].workbench-open .workbench {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: var(--sp-5);
+    gap: var(--sp-4);
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     padding: var(--gutter);
 }
 
@@ -154,25 +153,153 @@ body[data-tab="tab_button"].workbench-open .tab-actions {
     display: none;
 }
 
+.workbench-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--sp-4);
+}
+
+.workbench-switch {
+    display: flex;
+    flex: 1 1 auto;
+    padding: 2px;
+    border: 1px solid var(--c-line-2);
+    border-radius: var(--r-pill);
+    background: var(--c-field);
+}
+
+.workbench-switch-btn {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    height: calc(var(--h-ctl) - 4px);
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--c-text-3);
+    font: 500 var(--fs-xs)/1 var(--font-tech);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color var(--t-fast) ease, color var(--t-fast) ease;
+}
+
+.workbench-switch-btn svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    fill: currentColor;
+}
+
+.workbench-switch-btn:hover {
+    color: var(--c-text);
+}
+
+.workbench-switch-btn.is-on {
+    background: var(--c-surface-hover);
+    color: var(--c-text);
+    box-shadow: inset 0 0 0 1px var(--c-line-3);
+}
+
 .workbench-pane {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: var(--sp-4);
     min-height: 0;
 }
 
-/* Panes never shrink below their content (that made them overlap in a
-   short panel); the workbench scrolls instead. Spare height is shared 3:2. */
-.workbench-editor {
-    flex: 3 0 auto;
-    min-height: 260px;
+.workbench[data-view="editor"] .workbench-ai,
+.workbench[data-view="ai"] .workbench-editor {
+    display: none;
 }
 
-.workbench-ai {
-    flex: 2 0 auto;
-    min-height: 180px;
-    padding-top: var(--sp-5);
-    border-top: 1px solid var(--c-line-2);
+/* The AI view: history and chat scroll, the prompt stays at the bottom. */
+.workbench-ai .chat-area {
+    flex: 1 1 auto;
+    min-height: 80px;
+}
+
+.workbench-ai .prompt-box {
+    flex: none;
+}
+
+/* ------------------------------------------------- editing helpers */
+
+.editor-tools {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-4);
+}
+
+.editor-tools-group {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.editor-tools-view {
+    margin-left: auto;
+}
+
+.editor-tools-text {
+    font: 600 var(--fs-xs)/1 var(--font-code);
+    letter-spacing: 0;
+}
+
+.editor-tools .btn.is-on {
+    border-color: var(--focus-ring);
+    color: var(--c-text);
+}
+
+.editor-tools-danger:hover {
+    border-color: var(--c-danger-ink);
+    color: var(--c-danger-ink);
+}
+
+.editor-snippets {
+    position: relative;
+}
+
+.editor-snippet-menu {
+    top: calc(100% + var(--sp-2));
+    left: 0;
+    min-width: 200px;
+}
+
+.editor-foot {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-4);
+    min-height: 20px;
+    color: var(--c-text-3);
+    font: 400 var(--fs-xs)/1.4 var(--font-tech);
+}
+
+.editor-check {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+}
+
+.editor-check[data-tone="ok"] {
+    color: var(--c-success);
+}
+
+.editor-check[data-tone="error"] {
+    color: var(--c-danger-ink);
+}
+
+#tab_editor .editor-error-line {
+    background: rgba(255, 107, 97, 0.16);
 }
 
 @media (max-width: 259px) {
@@ -359,24 +486,31 @@ body[data-tab="tab_button"].workbench-open .tab-actions {
 
 /* --------------------------------------------------------- recent code */
 
-.recent-code {
-    display: flex;
-    flex: none;
-    flex-direction: column;
-    gap: var(--sp-3);
+/* Count on the history button in the AI header. */
+#btn_recent_code {
+    position: relative;
 }
 
-.recent-code-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.icon-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    box-shadow: 0 0 0 2px var(--c-bg);
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+    color: #001318;
+    font: 600 9px/15px var(--font-tech);
+    text-align: center;
+    pointer-events: none;
 }
 
-.recent-code-label {
-    color: var(--c-text-3);
-    font: 500 var(--fs-2xs)/1 var(--font-tech);
-    letter-spacing: var(--track-wide);
-    text-transform: uppercase;
+#recent_code_modal .recent-code-list {
+    max-height: 50vh;
+    margin: var(--sp-4) 0;
+    overflow-y: auto;
 }
 
 .recent-code-list {

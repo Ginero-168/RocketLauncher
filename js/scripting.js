@@ -11,7 +11,8 @@
 
     let csInterface = null; // Lazy init
     let extensionPath = '';
-    let currentScriptId = 'default_script';
+    // The grid button this editor saves to; null until one is opened or saved.
+    let editingId = null;
     let editorOrigin = 'user';
 
     function getCS() {
@@ -161,6 +162,7 @@
         // Editor shortcuts only act on the Editor tab.
         document.addEventListener('keydown', e => {
             if (!(e.ctrlKey || e.metaKey) || activeTabId() !== 'tab_editor') return;
+            if (TATA.workbench && TATA.workbench.view && TATA.workbench.view() !== 'editor') return;
             if (document.querySelector('.modal.active')) return;
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -353,10 +355,10 @@
     function handleEditScriptEvent(event) {
         const data = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
 
-        if (data.id) currentScriptId = data.id;
+        if (data.id) editingId = data.id;
 
         if (data.code) {
-            const origin = data.source === 'ai' || data.source === 'auto-fix' ? data.source : 'user';
+            const origin = TATA.trackedSource(data.source) || 'user';
             setEditorCode(data.code, origin);
         }
         const nameInput = byId('script_name_input');
@@ -430,19 +432,16 @@
 
             if (result.message) addChatBubble('ai', result.message);
             if (result.code) {
-                addChatBubble('ai', 'Code updated. Review it in the Editor, then Run.');
+                addChatBubble('ai', 'Code updated. It is open in the Code view: review it, then Run.');
                 setEditorCode(result.code, 'ai');
                 activateTab('tab_editor');
                 showToast('Code generated', 'success');
                 const nameInput = byId('script_name_input');
                 saveRecentCode(result.name || (nameInput && nameInput.value) || 'AI Script', result.code, 'ai');
-                if (!currentScriptId) currentScriptId = `ai_script_${Date.now()}`;
             }
             if (result.name) {
                 const nameInput = byId('script_name_input');
                 if (nameInput) nameInput.value = result.name;
-                const slug = result.name.replace(/\s+/g, '_').toLowerCase();
-                if (!String(currentScriptId).includes(slug)) currentScriptId = `${slug}_${Date.now()}`;
             }
         } catch (e) {
             const lb = byId(loadingId);
@@ -532,8 +531,13 @@
             return;
         }
         const origin = typeof TATA.getEditorOrigin === 'function' ? TATA.getEditorOrigin() : 'user';
-        TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor, false, null, false, origin);
-        showToast(`Added "${scriptName}" to Tools`, 'success');
+        const layout = typeof TATA.getV2Layout === 'function' ? TATA.getV2Layout() : {};
+        const stillThere = !!editingId && (layout.tab_button || []).some(item => item && item.id === editingId);
+        const id = TATA.saveUserScript(scriptName, scriptIcon, scriptCode, scriptColor,
+            stillThere, stillThere ? editingId : null, false, origin);
+        editingId = stillThere ? editingId : id;
+        updateEditorStatus('edit', scriptName);
+        showToast(stillThere ? `Updated "${scriptName}"` : `Added "${scriptName}" to Tools`, 'success');
         setTimeout(() => activateTab('tab_button'), 150);
     }
 
@@ -745,7 +749,7 @@
         list.unshift({
             name: name || 'Untitled',
             code,
-            origin: origin === 'ai' || origin === 'auto-fix' ? origin : 'user',
+            origin: TATA.trackedSource(origin) || 'user',
             timestamp: Date.now()
         });
         localStorage.setItem(RECENT_CODE_KEY, JSON.stringify(list.slice(0, MAX_RECENT)));
@@ -757,6 +761,11 @@
         if (!container) return;
         const list = getRecentCodes();
         container.textContent = '';
+        const badge = byId('recent_code_count');
+        if (badge) {
+            badge.textContent = list.length > 9 ? '9+' : String(list.length);
+            badge.hidden = list.length === 0;
+        }
 
         if (list.length === 0) {
             const empty = document.createElement('div');
@@ -781,7 +790,7 @@
             const timeEl = document.createElement('span');
             timeEl.className = 'rc-time';
             timeEl.textContent = getTimeAgo(item.timestamp);
-            if (item.origin === 'ai' || item.origin === 'auto-fix') {
+            if (TATA.trackedSource(item.origin)) {
                 const source = document.createElement('span');
                 source.className = 'rc-source';
                 source.textContent = 'AI';
@@ -797,7 +806,7 @@
             row.appendChild(info);
             row.appendChild(load);
             row.addEventListener('click', () => {
-                const origin = item.origin === 'ai' || item.origin === 'auto-fix' ? item.origin : 'user';
+                const origin = TATA.trackedSource(item.origin) || 'user';
                 setEditorCode(item.code, origin);
                 const nameInput = byId('script_name_input');
                 if (nameInput) nameInput.value = item.name;
@@ -865,6 +874,8 @@
             indentWithTabs: true
         });
         cmEditor.on('change', () => cmEditor.save());
+        // js/editor-tools.js adds its toolbar, keys and settings from here.
+        document.dispatchEvent(new CustomEvent('tata:editor-ready', { detail: cmEditor }));
     }
 
     function getEditorCode() {
@@ -874,8 +885,7 @@
     }
 
     function setEditorCode(code, origin) {
-        if (origin === 'ai' || origin === 'auto-fix') editorOrigin = origin;
-        else if (origin) editorOrigin = 'user';
+        if (origin) editorOrigin = TATA.trackedSource(origin) || 'user';
         if (cmEditor) {
             cmEditor.setValue(code);
             setTimeout(() => cmEditor.refresh(), 10);
@@ -894,7 +904,7 @@
     TATA.addChatBubble = addChatBubble;
     TATA.runEditorScript = runCodeWithAutoFix;
     TATA.markEditorOrigin = origin => {
-        editorOrigin = origin === 'ai' || origin === 'auto-fix' ? origin : 'user';
+        editorOrigin = TATA.trackedSource(origin) || 'user';
     };
     TATA.getEditorOrigin = () => editorOrigin;
     TATA.withWorkspaceContext = withWorkspaceContext;
@@ -957,6 +967,16 @@
         return fallback;
     }
 
+    // A prediction the panel stops waiting for keeps running and billing
+    // unless it is cancelled. Best effort: the error the user sees stays.
+    function cancelPrediction(fetchTimed, token, data) {
+        if (!data || !data.id) return Promise.resolve();
+        const url = `https://api.replicate.com/v1/predictions/${encodeURIComponent(data.id)}/cancel`;
+        return Promise.resolve()
+            .then(() => fetchTimed(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }, 10000))
+            .catch(() => {});
+    }
+
     function replicateTimeoutError(error) {
         if (error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
             return new Error('Replicate request timed out');
@@ -1002,16 +1022,23 @@
                     headers: { Authorization: `Bearer ${token}` }
                 }, cfg.pollTimeoutMs);
             } catch (error) {
+                await cancelPrediction(fetchTimed, token, data);
                 throw replicateTimeoutError(error);
             }
-            if (!poll.ok) throw new Error(`Replicate poll ${poll.status}`);
+            if (!poll.ok) {
+                await cancelPrediction(fetchTimed, token, data);
+                throw new Error(`Replicate poll ${poll.status}`);
+            }
             data = await poll.json();
         }
 
         if (data.status === 'failed' || data.status === 'canceled') {
             throw new Error(data.error || `Replicate ${data.status}`);
         }
-        if (data.status !== 'succeeded') throw new Error('Replicate timed out before the model finished');
+        if (data.status !== 'succeeded') {
+            await cancelPrediction(fetchTimed, token, data);
+            throw new Error('Replicate timed out before the model finished');
+        }
         return replicateOutputText(data.output);
     };
 })();

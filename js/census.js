@@ -262,13 +262,20 @@
         });
     }
 
+    // A scan asked for while one runs (the scope chip changed, the document
+    // went stale) runs once the first finishes, so the list matches the chip.
     function scan() {
-        if (view.busy) return Promise.resolve();
+        if (view.busy) {
+            view.again = true;
+            return Promise.resolve();
+        }
         view.busy = true;
+        view.again = false;
         view.picked = '';
         setStatus('กำลังสำรวจ...', '');
         return hostRun('censusScan', { scope: view.scope, max: MAX_ITEMS }).then(data => {
             view.busy = false;
+            if (view.again) return scan();
             if (!data) {
                 view.report = null;
                 paint();

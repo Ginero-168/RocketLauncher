@@ -4,7 +4,24 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 
 ## Unreleased
 
+### Security
+- Marketplace scripts always ask before each run. Three ways around the confirmation are closed: code ending in
+  `.jsx` being run as a file, the source being lost on export/import or on edit, and installing without the review
+  dialog.
+- While connecting to the Marketplace, the panel shows the connection code so it can be compared with the browser page.
+
+### Removed
+- 30 host functions in `jsx/hostscript.jsx` that nothing in the panel called (symbols, effects, appearance,
+  the old clean and dimension entry points). `TATA.run` with `fitSelection`, `followWidth`, `embedAll`,
+  `createPreview` and `generateColorPalette` still works for scripts saved from older versions.
+
 ### Fixed
+- Update in the editor updates the button it was opened from instead of adding a second one.
+- Selector: changing the scope during a survey no longer shows the other scope's results.
+- Marketplace requests give up after 30 seconds instead of waiting until the panel is reloaded.
+- Documents, layers or fonts with quotes or line breaks in their names no longer break the Selector survey on
+  Illustrator versions without native JSON.
+- An AI request the panel stops waiting for is cancelled at Replicate.
 - Clearing the Illustrator/CEP cache no longer removes scripts, layout, hotkeys, the Keep index or custom colours.
   The panel now keeps a second copy in `~/Library/Application Support/RocketLauncher/panel-data`
   (`%APPDATA%\RocketLauncher\panel-data` on Windows) and restores it on the next start. One snapshot per key per
@@ -12,6 +29,10 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - A full panel storage now shows an error instead of dropping the change silently.
 
 ### Added
+- Editing toolbar in the Code view: undo and redo, ready-made snippets (document check, loops over selection,
+  artboards, text, paths, a prompt, an RGB colour), comment toggle (also ⌘/), re-indent, a syntax check that marks
+  the line and offers to hand the error to the AI, copy all, paste over everything, clear (undoable), font size and
+  line wrapping. A status line shows the cursor position and line count.
 - Selector tab: lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
   and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
   much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
@@ -23,6 +44,9 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
+- The editor and the AI are separate full-height views, switched with Code | AI at the top of the workbench.
+  When the AI writes code the panel switches to Code. Recent code opens as a dialog from a
+  history button (with a count) in the AI view's header.
 - The panel has three tabs: Tool, Selector and Library. Library holds Style, Color and Keep behind a row of
   chips and reopens on the one used last.
 - Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place

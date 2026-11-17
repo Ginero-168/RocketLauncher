@@ -35,7 +35,8 @@
     function open(item) {
         const modal = byId('script_review_modal');
         const scanApi = TATA.scriptScan;
-        if (!modal || !scanApi || typeof TATA.openDialog !== 'function') return Promise.resolve('install');
+        // Without the review dialog nothing can be reviewed, so nothing installs.
+        if (!modal || !scanApi || typeof TATA.openDialog !== 'function') return Promise.resolve('');
         if (settle) settle('');
 
         const report = scanApi.scan(item.code);
