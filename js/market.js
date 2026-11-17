@@ -230,6 +230,21 @@
         return target.protocol + '://' + target.hostname + (target.port ? ':' + target.port : '') + target.path;
     }
 
+    const REQUEST_TIMEOUT_MS = 30000;
+    const TIMEOUT_TEXT = 'Marketplace ไม่ตอบ ลองใหม่อีกครั้ง';
+
+    function timedFetch(url, options) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        return fetch(url, Object.assign({}, options, { signal: controller.signal })).then(res => {
+            clearTimeout(timer);
+            return res;
+        }, err => {
+            clearTimeout(timer);
+            throw err && err.name === 'AbortError' ? new Error(TIMEOUT_TEXT) : err;
+        });
+    }
+
     function transfer(target, method, body, headers) {
         const https = nodeRequire('https');
         const http = nodeRequire('http');
@@ -250,6 +265,9 @@
                     resolve({ status: res.statusCode, buffer: Buffer.concat(parts) });
                 });
             });
+            // A server that accepts the connection and never answers must not
+            // leave sign-in or a download waiting until the panel reloads.
+            req.setTimeout(REQUEST_TIMEOUT_MS, () => req.destroy(new Error(TIMEOUT_TEXT)));
             req.on('error', reject);
             if (body) req.write(body);
             req.end();
@@ -380,7 +398,7 @@
             paintAccount();
         };
         if (typeof fetch === 'function') {
-            fetch(absoluteUrl(target), {
+            timedFetch(absoluteUrl(target), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: body
@@ -811,7 +829,7 @@
         const target = endpoint(marketSettings().url, apiPath);
         if (!target) return Promise.reject(new Error('ที่อยู่ Marketplace ไม่ถูกต้อง'));
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => res.text().then(text => ({ status: res.status, text: text })));
+            return timedFetch(absoluteUrl(target)).then(res => res.text().then(text => ({ status: res.status, text: text })));
         }
         return transfer(target, 'GET').then(res => ({ status: res.status, text: textFrom(res) }));
     }
@@ -820,7 +838,7 @@
         const target = endpoint(marketSettings().url, '/api/download.php?id=' + id);
         if (!target) return Promise.reject(new Error('ที่อยู่ Marketplace ไม่ถูกต้อง'));
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => {
+            return timedFetch(absoluteUrl(target)).then(res => {
                 if (!res.ok) {
                     return res.text().then(text => {
                         let message = 'ดาวน์โหลดไม่สำเร็จ';
@@ -942,7 +960,7 @@
             return Promise.resolve();
         }
         if (typeof fetch === 'function') {
-            return fetch(absoluteUrl(target)).then(res => {
+            return timedFetch(absoluteUrl(target)).then(res => {
                 if (!res.ok) throw new Error('preview');
                 return res.arrayBuffer();
             }).then(buf => {
