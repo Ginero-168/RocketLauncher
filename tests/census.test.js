@@ -79,4 +79,23 @@ describe('document census (js/census.js)', function () {
         expect(build([])).toEqual({ total: 0, skipped: 0, sections: [], outliers: [] });
         expect(build(null).total).toBe(0);
     });
+
+    test('changing scope during a scan ends with the list for the chosen scope', async function () {
+        document.body.innerHTML =
+            '<button data-census-scope="artboard"></button><button data-census-scope="document"></button>' +
+            '<div id="census_list"></div><div id="census_summary"></div><div id="census_status"></div>';
+        const calls = [];
+        TATA.host = { run: (cmd, params, cb) => calls.push({ params: params, cb: cb }) };
+        window.loadPanelScript('js/census.js');
+
+        TATA.census.refresh();
+        document.querySelector('[data-census-scope="document"]').click();
+        expect(calls).toHaveLength(1);
+
+        calls[0].cb(JSON.stringify({ items: [] }));
+        await new Promise(r => setTimeout(r, 0));
+        expect(calls).toHaveLength(2);
+        expect(calls[0].params.scope).toBe('artboard');
+        expect(calls[1].params.scope).toBe('document');
+    });
 });

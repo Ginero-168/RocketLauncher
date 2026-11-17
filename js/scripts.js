@@ -28,11 +28,6 @@
     // ==========================================
     // Save User Script
     // ==========================================
-    // Code from AI, auto-fix or the Marketplace keeps its source so every run asks first.
-    function trackedSource(source) {
-        return source === 'ai' || source === 'auto-fix' || source === 'market' ? source : '';
-    }
-
     function applyProvenance(record, origin) {
         if (origin) record.source = origin;
         else delete record.source;
@@ -53,15 +48,13 @@
         // Use targetId if provided, otherwise generate a new script_ ID
         const id = targetId ? targetId : `script_${Date.now()}`;
 
-        const isScriptFile = (typeof code === 'string' && code.endsWith('.jsx'));
-        const filePath = isScriptFile ? code.trim() : null;
-        const origin = trackedSource(source);
+        // Code from AI, auto-fix or the Marketplace keeps its source so every run asks first.
+        const origin = TATA.trackedSource(source);
 
         const record = {
             name,
             icon,
-            code: isScriptFile ? '' : code,
-            script: filePath, // Store the .jsx path if applicable
+            code,
             color,
             date: Date.now()
         };
@@ -78,15 +71,10 @@
             button.id = id;
             button.label = name;
             button.icon = icon;
-            button.type = isScriptFile ? 'script' : 'code';
+            button.type = 'code';
             button.color = color;
-            if (isScriptFile) {
-                button.script = filePath;
-                delete button.code;
-            } else {
-                button.code = code;
-                delete button.script;
-            }
+            button.code = code;
+            delete button.script;
             applyProvenance(button, origin);
         }
 
@@ -181,6 +169,11 @@
     // Run Script (JSX file)
     // ==========================================
     function runScript(scriptName, params) {
+        // Only bundled scripts in jsx/ run by name.
+        if (!/^[\w][\w .-]*\.jsx$/.test(String(scriptName)) || String(scriptName).indexOf('..') !== -1) {
+            if (TATA.showToast) TATA.showToast('This button points at a script outside the panel and was not run.', 'error');
+            return;
+        }
         const extensionPath = TATA.getExtensionPath ? TATA.getExtensionPath() : '';
         const scriptPath = `${extensionPath}/jsx/${scriptName}`;
 

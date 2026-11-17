@@ -91,6 +91,25 @@ function rl_ai_refund($userId)
     });
 }
 
+// A prediction that failed after it was accepted gives the request back,
+// once: the prediction is forgotten in the same step, so a second poll of it
+// finds nothing to refund.
+function rl_ai_settle_failed($predictionId, $userId)
+{
+    rl_locked(function () use ($predictionId, $userId) {
+        $usage = rl_ai_usage();
+        if (!isset($usage['predictions'][$predictionId])) {
+            return true;
+        }
+        unset($usage['predictions'][$predictionId]);
+        if (!empty($usage['members'][$userId])) {
+            $usage['members'][$userId]--;
+            $usage['total'] = max(0, $usage['total'] - 1);
+        }
+        return rl_write_json_file(rl_ai_usage_path(), $usage);
+    });
+}
+
 function rl_ai_remember($predictionId, $userId)
 {
     rl_locked(function () use ($predictionId, $userId) {

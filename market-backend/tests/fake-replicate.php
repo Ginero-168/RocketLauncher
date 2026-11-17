@@ -4,7 +4,8 @@
  * PHP's built-in server). Every request is appended to FAKE_REPLICATE_LOG.
  *
  * Prompts steer the answer: "slow" -> processing (finished on the next poll),
- * "fail" -> failed, "credit" -> 402, anything else -> succeeded at once.
+ * "fail" -> failed, "dies later" -> processing, then failed on the poll,
+ * "credit" -> 402, anything else -> succeeded at once.
  */
 
 if (PHP_SAPI !== 'cli-server') {
@@ -53,6 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/v1/models/[^/]+/[^/]
         echo json_encode(array('id' => 'failedpred01', 'status' => 'failed', 'error' => 'model crashed'));
         return true;
     }
+    if (strpos($prompt, 'dies later') !== false) {
+        http_response_code(201);
+        echo json_encode(array('id' => 'diespred0001', 'status' => 'processing'));
+        return true;
+    }
     if (strpos($prompt, 'slow') !== false) {
         http_response_code(201);
         echo json_encode(array('id' => 'slowpred0001', 'status' => 'processing', 'urls' => array('get' => 'https://api.replicate.com/v1/predictions/slowpred0001')));
@@ -60,6 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && preg_match('#^/v1/models/[^/]+/[^/]
     }
     http_response_code(201);
     echo json_encode(array('id' => 'quickpred001', 'status' => 'succeeded', 'output' => array('{"name": "Circle", ', substr($answer, strlen('{"name": "Circle", ')))));
+    return true;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && $path === '/v1/predictions/diespred0001') {
+    echo json_encode(array('id' => 'diespred0001', 'status' => 'failed', 'error' => 'model crashed'));
     return true;
 }
 

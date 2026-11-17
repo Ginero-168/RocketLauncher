@@ -8,7 +8,9 @@
 - **Panels:** `index.html` only. Color tools and the SVG keeper are tabs inside it since 3.1.0.
 
 ## Build / Test Commands
-- Run tests: `npm test -- --runInBand`
+- Install: `npm ci` (the lockfile is committed)
+- Run tests: `npm test -- --runInBand`. A test that passes only with uncommitted changes in the tree is a broken
+  test; before pushing, run the suite on a clean checkout (`git worktree add --detach <dir> HEAD`).
 - Syntax check all JS: `for f in js/*.js tests/*.js; do node --check "$f"; done`
 - Whitespace check: `git diff --check`
 
@@ -59,10 +61,19 @@
 
 ## Common Pitfalls
 - `TATA` namespace is shared across modules; `host.js` must load before modules that call `TATA.host`.
+- Which code must be confirmed before each run is decided only by `TATA.trackedSource` /
+  `TATA.shouldConfirmJsxRun` in `sanitize.js`. Do not copy the list of sources into another module.
+- `tests/setup.js` gives every test file a throwaway home folder; `persist.js` would otherwise read and write the
+  developer's real panel data.
 
 ## Recovered source (3.1.0)
 - The 3.1.0 working tree was lost and rebuilt from the signed ZXP. `css/`, `js/`, `jsx/`, `CSXS/` and `index.html`
-  are the shipped 3.1.0 files. Tests for the modules added in 3.1.0 were not recovered.
+  are the shipped 3.1.0 files. The tests of that tree were not recovered; they were written again afterwards.
+- `jsx/` is tested by loading the real files in a Node `vm` context with a fake `app` (`tests/host-*.test.js`,
+  `tests/jsx-json.test.js`). `tests/host-contract.test.js` fails when the panel sends a command the host does
+  not have, or when one of the five `TATA.run` commands old user scripts rely on is removed.
+- Still untested: `main.js`, `bootstrap.js`, `tabs.js` beyond the workbench, and the drawing handlers in
+  `hostscript.jsx` (they need Illustrator).
 
 ## Marketplace site (`market-backend/`)
 - PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former

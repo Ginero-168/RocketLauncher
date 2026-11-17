@@ -31,7 +31,12 @@ if ($action === 'poll') {
     if (!preg_match('/^[A-Za-z0-9]{6,64}$/', $id) || rl_ai_owner($id) !== $user['id']) {
         rl_json(array('ok' => false, 'error' => 'Request not found'), 404);
     }
-    $reply = rl_ai_reply(rl_replicate('GET', '/v1/predictions/' . $id, null, 0));
+    $response = rl_replicate('GET', '/v1/predictions/' . $id, null, 0);
+    $state = is_array($response['data']) && isset($response['data']['status']) ? (string) $response['data']['status'] : '';
+    if ($state === 'failed' || $state === 'canceled') {
+        rl_ai_settle_failed($id, $user['id']);
+    }
+    $reply = rl_ai_reply($response);
     rl_json($reply['body'], $reply['http']);
 }
 

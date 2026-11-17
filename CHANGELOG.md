@@ -4,7 +4,24 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 
 ## Unreleased
 
+### Security
+- Marketplace scripts always ask before each run. Three ways around the confirmation are closed: code ending in
+  `.jsx` being run as a file, the source being lost on export/import or on edit, and installing without the review
+  dialog.
+- While connecting to the Marketplace, the panel shows the connection code so it can be compared with the browser page.
+
+### Removed
+- 30 host functions in `jsx/hostscript.jsx` that nothing in the panel called (symbols, effects, appearance,
+  the old clean and dimension entry points). `TATA.run` with `fitSelection`, `followWidth`, `embedAll`,
+  `createPreview` and `generateColorPalette` still works for scripts saved from older versions.
+
 ### Fixed
+- Update in the editor updates the button it was opened from instead of adding a second one.
+- Selector: changing the scope during a survey no longer shows the other scope's results.
+- Marketplace requests give up after 30 seconds instead of waiting until the panel is reloaded.
+- Documents, layers or fonts with quotes or line breaks in their names no longer break the Selector survey on
+  Illustrator versions without native JSON.
+- An AI request the panel stops waiting for is cancelled at Replicate.
 - Clearing the Illustrator/CEP cache no longer removes scripts, layout, hotkeys, the Keep index or custom colours.
   The panel now keeps a second copy in `~/Library/Application Support/RocketLauncher/panel-data`
   (`%APPDATA%\RocketLauncher\panel-data` on Windows) and restores it on the next start. One snapshot per key per

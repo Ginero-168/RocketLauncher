@@ -442,6 +442,11 @@ check('a member cannot delete another member\'s item from a panel', $res['status
 $res = http('POST', $base . '/api/delete.php', array('fields' => array('id' => $silver, 'panel_token' => $mikeToken)));
 check('a member deletes their own item from a panel', $res['status'] === 200 && http('GET', $base . '/api/preview.php?id=' . $silver)['status'] === 404);
 check('a wrong admin token cannot delete', http('POST', $base . '/api/delete.php', array('fields' => array('id' => 'aaaaaaaaaaaaaaa3', 'token' => 'nope')))['status'] === 401);
+$guess = site($ready);
+for ($n = 0; $n < 10; $n++) {
+    http('POST', $guess['base'] . '/api/delete.php', array('fields' => array('id' => 'aaaaaaaaaaaaaaa3', 'token' => 'guess-' . $n)));
+}
+check('after ten wrong tokens even the right one is refused for a while', http('POST', $guess['base'] . '/api/delete.php', array('fields' => array('id' => 'aaaaaaaaaaaaaaa3', 'token' => $ready['upload_token'])))['status'] === 429);
 check('the admin token deletes any item', http('POST', $base . '/api/delete.php', array('fields' => array('id' => 'aaaaaaaaaaaaaaa3', 'token' => 'admin-token-0123456789abcdef')))['status'] === 200);
 check('delete needs POST', http('GET', $base . '/api/delete.php?id=aaaaaaaaaaaaaaa2')['status'] === 405);
 
@@ -616,6 +621,12 @@ $res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'st
 check('a failed request is not counted against the quota', $res['status'] === 200 && $res['json']['remaining'] === 0);
 $res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $memberToken, 'prompt' => 'fourth')));
 check('each member has a daily AI quota', $res['status'] === 429 && $res['json']['error'] === 'Daily AI limit reached: 3 requests');
+http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => 'this one dies later')));
+$res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'poll', 'panel_token' => $bossToken, 'id' => 'diespred0001')));
+check('a request that fails while polled says so', $res['status'] === 502);
+check('it is refunded once: the failed prediction is forgotten', http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'poll', 'panel_token' => $bossToken, 'id' => 'diespred0001')))['status'] === 404);
+$res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => 'make a circle')));
+check('a request that failed while polled is not counted', $res['status'] === 200 && $res['json']['remaining'] === 2);
 check('prompts have a size limit', http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => str_repeat('x', 5000))))['status'] === 413);
 http('POST', $ad . '/admin.php', array('cookie' => $boss['cookie'], 'fields' => array(
     'action' => 'save_ai', 'csrf' => $boss['csrf'], 'ai_model' => 'google/gemini-3-flash', 'ai_per_member_daily' => '3', 'ai_total_daily' => '100', 'ai_max_prompt_kb' => '4')));
@@ -667,7 +678,7 @@ $root = file_get_contents(dirname(__DIR__) . '/.htaccess');
 $storage = file_get_contents(dirname(__DIR__) . '/storage/.htaccess');
 check('config, backups and helpers are denied', strpos($root, '<Files "config.json">') !== false && strpos($root, '\.(bak|tmp)$') !== false && strpos($root, 'lib\.php') !== false);
 check('dot folders, tests and includes are denied', strpos($root, '"(^|/)\.(?!well-known/)"') !== false && strpos($root, '"^tests(/|$)"') !== false && strpos($root, '"^inc(/|$)"') !== false && trim(file_get_contents(__DIR__ . '/.htaccess')) === 'Require all denied' && trim(file_get_contents(dirname(__DIR__) . '/inc/.htaccess')) === 'Require all denied');
-check('storage never serves data files, scripts or stored installers', strpos($storage, 'php|phtml|phar|json|lock|bak|tmp|zxp') !== false);
+check('storage serves nothing directly', strpos($storage, 'Require all denied') !== false && strpos($storage, '<FilesMatch') === false);
 
 $total = $GLOBALS['passed'] + count($GLOBALS['failed']);
 echo "\n" . $GLOBALS['passed'] . " of $total checks passed\n";

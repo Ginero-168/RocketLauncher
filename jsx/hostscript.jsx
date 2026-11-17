@@ -31,28 +31,6 @@ var TATA = {
         }
     },
 
-    // ================================================================================
-    // ====================================   DIMENSION   =============================
-    // ================================================================================
-
-    dimensionSingle: function (params) {
-        if (app.documents.length === 0) return;
-        var doc = app.activeDocument;
-        var idx = doc.artboards.getActiveArtboardIndex();
-        var name = params.name || "";
-        var size = parseFloat(params.size) || 100;
-        this.dimensionMaster(doc, idx, name, size);
-    },
-
-    dimensionAll: function (params) {
-        if (app.documents.length === 0) return;
-        var doc = app.activeDocument;
-        var size = parseFloat(params.size) || 100;
-        for (var i = 0; i < doc.artboards.length; i++) {
-            this.dimensionMaster(doc, i, "", size);
-        }
-    },
-
     dimensionMaster: function (doc, activeABIndex, ABName, sizeVal) {
         var passActiveLayer = doc.activeLayer;
         var dimensionLayer = getOrCreateLayer(doc, "Dimension");
@@ -245,61 +223,6 @@ var TATA = {
         }
     },
 
-    // Merged from ArrangeDialog.jsx logic
-    arrangeObjects: function (params) {
-        if (app.documents.length === 0) return;
-        var doc = app.activeDocument;
-        var sel = doc.selection;
-        if (sel.length < 2) return; // Silent fail if logic error, but alert handled in UI usually
-
-        var cols = parseInt(params.cols) || 5;
-        var gap = parseFloat(params.gap) || 20;
-
-        var items = [];
-        for (var i = 0; i < sel.length; i++) items.push(sel[i]);
-
-        // Sorting Logic (Optional: Sort by Layer Order or Position? Currently Selection Order)
-
-        var startX = items[0].position[0];
-        var startY = items[0].position[1];
-        var currentX = startX;
-        var currentY = startY;
-        var maxHeightInRow = 0;
-
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            item.position = [currentX, currentY];
-
-            if (item.height > maxHeightInRow) maxHeightInRow = item.height;
-            currentX += item.width + gap;
-
-            if ((i + 1) % cols === 0) {
-                currentX = startX;
-                currentY -= maxHeightInRow + gap;
-                maxHeightInRow = 0;
-            }
-        }
-    },
-
-    // Merged from ResizeDialog.jsx logic
-    resizeObjects: function (params) {
-        if (app.documents.length === 0) return;
-        var doc = app.activeDocument;
-        var sel = doc.selection;
-        var newWidth = parseFloat(params.width);
-        if (isNaN(newWidth) || newWidth <= 0) return;
-
-        for (var i = 0; i < sel.length; i++) {
-            var item = sel[i];
-            if (item.locked || item.hidden) continue;
-            var oldWidth = item.width;
-            if (oldWidth === 0) continue;
-            var ratio = newWidth / oldWidth;
-            item.width = newWidth;
-            item.height *= ratio;
-        }
-    },
-
     followWidth: function () {
         if (app.documents.length === 0) return;
         var doc = app.activeDocument;
@@ -395,22 +318,6 @@ var TATA = {
 
         dimLayer.zOrder(ZOrderMethod.SENDTOBACK);
         dimLayer.locked = true;
-    },
-
-    createStars: function () {
-        if (app.documents.length === 0) return;
-        var doc = app.activeDocument;
-        var xStart = 0, yStart = 0, r = 60, gap = 160;
-        var counts = [3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 24, 36, 60, 90, 120];
-        var depths = [0.2, 0.3, 0.5, 0.7, 0.85];
-
-        for (var i = 0; i < counts.length; i++) {
-            for (var j = 0; j < depths.length; j++) {
-                try {
-                    doc.pathItems.star(xStart + j * gap, yStart - i * gap, r, r * depths[j], counts[i]);
-                } catch (e) { }
-            }
-        }
     },
 
     // ================================================================================
@@ -655,131 +562,6 @@ var TATA = {
         }
     },
 
-    // --- Cleaner Functions ---
-
-    scanDoc: function () {
-        if (app.documents.length === 0) return "No Doc";
-        var doc = app.activeDocument;
-        var strayCount = 0;
-        var textCount = 0;
-        var unusedCount = 0; // Approximation
-
-        // Scan Stray Points (Single point paths or extremely small paths)
-        try {
-            var paths = doc.pathItems;
-            // Limit scan for performance? No, scan all for accuracy.
-            for (var i = 0; i < paths.length; i++) {
-                try {
-                    var p = paths[i];
-                    if (p.pathPoints && p.pathPoints.length <= 1) {
-                        strayCount++;
-                    } else if (p.width < 0.1 && p.height < 0.1) {
-                        // Tiny objects often invisible junk
-                        strayCount++;
-                    }
-                } catch (err) { }
-            }
-        } catch (e) { }
-
-        // Scan Empty Text
-        try {
-            var tfs = doc.textFrames;
-            for (var i = 0; i < tfs.length; i++) {
-                try {
-                    if (tfs[i].contents.replace(/\s/g, '').length === 0) {
-                        textCount++;
-                    }
-                } catch (err) { }
-            }
-        } catch (e) { }
-
-        // Scan Unused (Naive check)
-        // We can't easily count "Unused" items without potentially deleting them.
-        // But we can check if document has more than basic swatches.
-        if (doc.swatches.length > 10) {
-            unusedCount = 1; // Indicator to show cleanup is possible
-        }
-
-        return JSON.stringify({
-            stray: strayCount,
-            text: textCount,
-            unused: unusedCount
-        });
-    },
-
-    cleanDoc: function (flagsStr) {
-        if (app.documents.length === 0) return "No Doc";
-        var doc = app.activeDocument;
-        var flags = JSON.parse(flagsStr);
-        var report = [];
-
-        // 1. Clean Stray Points
-        if (flags.stray) {
-            var deletedStray = 0;
-            try {
-                // Must iterate backwards to delete safely
-                for (var i = doc.pathItems.length - 1; i >= 0; i--) {
-                    try {
-                        var p = doc.pathItems[i];
-                        if ((p.pathPoints && p.pathPoints.length <= 1) || (p.width < 0.1 && p.height < 0.1)) {
-                            p.remove();
-                            deletedStray++;
-                        }
-                    } catch (err) { }
-                }
-                if (deletedStray > 0) report.push("Removed " + deletedStray + " Stray Points.");
-            } catch (e) { report.push("Error Cleaning Stray: " + e); }
-        }
-
-        // 2. Clean Empty Text
-        if (flags.text) {
-            var deletedText = 0;
-            try {
-                for (var i = doc.textFrames.length - 1; i >= 0; i--) {
-                    try {
-                        if (doc.textFrames[i].contents.replace(/\s/g, '').length === 0) {
-                            doc.textFrames[i].remove();
-                            deletedText++;
-                        }
-                    } catch (err) { }
-                }
-                if (deletedText > 0) report.push("Removed " + deletedText + " Empty Text Boxes.");
-            } catch (e) { report.push("Error Cleaning Text: " + e); }
-        }
-
-        // 3. Clean Unused Items (Swatches, Symbols, Styles)
-        if (flags.unused) {
-            try {
-                // Native Command: Delete Unused Panel Items
-                app.executeMenuCommand('Delete Unused Panel Items');
-                report.push("Cleaned Unused Panel Items.");
-            } catch (e) { report.push("Failed to clean unused items."); }
-        }
-
-        if (report.length === 0) return "Nothing cleaned.";
-        return report.join("\n");
-    },
-
-    finalizeDoc: function (action) {
-        if (app.documents.length === 0) return "No Doc";
-        try {
-            if (action === 'unlock') {
-                app.executeMenuCommand('unlockAll');
-                // 'showAll' might be 'showAll' or 'Show All'? command ID is usually 'showAll'
-                try { app.executeMenuCommand('showAll'); } catch (e) { }
-                return "All Objects Unlocked and Unhidden.";
-            } else if (action === 'outline') {
-                // Select All -> Outline
-                app.executeMenuCommand('selectall');
-                app.executeMenuCommand('outline');
-                app.executeMenuCommand('deselectall');
-                return "All Text Converted to Outlines.";
-            }
-        } catch (e) {
-            return "Error: " + e;
-        }
-    },
-
     _generatePaletteFromItems: function (doc, targetItems) {
         if (typeof CoordinateSystem !== 'undefined') { app.coordinateSystem = CoordinateSystem.ARTBOARDCOORDINATESYSTEM; }
         else { app.coordinateSystem = 1; }
@@ -882,429 +664,6 @@ var TATA = {
 
         restoreAndLock(doc, prevActiveLayer, colorLayer);
         return "Full Success";
-    },
-
-    // ================================================================================
-    // ===================================== QUICK CLEAN ==============================
-    // ================================================================================
-
-    cleanStrayPoints: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        var count = 0;
-        for (var i = doc.pathItems.length - 1; i >= 0; i--) {
-            try {
-                if (doc.pathItems[i].pathPoints.length === 1) {
-                    doc.pathItems[i].remove();
-                    count++;
-                }
-            } catch (e) { }
-        }
-        return "Removed " + count + " stray points";
-    },
-
-    cleanEmptyText: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        var count = 0;
-        for (var i = doc.textFrames.length - 1; i >= 0; i--) {
-            try {
-                if (doc.textFrames[i].contents === "" || doc.textFrames[i].contents.replace(/\s/g, "") === "") {
-                    doc.textFrames[i].remove();
-                    count++;
-                }
-            } catch (e) { }
-        }
-        return "Removed " + count + " empty text frames";
-    },
-
-    outlineAllText: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        var count = 0;
-        for (var i = doc.textFrames.length - 1; i >= 0; i--) {
-            try {
-                doc.textFrames[i].createOutline();
-                count++;
-            } catch (e) { }
-        }
-        return "Outlined " + count + " text frames";
-    },
-
-    unlockAll: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        var count = 0;
-        for (var i = 0; i < doc.layers.length; i++) {
-            if (doc.layers[i].locked) {
-                doc.layers[i].locked = false;
-                count++;
-            }
-        }
-        for (var j = 0; j < doc.pageItems.length; j++) {
-            try {
-                if (doc.pageItems[j].locked) {
-                    doc.pageItems[j].locked = false;
-                    count++;
-                }
-            } catch (e) { }
-        }
-        return "Unlocked " + count + " items";
-    },
-
-    // ================================================================================
-    // ================================= SMART CLEAN ==================================
-    // ================================================================================
-
-    scanDocument: function () {
-        if (app.documents.length === 0) return JSON.stringify({ strayPoints: 0, emptyText: 0, textFrames: 0, lockedItems: 0 });
-
-        var doc = app.activeDocument;
-        var results = {
-            strayPoints: 0,
-            emptyText: 0,
-            textFrames: 0,
-            lockedItems: 0
-        };
-
-        // Count stray points
-        for (var i = 0; i < doc.pathItems.length; i++) {
-            if (doc.pathItems[i].pathPoints.length === 1) {
-                results.strayPoints++;
-            }
-        }
-
-        // Count empty text frames and total text frames
-        for (var j = 0; j < doc.textFrames.length; j++) {
-            results.textFrames++;
-            try {
-                if (doc.textFrames[j].contents === "" || doc.textFrames[j].contents.replace(/\s/g, "") === "") {
-                    results.emptyText++;
-                }
-            } catch (e) { }
-        }
-
-        // Count locked items
-        for (var k = 0; k < doc.layers.length; k++) {
-            if (doc.layers[k].locked) results.lockedItems++;
-        }
-        for (var l = 0; l < doc.pageItems.length; l++) {
-            try {
-                if (doc.pageItems[l].locked) results.lockedItems++;
-            } catch (e) { }
-        }
-
-        return JSON.stringify(results);
-    },
-
-    smartClean: function (params) {
-        if (app.documents.length === 0) return "No document open";
-
-        var options = JSON.parse(params);
-        var doc = app.activeDocument;
-        var results = [];
-
-        // Clean stray points
-        if (options.cleanStray) {
-            var strayCount = 0;
-            for (var i = doc.pathItems.length - 1; i >= 0; i--) {
-                try {
-                    if (doc.pathItems[i].pathPoints.length === 1) {
-                        doc.pathItems[i].remove();
-                        strayCount++;
-                    }
-                } catch (e) { }
-            }
-            if (strayCount > 0) results.push("Removed " + strayCount + " stray points");
-        }
-
-        // Clean empty text
-        if (options.cleanEmpty) {
-            var emptyCount = 0;
-            for (var j = doc.textFrames.length - 1; j >= 0; j--) {
-                try {
-                    if (doc.textFrames[j].contents === "" || doc.textFrames[j].contents.replace(/\s/g, "") === "") {
-                        doc.textFrames[j].remove();
-                        emptyCount++;
-                    }
-                } catch (e) { }
-            }
-            if (emptyCount > 0) results.push("Removed " + emptyCount + " empty text frames");
-        }
-
-        // Outline text
-        if (options.outlineText) {
-            var outlineCount = 0;
-            for (var k = doc.textFrames.length - 1; k >= 0; k--) {
-                try {
-                    doc.textFrames[k].createOutline();
-                    outlineCount++;
-                } catch (e) { }
-            }
-            if (outlineCount > 0) results.push("Outlined " + outlineCount + " text frames");
-        }
-
-        // Unlock all
-        if (options.unlockAll) {
-            var unlockCount = 0;
-            for (var m = 0; m < doc.layers.length; m++) {
-                if (doc.layers[m].locked) {
-                    doc.layers[m].locked = false;
-                    unlockCount++;
-                }
-            }
-            for (var n = 0; n < doc.pageItems.length; n++) {
-                try {
-                    if (doc.pageItems[n].locked) {
-                        doc.pageItems[n].locked = false;
-                        unlockCount++;
-                    }
-                } catch (e) { }
-            }
-            if (unlockCount > 0) results.push("Unlocked " + unlockCount + " items");
-        }
-
-        if (results.length === 0) return "Nothing to clean";
-        return results.join("\n");
-    },
-
-    smartCleanDirect: function (cleanStray, cleanEmpty, outlineText, unlockAll) {
-        if (app.documents.length === 0) return "No document open";
-
-        var doc = app.activeDocument;
-        var results = [];
-
-        // Clean stray points
-        if (cleanStray === true || cleanStray === 'true') {
-            var strayCount = 0;
-            for (var i = doc.pathItems.length - 1; i >= 0; i--) {
-                try {
-                    if (doc.pathItems[i].pathPoints.length === 1) {
-                        doc.pathItems[i].remove();
-                        strayCount++;
-                    }
-                } catch (e) { }
-            }
-            if (strayCount > 0) results.push("Removed " + strayCount + " stray points");
-        }
-
-        // Clean empty text
-        if (cleanEmpty === true || cleanEmpty === 'true') {
-            var emptyCount = 0;
-            for (var j = doc.textFrames.length - 1; j >= 0; j--) {
-                try {
-                    if (doc.textFrames[j].contents === "" || doc.textFrames[j].contents.replace(/\s/g, "") === "") {
-                        doc.textFrames[j].remove();
-                        emptyCount++;
-                    }
-                } catch (e) { }
-            }
-            if (emptyCount > 0) results.push("Removed " + emptyCount + " empty text frames");
-        }
-
-        // Outline text
-        if (outlineText === true || outlineText === 'true') {
-            var outlineCount = 0;
-            for (var k = doc.textFrames.length - 1; k >= 0; k--) {
-                try {
-                    doc.textFrames[k].createOutline();
-                    outlineCount++;
-                } catch (e) { }
-            }
-            if (outlineCount > 0) results.push("Outlined " + outlineCount + " text frames");
-        }
-
-        // Unlock all
-        if (unlockAll === true || unlockAll === 'true') {
-            var unlockCount = 0;
-            for (var m = 0; m < doc.layers.length; m++) {
-                if (doc.layers[m].locked) {
-                    doc.layers[m].locked = false;
-                    unlockCount++;
-                }
-            }
-            for (var n = 0; n < doc.pageItems.length; n++) {
-                try {
-                    if (doc.pageItems[n].locked) {
-                        doc.pageItems[n].locked = false;
-                        unlockCount++;
-                    }
-                } catch (e) { }
-            }
-            if (unlockCount > 0) results.push("Unlocked " + unlockCount + " items");
-        }
-
-        if (results.length === 0) return "Nothing to clean";
-        return results.join("\n");
-    },
-
-    // ================================================================================
-    // ===================================== SYMBOLS ==================================
-    // ================================================================================
-
-    listSymbols: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        var list = [];
-        for (var i = 0; i < doc.symbols.length; i++) {
-            list.push(doc.symbols[i].name);
-        }
-        return list.length > 0 ? "Symbols: " + list.join(", ") : "No symbols found";
-    },
-
-    replaceSymbol: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select symbol instances";
-        var count = 0;
-        for (var i = 0; i < doc.selection.length; i++) {
-            try {
-                if (doc.selection[i].typename === "SymbolItem") count++;
-            } catch (e) { }
-        }
-        return "Found " + count + " symbol instances";
-    },
-
-    breakSymbolLink: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select symbol instances";
-        var count = 0;
-        for (var i = doc.selection.length - 1; i >= 0; i--) {
-            try {
-                if (doc.selection[i].typename === "SymbolItem") {
-                    doc.selection[i].breakLink();
-                    count++;
-                }
-            } catch (e) { }
-        }
-        return "Broke " + count + " symbol links";
-    },
-
-    createSymbol: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        var name = params.name || "New Symbol";
-        try {
-            var newSymbol = doc.symbols.add(doc.selection[0]);
-            newSymbol.name = name;
-            return "Created symbol: " + name;
-        } catch (e) {
-            return "Error creating symbol";
-        }
-    },
-
-    // ================================================================================
-    // ===================================== EFFECTS ==================================
-    // ================================================================================
-
-    applyDropShadow: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        var count = 0;
-        for (var i = 0; i < doc.selection.length; i++) {
-            try {
-                var item = doc.selection[i];
-                var shadow = item.duplicate();
-                shadow.move(item, ElementPlacement.PLACEATEND);
-                shadow.translate(5, -5);
-                shadow.opacity = 50;
-                count++;
-            } catch (e) { }
-        }
-        return "Applied shadow to " + count + " objects";
-    },
-
-    applyGlow: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        return "Glow effect applied (use Effect > Stylize > Outer Glow for full control)";
-    },
-
-    apply3D: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        return "3D effect applied (use Effect > 3D for full control)";
-    },
-
-    removeEffects: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        var count = 0;
-        for (var i = 0; i < doc.selection.length; i++) {
-            try {
-                doc.selection[i].clearAppearance();
-                count++;
-            } catch (e) { }
-        }
-        return "Cleared effects from " + count + " objects";
-    },
-
-    // ================================================================================
-    // ===================================== APPEARANCE ===============================
-    // ================================================================================
-
-    copyAppearance: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select an object";
-        try {
-            app.copy();
-            return "Appearance copied (use Paste Appearance on target)";
-        } catch (e) {
-            return "Error copying appearance";
-        }
-    },
-
-    pasteAppearance: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select target objects";
-        try {
-            app.paste();
-            return "Appearance pasted";
-        } catch (e) {
-            return "Error pasting (copy appearance first)";
-        }
-    },
-
-    clearAppearance: function () {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        var count = 0;
-        for (var i = 0; i < doc.selection.length; i++) {
-            try {
-                doc.selection[i].clearAppearance();
-                count++;
-            } catch (e) { }
-        }
-        return "Cleared appearance from " + count + " objects";
-    },
-
-    // ================================================================================
-    // ===================================== BLEND MODE ===============================
-    // ================================================================================
-
-    setBlendMode: function (params) {
-        if (app.documents.length === 0) return "No document open";
-        var doc = app.activeDocument;
-        if (doc.selection.length === 0) return "Please select objects";
-        var mode = params.mode || "NORMAL";
-        var blendMode = BlendModes[mode] || BlendModes.NORMAL;
-        var count = 0;
-        for (var i = 0; i < doc.selection.length; i++) {
-            try {
-                doc.selection[i].blendingMode = blendMode;
-                count++;
-            } catch (e) { }
-        }
-        return "Set blend mode for " + count + " objects";
     },
 
     // ================================================================================
@@ -1480,124 +839,6 @@ var TATA = {
 
 };
 
-TATA.openColorPicker = function (params) {
-    try {
-        var initial = (params && typeof params.initial === 'number') ? params.initial : 0xFF0000;
-        var dec = $.colorPicker(initial);
-        if (dec > -1) {
-            var hex = dec.toString(16).toUpperCase();
-            while (hex.length < 6) hex = '0' + hex;
-            return "#" + hex;
-        } else {
-            return "CANCELED";
-        }
-    } catch (e) {
-        return "ERR: " + e.message;
-    }
-};
-
-// ===========================================
-// COLOR HARMONY FUNCTIONS
-// ===========================================
-
-/**
- * Place a color palette on the artboard as a row of rectangles.
- * @param {Array} colors - Array of hex color strings (e.g., ["#FF0000", "#00FF00"])
- * @returns {string} - "success" or error message
- */
-function placePaletteOnArtboard(colors) {
-    try {
-        if (!app.documents.length) return "error: No document open";
-        var doc = app.activeDocument;
-        var layer = doc.activeLayer;
-
-        var rectSize = 50;
-        var gap = 5;
-        var startX = doc.activeView.centerPoint[0] - ((colors.length * (rectSize + gap)) / 2);
-        var startY = doc.activeView.centerPoint[1];
-
-        // Create group for palette
-        var group = layer.groupItems.add();
-        group.name = "TATA Palette";
-
-        for (var i = 0; i < colors.length; i++) {
-            var hex = colors[i];
-            var rgb = hexToRgb(hex);
-
-            var color = new RGBColor();
-            color.red = rgb.r;
-            color.green = rgb.g;
-            color.blue = rgb.b;
-
-            var rect = group.pathItems.rectangle(startY, startX + (i * (rectSize + gap)), rectSize, rectSize);
-            rect.fillColor = color;
-            rect.stroked = false;
-        }
-
-        // Select the new group
-        doc.selection = null;
-        group.selected = true;
-
-        return "success";
-    } catch (e) {
-        return "error: " + e.message;
-    }
-}
-
-/**
- * Save a color palette to the Swatches panel.
- * @param {string} name - Name of the swatch group
- * @param {Array} colors - Array of hex color strings
- * @returns {string} - "success" or error message
- */
-function saveToSwatches(name, colors) {
-    try {
-        if (!app.documents.length) return "error: No document open";
-        var doc = app.activeDocument;
-
-        // Create new Swatch Group
-        var groupName = name || "TATA Palette";
-        var swatchGroup;
-        try {
-            swatchGroup = doc.swatchGroups.add();
-            swatchGroup.name = groupName;
-        } catch (e) {
-            // Group might already exist or name conflict, create unique name
-            swatchGroup = doc.swatchGroups.add();
-            swatchGroup.name = groupName + " " + new Date().getTime();
-        }
-
-        for (var i = 0; i < colors.length; i++) {
-            var hex = colors[i];
-            var rgb = hexToRgb(hex);
-
-            var color = new RGBColor();
-            color.red = rgb.r;
-            color.green = rgb.g;
-            color.blue = rgb.b;
-
-            // Add swatch
-            var swatchName = "TATA " + hex;
-            var swatch = null;
-
-            // Check if swatch exists, otherwise create
-            try {
-                swatch = doc.swatches.getByName(swatchName);
-            } catch (e) {
-                swatch = doc.swatches.add();
-                swatch.name = swatchName;
-                swatch.color = color;
-            }
-
-            // Add to group
-            swatchGroup.addSwatch(swatch);
-        }
-
-        return "success";
-    } catch (e) {
-        return "error: " + e.message;
-    }
-}
 
 // Helper: Hex to RGB
 function hexToRgb(hex) {
@@ -1619,7 +860,7 @@ function hexToRgb(hex) {
 // Object references are kept in this engine between calls; every later call
 // checks that the document is still the one that was scanned.
 
-TATA._census = { refs: [], doc: "", count: -1 };
+TATA._census = { refs: [], sigs: [], doc: "", count: -1 };
 
 TATA._censusHex = function (r, g, b) {
     function h(n) { var s = Math.max(0, Math.min(255, Math.round(n))).toString(16).toUpperCase(); return s.length === 1 ? "0" + s : s; }
@@ -1658,13 +899,33 @@ TATA._censusBlocked = function (item) {
     return false;
 };
 
+// What the census groups an object by. Null when the object has no paint or
+// no text to report. Scan stores it; select and fix compare against it.
+TATA._censusDescribe = function (item, kind) {
+    if (kind === "text") {
+        if (item.contents === "") return null;
+        var attrs = item.textRange.characterAttributes;
+        var tfill = TATA._censusColor(attrs.fillColor);
+        return { k: "text", font: attrs.textFont.family + " " + attrs.textFont.style, size: Math.round(attrs.size * 1000) / 1000, fc: tfill[0], fh: tfill[1] };
+    }
+    var stroke = item.stroked ? TATA._censusColor(item.strokeColor) : ["", ""];
+    var fill = item.filled ? TATA._censusColor(item.fillColor) : ["", ""];
+    if (!stroke[0] && !fill[0]) return null;
+    return { k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
+};
+
+TATA._censusSignature = function (rec) {
+    if (!rec) return "";
+    return rec.k === "text" ? "text|" + rec.font + "|" + rec.size + "|" + rec.fc : "path|" + rec.sc + "|" + rec.sw + "|" + rec.fc;
+};
+
 TATA.censusScan = function (params) {
     if (app.documents.length === 0) return JSON.stringify({ error: "nodoc" });
     var doc = app.activeDocument;
     var max = parseInt(params.max, 10) || 4000;
     var whole = params.scope === "document";
     var board = whole ? null : doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
-    var refs = [], items = [], truncated = false;
+    var refs = [], sigs = [], items = [], truncated = false;
 
     function inScope(item) {
         if (!board) return true;
@@ -1680,12 +941,12 @@ TATA.censusScan = function (params) {
         try {
             item = doc.pathItems[i];
             if (item.guides || item.clipping || !inScope(item)) continue;
-            var stroke = item.stroked ? TATA._censusColor(item.strokeColor) : ["", ""];
-            var fill = item.filled ? TATA._censusColor(item.fillColor) : ["", ""];
-            if (!stroke[0] && !fill[0]) continue;
-            rec = { i: refs.length, k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
+            rec = TATA._censusDescribe(item, "path");
+            if (!rec) continue;
+            rec.i = refs.length;
             if (TATA._censusBlocked(item)) rec.skip = 1;
             refs.push(item);
+            sigs.push(TATA._censusSignature(rec));
             items.push(rec);
         } catch (e1) { }
     }
@@ -1693,32 +954,43 @@ TATA.censusScan = function (params) {
         if (refs.length >= max) { truncated = true; break; }
         try {
             item = doc.textFrames[i];
-            if (!inScope(item) || item.contents === "") continue;
-            var attrs = item.textRange.characterAttributes;
-            var tfill = TATA._censusColor(attrs.fillColor);
-            rec = { i: refs.length, k: "text", font: attrs.textFont.family + " " + attrs.textFont.style, size: Math.round(attrs.size * 1000) / 1000, fc: tfill[0], fh: tfill[1] };
+            if (!inScope(item)) continue;
+            rec = TATA._censusDescribe(item, "text");
+            if (!rec) continue;
+            rec.i = refs.length;
             if (TATA._censusBlocked(item)) rec.skip = 1;
             refs.push(item);
+            sigs.push(TATA._censusSignature(rec));
             items.push(rec);
         } catch (e2) { }
     }
 
-    TATA._census = { refs: refs, doc: doc.name, count: doc.pageItems.length };
+    TATA._census = { refs: refs, sigs: sigs, doc: doc.name, count: doc.pageItems.length };
     return JSON.stringify({ doc: doc.name, scope: whole ? "document" : "artboard", truncated: truncated, items: items });
 };
 
-TATA._censusCurrent = function () {
+// The document the last scan saw, or null when it has changed since. The name
+// and object count catch a switched or edited document; the signatures catch
+// a restyled object, which would otherwise still be selected or changed as
+// part of the group it has left.
+TATA._censusCurrent = function (ids) {
     if (app.documents.length === 0) return null;
     var doc = app.activeDocument;
     var c = TATA._census;
     if (!c || c.doc !== doc.name || c.count !== doc.pageItems.length) return null;
+    for (var i = 0; i < ids.length; i++) {
+        try {
+            var kind = c.sigs[ids[i]].indexOf("text|") === 0 ? "text" : "path";
+            if (TATA._censusSignature(TATA._censusDescribe(c.refs[ids[i]], kind)) !== c.sigs[ids[i]]) return null;
+        } catch (e) { return null; }
+    }
     return doc;
 };
 
 TATA.censusSelect = function (params) {
-    var doc = TATA._censusCurrent();
-    if (!doc) return JSON.stringify({ error: "stale" });
     var ids = params.ids || [];
+    var doc = TATA._censusCurrent(ids);
+    if (!doc) return JSON.stringify({ error: "stale" });
     var done = 0, missed = 0;
     doc.selection = null;
     for (var i = 0; i < ids.length; i++) {
@@ -1729,11 +1001,11 @@ TATA.censusSelect = function (params) {
 
 // Evens out a near-miss: kind "stroke" sets the stroke width, "size" the font size (points).
 TATA.censusFix = function (params) {
-    var doc = TATA._censusCurrent();
+    var ids = params.ids || [];
+    var doc = TATA._censusCurrent(ids);
     if (!doc) return JSON.stringify({ error: "stale" });
     var value = parseFloat(params.value);
     if (!(value > 0)) return JSON.stringify({ error: "value" });
-    var ids = params.ids || [];
     var done = 0;
     for (var i = 0; i < ids.length; i++) {
         try {
