@@ -468,11 +468,14 @@ function rl_update_config($patch)
     if (rl_config_damaged()) {
         return false;
     }
-    $config = rl_config_raw();
-    foreach ($patch as $key => $value) {
-        $config[$key] = $value;
-    }
-    return rl_write_json_file(rl_config_path(), $config, false);
+    // Under the lock, so two admin saves at once cannot drop each other's keys.
+    return rl_locked(function () use ($patch) {
+        $config = rl_config_raw();
+        foreach ($patch as $key => $value) {
+            $config[$key] = $value;
+        }
+        return rl_write_json_file(rl_config_path(), $config, false);
+    }) === true;
 }
 
 function rl_base_url()
@@ -1282,14 +1285,28 @@ function rl_create_item($user)
         $item['credits'] = $credits;
     }
 
-    $saved = rl_locked(function () use ($item) {
+    // The limits were checked before the files arrived; parallel uploads
+    // could all pass that check, so they are checked again under the lock.
+    $saved = rl_locked(function () use ($item, $user, $limits) {
+        if ($user && rl_uploads_today($user['id']) >= $limits['per_day']) {
+            return 'day';
+        }
+        if (rl_storage_used() + $item['bytes'] + $item['preview_bytes'] > $limits['storage']) {
+            return 'full';
+        }
         $catalog = rl_catalog();
         $catalog['items'][] = $item;
         return rl_save_catalog($catalog);
     });
-    if (!$saved) {
+    if ($saved !== true) {
         rl_unlink_stored($stored);
         rl_unlink_stored($preview);
+        if ($saved === 'day') {
+            return array('ok' => false, 'error' => 'Upload limit reached: ' . $limits['per_day'] . ' items a day', 'status' => 429);
+        }
+        if ($saved === 'full') {
+            return array('ok' => false, 'error' => 'Marketplace storage is full', 'status' => 507);
+        }
         return array('ok' => false, 'error' => 'Could not update the catalog');
     }
     return array('ok' => true, 'item' => $item);

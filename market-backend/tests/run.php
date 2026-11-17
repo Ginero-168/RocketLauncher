@@ -621,6 +621,12 @@ $res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'st
 check('a failed request is not counted against the quota', $res['status'] === 200 && $res['json']['remaining'] === 0);
 $res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $memberToken, 'prompt' => 'fourth')));
 check('each member has a daily AI quota', $res['status'] === 429 && $res['json']['error'] === 'Daily AI limit reached: 3 requests');
+http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => 'this one dies later')));
+$res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'poll', 'panel_token' => $bossToken, 'id' => 'diespred0001')));
+check('a request that fails while polled says so', $res['status'] === 502);
+check('it is refunded once: the failed prediction is forgotten', http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'poll', 'panel_token' => $bossToken, 'id' => 'diespred0001')))['status'] === 404);
+$res = http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => 'make a circle')));
+check('a request that failed while polled is not counted', $res['status'] === 200 && $res['json']['remaining'] === 2);
 check('prompts have a size limit', http('POST', $ad . '/api/ai.php', array('fields' => array('action' => 'start', 'panel_token' => $bossToken, 'prompt' => str_repeat('x', 5000))))['status'] === 413);
 http('POST', $ad . '/admin.php', array('cookie' => $boss['cookie'], 'fields' => array(
     'action' => 'save_ai', 'csrf' => $boss['csrf'], 'ai_model' => 'google/gemini-3-flash', 'ai_per_member_daily' => '3', 'ai_total_daily' => '100', 'ai_max_prompt_kb' => '4')));
