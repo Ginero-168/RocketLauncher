@@ -9,7 +9,8 @@
 
 ## Build / Test Commands
 - Install: `npm ci` (the lockfile is committed)
-- Run tests: `npm test -- --runInBand`
+- Run tests: `npm test -- --runInBand`. A test that passes only with uncommitted changes in the tree is a broken
+  test; before pushing, run the suite on a clean checkout (`git worktree add --detach <dir> HEAD`).
 - Syntax check all JS: `for f in js/*.js tests/*.js; do node --check "$f"; done`
 - Whitespace check: `git diff --check`
 
@@ -67,9 +68,12 @@
 
 ## Recovered source (3.1.0)
 - The 3.1.0 working tree was lost and rebuilt from the signed ZXP. `css/`, `js/`, `jsx/`, `CSXS/` and `index.html`
-  are the shipped 3.1.0 files. Tests for the modules added in 3.1.0 were not recovered; sanitize, script-review,
-  the editor save, Marketplace timeouts, the Replicate client and the jsx JSON fallback have tests again.
-  keep, graphic-styles, hotkeys, settings, updates and `jsx/hostscript.jsx` still have none.
+  are the shipped 3.1.0 files. The tests of that tree were not recovered; they were written again afterwards.
+- `jsx/` is tested by loading the real files in a Node `vm` context with a fake `app` (`tests/host-*.test.js`,
+  `tests/jsx-json.test.js`). `tests/host-contract.test.js` fails when the panel sends a command the host does
+  not have, or when one of the five `TATA.run` commands old user scripts rely on is removed.
+- Still untested: `main.js`, `bootstrap.js`, `tabs.js` beyond the workbench, and the drawing handlers in
+  `hostscript.jsx` (they need Illustrator).
 
 ## Marketplace site (`market-backend/`)
 - PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former
