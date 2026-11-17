@@ -967,6 +967,16 @@
         return fallback;
     }
 
+    // A prediction the panel stops waiting for keeps running and billing
+    // unless it is cancelled. Best effort: the error the user sees stays.
+    function cancelPrediction(fetchTimed, token, data) {
+        if (!data || !data.id) return Promise.resolve();
+        const url = `https://api.replicate.com/v1/predictions/${encodeURIComponent(data.id)}/cancel`;
+        return Promise.resolve()
+            .then(() => fetchTimed(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }, 10000))
+            .catch(() => {});
+    }
+
     function replicateTimeoutError(error) {
         if (error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
             return new Error('Replicate request timed out');
@@ -1012,16 +1022,23 @@
                     headers: { Authorization: `Bearer ${token}` }
                 }, cfg.pollTimeoutMs);
             } catch (error) {
+                await cancelPrediction(fetchTimed, token, data);
                 throw replicateTimeoutError(error);
             }
-            if (!poll.ok) throw new Error(`Replicate poll ${poll.status}`);
+            if (!poll.ok) {
+                await cancelPrediction(fetchTimed, token, data);
+                throw new Error(`Replicate poll ${poll.status}`);
+            }
             data = await poll.json();
         }
 
         if (data.status === 'failed' || data.status === 'canceled') {
             throw new Error(data.error || `Replicate ${data.status}`);
         }
-        if (data.status !== 'succeeded') throw new Error('Replicate timed out before the model finished');
+        if (data.status !== 'succeeded') {
+            await cancelPrediction(fetchTimed, token, data);
+            throw new Error('Replicate timed out before the model finished');
+        }
         return replicateOutputText(data.output);
     };
 })();
