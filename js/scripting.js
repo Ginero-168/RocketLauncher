@@ -161,6 +161,7 @@
         // Editor shortcuts only act on the Editor tab.
         document.addEventListener('keydown', e => {
             if (!(e.ctrlKey || e.metaKey) || activeTabId() !== 'tab_editor') return;
+            if (TATA.workbench && TATA.workbench.view && TATA.workbench.view() !== 'editor') return;
             if (document.querySelector('.modal.active')) return;
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -430,7 +431,7 @@
 
             if (result.message) addChatBubble('ai', result.message);
             if (result.code) {
-                addChatBubble('ai', 'Code updated. Review it in the Editor, then Run.');
+                addChatBubble('ai', 'Code updated. It is open in the Code view: review it, then Run.');
                 setEditorCode(result.code, 'ai');
                 activateTab('tab_editor');
                 showToast('Code generated', 'success');
@@ -823,7 +824,10 @@
         const btnClear = byId('btn_clear_recent');
         if (btnClear && btnClear.dataset.bound !== '1') {
             btnClear.dataset.bound = '1';
-            btnClear.addEventListener('click', () => {
+            btnClear.addEventListener('click', event => {
+                // The button sits in the <summary>; do not fold the list too.
+                event.preventDefault();
+                event.stopPropagation();
                 localStorage.removeItem(RECENT_CODE_KEY);
                 renderRecentCodes();
                 showToast('Recent code cleared');
@@ -865,6 +869,8 @@
             indentWithTabs: true
         });
         cmEditor.on('change', () => cmEditor.save());
+        // js/editor-tools.js adds its toolbar, keys and settings from here.
+        document.dispatchEvent(new CustomEvent('tata:editor-ready', { detail: cmEditor }));
     }
 
     function getEditorCode() {

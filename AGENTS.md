@@ -32,9 +32,13 @@
   - `main.js`, `bootstrap.js` — startup
 - The strip has three tabs: **Tool**, **Selector**, **Library** (plus Market in the footer).
   - Tool: the button grid. The script editor and the AI are one **workbench** inside it (`#workbench` holding
-    `#tab_editor` and `#tab_ai`), shown in place of the grid while `body.workbench-open` is set.
-    `TATA.activateTab('tab_editor' | 'tab_ai')` opens it; `TATA.activateTab('tab_button')` returns to the buttons.
-    `TATA.workbench.isOpen()` asks.
+    `#tab_editor` and `#tab_ai`), shown in place of the grid while `body.workbench-open` is set. The workbench shows
+    one full-height view at a time, Code or AI (`#workbench[data-view]`), picked by the switch in its bar.
+    `TATA.activateTab('tab_editor' | 'tab_ai')` opens it on that view; `TATA.activateTab('tab_button')` returns to
+    the buttons. `TATA.workbench.isOpen()` and `TATA.workbench.view()` ask.
+  - `editor-tools.js` adds the editing toolbar (undo/redo, snippets, comment, re-indent, syntax check, copy,
+    paste-over, clear, font size, wrap). It attaches when `scripting.js` fires `tata:editor-ready`. The syntax check
+    compiles with Node's `vm.Script` and never runs the code.
   - Selector (`#tab_selector`): the document census. It surveys again each time the tab is shown.
   - Library: Style, Color and Keep. They keep their own panels and ids (`tab_styles`, `tab_colors`, `tab_keep`);
     the one strip button `#tabbtn_library` points its `data-tab` at whichever is in use, and the `.subtabs` chips

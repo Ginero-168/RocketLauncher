@@ -91,6 +91,25 @@
         if (document.body) document.body.classList.toggle('workbench-open', !!open);
     }
 
+    // The workbench shows one of two full-height views: the code editor or
+    // the AI chat. The switch at its top and every 'tab_editor' / 'tab_ai'
+    // call choose which; opening the workbench from the strip keeps the last.
+    function workbenchView() {
+        const bench = document.getElementById('workbench');
+        return bench && bench.getAttribute('data-view') === 'ai' ? 'ai' : 'editor';
+    }
+
+    function setWorkbenchView(part) {
+        const view = part === 'ai' ? 'ai' : 'editor';
+        const bench = document.getElementById('workbench');
+        if (bench) bench.setAttribute('data-view', view);
+        document.querySelectorAll('[data-workbench-view]').forEach(button => {
+            const on = button.getAttribute('data-workbench-view') === view;
+            button.classList.toggle('is-on', on);
+            button.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    }
+
     function focusWorkbench(part) {
         if (part === 'ai') {
             const prompt = document.getElementById('prompt_input');
@@ -138,6 +157,7 @@
         if (part) {
             tabId = 'tab_button';
             setWorkbench(true);
+            setWorkbenchView(part);
         } else if (tabId === 'tab_button' && (!(opts && opts.user) || current === 'tab_button')) {
             setWorkbench(false);
         }
@@ -167,7 +187,7 @@
         if (document.body) document.body.setAttribute('data-tab', tabId);
         revealActiveTab();
         if (tabId === 'tab_button' && workbenchOpen()) {
-            applyTabSideEffects('tab_editor');
+            if (workbenchView() === 'editor') applyTabSideEffects('tab_editor');
             focusWorkbench(part);
             return undefined;
         }
@@ -262,6 +282,14 @@
             market.addEventListener('click', () => activateTab('tab_market'));
         }
 
+        document.querySelectorAll('[data-workbench-view]').forEach(button => {
+            if (button.dataset.bound === '1') return;
+            button.dataset.bound = '1';
+            button.addEventListener('click', () => {
+                activateTab(button.getAttribute('data-workbench-view') === 'ai' ? 'tab_ai' : 'tab_editor');
+            });
+        });
+
         const back = document.getElementById('btn_workbench_close');
         if (back && back.dataset.bound !== '1') {
             back.dataset.bound = '1';
@@ -272,7 +300,10 @@
         revealActiveTab(list);
     }
 
-    TATA.workbench = { isOpen: () => workbenchOpen() && document.body.getAttribute('data-tab') === 'tab_button' };
+    TATA.workbench = {
+        isOpen: () => workbenchOpen() && document.body.getAttribute('data-tab') === 'tab_button',
+        view: workbenchView
+    };
     TATA.activateTab = activateTab;
     TATA.bindTabList = bindTabList;
     TATA.revealActiveTab = revealActiveTab;

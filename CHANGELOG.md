@@ -12,6 +12,10 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - A full panel storage now shows an error instead of dropping the change silently.
 
 ### Added
+- Editing toolbar in the Code view: undo and redo, ready-made snippets (document check, loops over selection,
+  artboards, text, paths, a prompt, an RGB colour), comment toggle (also ⌘/), re-indent, a syntax check that marks
+  the line and offers to hand the error to the AI, copy all, paste over everything, clear (undoable), font size and
+  line wrapping. A status line shows the cursor position and line count.
 - Selector tab: lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
   and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
   much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
@@ -23,6 +27,8 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
+- The editor and the AI are separate full-height views, switched with Code | AI at the top of the workbench.
+  When the AI writes code the panel switches to Code. Recent code moved to the AI view as a fold.
 - The panel has three tabs: Tool, Selector and Library. Library holds Style, Color and Keep behind a row of
   chips and reopens on the one used last.
 - Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place
