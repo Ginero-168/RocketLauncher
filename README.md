@@ -10,7 +10,7 @@ Adobe Illustrator CEP 11 panel (bundle `com.tata.pro`) and its Marketplace websi
 ## Local development
 
 ```bash
-npm install
+npm ci
 npm test -- --runInBand
 cd market-backend && php tests/run.php
 ```

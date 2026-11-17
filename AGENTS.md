@@ -8,6 +8,7 @@
 - **Panels:** `index.html` only. Color tools and the SVG keeper are tabs inside it since 3.1.0.
 
 ## Build / Test Commands
+- Install: `npm ci` (the lockfile is committed)
 - Run tests: `npm test -- --runInBand`
 - Syntax check all JS: `for f in js/*.js tests/*.js; do node --check "$f"; done`
 - Whitespace check: `git diff --check`
@@ -59,10 +60,16 @@
 
 ## Common Pitfalls
 - `TATA` namespace is shared across modules; `host.js` must load before modules that call `TATA.host`.
+- Which code must be confirmed before each run is decided only by `TATA.trackedSource` /
+  `TATA.shouldConfirmJsxRun` in `sanitize.js`. Do not copy the list of sources into another module.
+- `tests/setup.js` gives every test file a throwaway home folder; `persist.js` would otherwise read and write the
+  developer's real panel data.
 
 ## Recovered source (3.1.0)
 - The 3.1.0 working tree was lost and rebuilt from the signed ZXP. `css/`, `js/`, `jsx/`, `CSXS/` and `index.html`
-  are the shipped 3.1.0 files. Tests for the modules added in 3.1.0 were not recovered.
+  are the shipped 3.1.0 files. Tests for the modules added in 3.1.0 were not recovered; sanitize, script-review,
+  the editor save, Marketplace timeouts, the Replicate client and the jsx JSON fallback have tests again.
+  keep, graphic-styles, hotkeys, settings, updates and `jsx/hostscript.jsx` still have none.
 
 ## Marketplace site (`market-backend/`)
 - PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former
