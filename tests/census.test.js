@@ -80,22 +80,139 @@ describe('document census (js/census.js)', function () {
         expect(build(null).total).toBe(0);
     });
 
-    test('changing scope during a scan ends with the list for the chosen scope', async function () {
-        document.body.innerHTML =
-            '<button data-census-scope="artboard"></button><button data-census-scope="document"></button>' +
-            '<div id="census_list"></div><div id="census_summary"></div><div id="census_status"></div>';
-        const calls = [];
-        TATA.host = { run: (cmd, params, cb) => calls.push({ params: params, cb: cb }) };
-        window.loadPanelScript('js/census.js');
+    describe('the panel', function () {
+        let calls, replies;
 
-        TATA.census.refresh();
-        document.querySelector('[data-census-scope="document"]').click();
-        expect(calls).toHaveLength(1);
+        function mount() {
+            document.body.innerHTML =
+                '<button data-census-scope="selection"></button><button data-census-scope="document"></button>' +
+                '<button id="btn_census_rescan"></button>' +
+                '<div id="census_list"></div><div id="census_summary"></div><div id="census_status"></div>';
+            calls = [];
+            replies = {};
+            TATA.host = {
+                run: (cmd, params, cb) => {
+                    calls.push({ cmd: cmd, params: params });
+                    if (replies[cmd]) cb(JSON.stringify(replies[cmd]));
+                    else calls[calls.length - 1].cb = cb;
+                }
+            };
+            window.loadPanelScript('js/census.js');
+        }
 
-        calls[0].cb(JSON.stringify({ items: [] }));
-        await new Promise(r => setTimeout(r, 0));
-        expect(calls).toHaveLength(2);
-        expect(calls[0].params.scope).toBe('artboard');
-        expect(calls[1].params.scope).toBe('document');
+        function settle() {
+            return new Promise(resolve => setTimeout(resolve, 0));
+        }
+
+        function commands() {
+            return calls.map(call => call.cmd + ':' + (call.params.scope || ''));
+        }
+
+        test('the first survey is of the selection', async function () {
+            mount();
+            replies.censusSize = { n: 12, over: false };
+            replies.censusScan = { items: [] };
+            TATA.census.refresh();
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection', 'censusScan:selection']);
+        });
+
+        test('a large selection is not scanned when the tab is shown, and says why', async function () {
+            mount();
+            replies.censusSize = { n: 3001, over: true };
+            TATA.census.refresh();
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection']);
+            expect(document.getElementById('census_list').textContent).toContain('เลือกไว้ เกิน 3000 ชิ้น');
+        });
+
+        test('a large document shows how many objects it has and waits to be asked', async function () {
+            mount();
+            replies.censusSize = { n: 52000, over: true };
+            document.querySelector('[data-census-scope="document"]').click();
+            await settle();
+            expect(commands()).toEqual(['censusSize:document']);
+            expect(document.getElementById('census_list').textContent).toContain('52,000');
+        });
+
+        test('the rescan button scans without asking the size first', async function () {
+            mount();
+            replies.censusScan = { items: [] };
+            document.getElementById('btn_census_rescan').click();
+            await settle();
+            expect(commands()).toEqual(['censusScan:selection']);
+        });
+
+        test('nothing selected says to select something', async function () {
+            mount();
+            replies.censusSize = { n: 0, over: false };
+            replies.censusScan = { error: 'noselection' };
+            TATA.census.refresh();
+            await settle();
+            expect(document.getElementById('census_list').textContent).toContain('ยังไม่ได้เลือกวัตถุ');
+        });
+
+        test('changing scope while the size is read asks again for the new scope, and never scans the old one unchecked', async function () {
+            mount();
+            TATA.census.refresh();
+            document.querySelector('[data-census-scope="document"]').click();
+            expect(commands()).toEqual(['censusSize:selection']);
+
+            calls[0].cb(JSON.stringify({ n: 5, over: false }));
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection', 'censusSize:document']);
+
+            calls[1].cb(JSON.stringify({ n: 52000, over: true }));
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection', 'censusSize:document']);
+            expect(document.getElementById('census_list').textContent).toContain('52,000');
+        });
+
+        test('changing scope during a scan ends with the list for the chosen scope', async function () {
+            mount();
+            replies.censusSize = { n: 5, over: false };
+            TATA.census.refresh();
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection', 'censusScan:selection']);
+
+            document.querySelector('[data-census-scope="document"]').click();
+            calls[1].cb(JSON.stringify({ items: [] }));
+            await settle();
+            expect(commands()).toEqual(['censusSize:selection', 'censusScan:selection', 'censusSize:document', 'censusScan:document']);
+        });
+
+        test('a click on a row sends the fields that define it, so the host re-reads only those', async function () {
+            mount();
+            const path = (i, width) => ({ i: i, k: 'path', sc: '#00BAE2', sh: '#00BAE2', sw: width, fc: '', fh: '' });
+            replies.censusSize = { n: 3, over: false };
+            replies.censusScan = { items: [path(0, 1), path(1, 1), path(2, 2)] };
+            replies.censusSelect = { selected: 2, missed: 0 };
+            TATA.census.refresh();
+            await settle();
+
+            const rows = Array.from(document.querySelectorAll('.census-row'));
+            const widthRow = rows.find(row => row.textContent.indexOf('สีและขนาดเดียวกัน') !== -1);
+            widthRow.click();
+            await settle();
+            const select = calls.find(call => call.cmd === 'censusSelect');
+            expect(select.params.check).toEqual(['sc', 'sw']);
+
+            rows[0].click();
+            await settle();
+            expect(calls.filter(call => call.cmd === 'censusSelect')[1].params.check).toEqual(['stroked']);
+        });
+
+        test('every row and every near-miss names the fields that define it', function () {
+            const report = build([
+                line(CY, 1), line(CY, 1), line(CY, 1), line(CY, 1), line(CY, 1.1),
+                text('Arial Regular', 12), text('Arial Regular', 12), text('Arial Regular', 12), text('Arial Regular', 11)
+            ]);
+            const rows = [];
+            report.sections.forEach(section => section.rows.forEach(row => rows.push(row)));
+            rows.concat(report.outliers).forEach(entry => {
+                expect(Array.isArray(entry.check)).toBe(true);
+            });
+            expect(report.outliers.map(found => found.check)).toEqual([['sc', 'sw'], ['font', 'size']]);
+        });
     });
 });

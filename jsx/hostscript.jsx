@@ -855,12 +855,17 @@ function hexToRgb(hex) {
 // ====================================================================================
 // ===============================   DOCUMENT CENSUS   ================================
 // ====================================================================================
-// Lists what the document holds so the panel can group objects that share a
-// stroke, fill or font, select a whole group, and even out near-misses.
-// Object references are kept in this engine between calls; every later call
-// checks that the document is still the one that was scanned.
+// Lists what the selection or the document holds so the panel can group
+// objects that share a stroke, fill or font, select a whole group, and even
+// out near-misses. Object references are kept in this engine between calls;
+// every later call checks that the document is still the one that was scanned.
+//
+// Every property read is a call into Illustrator and the whole scan is one
+// blocking call, so cost matters: a scan reads about 28 properties per object
+// (tests/host-census.test.js counts them), a select or fix only the ones that
+// define the group it was asked for.
 
-TATA._census = { refs: [], sigs: [], doc: "", count: -1 };
+TATA._census = { refs: [], recs: [], doc: "", count: -1 };
 
 TATA._censusHex = function (r, g, b) {
     function h(n) { var s = Math.max(0, Math.min(255, Math.round(n))).toString(16).toUpperCase(); return s.length === 1 ? "0" + s : s; }
@@ -900,7 +905,7 @@ TATA._censusBlocked = function (item) {
 };
 
 // What the census groups an object by. Null when the object has no paint or
-// no text to report. Scan stores it; select and fix compare against it.
+// no text to report.
 TATA._censusDescribe = function (item, kind) {
     if (kind === "text") {
         if (item.contents === "") return null;
@@ -914,9 +919,45 @@ TATA._censusDescribe = function (item, kind) {
     return { k: "path", sc: stroke[0], sh: stroke[1], sw: stroke[0] ? Math.round(item.strokeWidth * 1000) / 1000 : 0, fc: fill[0], fh: fill[1] };
 };
 
-TATA._censusSignature = function (rec) {
-    if (!rec) return "";
-    return rec.k === "text" ? "text|" + rec.font + "|" + rec.size + "|" + rec.fc : "path|" + rec.sc + "|" + rec.sw + "|" + rec.fc;
+// The paths and text frames inside one selected item, groups opened. As with
+// doc.pathItems for a whole document, a group's own pathItems and textFrames
+// list what is inside it at any depth. A compound path owns its paths.
+TATA._censusWalk = function (item, out, limit) {
+    var t, list, n, j;
+    try { t = item.typename; } catch (e) { return; }
+    if (t === "PathItem") out.push({ item: item, kind: "path" });
+    else if (t === "TextFrame") out.push({ item: item, kind: "text" });
+    else if (t === "CompoundPathItem" || t === "GroupItem") {
+        list = item.pathItems; n = list.length;
+        for (j = 0; j < n && out.length < limit; j++) out.push({ item: list[j], kind: "path" });
+        if (t === "GroupItem") {
+            list = item.textFrames; n = list.length;
+            for (j = 0; j < n && out.length < limit; j++) out.push({ item: list[j], kind: "text" });
+        }
+    }
+};
+
+// Up to limit objects from what is selected. An empty list means nothing is
+// selected, or text is being edited (the selection is then a TextRange).
+TATA._censusSelection = function (doc, limit) {
+    var out = [], sel = doc.selection, n, i;
+    if (!sel || sel.typename || typeof sel.length !== "number") return out;
+    n = sel.length;
+    for (i = 0; i < n && out.length < limit; i++) TATA._censusWalk(sel[i], out, limit);
+    return out;
+};
+
+// How much a scan would visit, counted up to limit + 1 so a huge selection is
+// not walked to the end just to be called huge. The panel asks this before it
+// scans on its own.
+TATA.censusSize = function (params) {
+    if (app.documents.length === 0) return JSON.stringify({ error: "nodoc" });
+    var doc = app.activeDocument;
+    var limit = parseInt(params.limit, 10) || 3000;
+    var n;
+    if (params.scope === "document") n = doc.pathItems.length + doc.textFrames.length;
+    else n = TATA._censusSelection(doc, limit + 1).length;
+    return JSON.stringify({ n: n, over: n > limit });
 };
 
 TATA.censusScan = function (params) {
@@ -924,64 +965,87 @@ TATA.censusScan = function (params) {
     var doc = app.activeDocument;
     var max = parseInt(params.max, 10) || 4000;
     var whole = params.scope === "document";
-    var board = whole ? null : doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect;
-    var refs = [], sigs = [], items = [], truncated = false;
+    var refs = [], items = [], truncated = false;
 
-    function inScope(item) {
-        if (!board) return true;
-        try {
-            var b = item.geometricBounds; // left, top, right, bottom (y grows upward)
-            return !(b[2] < board[0] || b[0] > board[2] || b[3] > board[1] || b[1] < board[3]);
-        } catch (e) { return false; }
+    function visit(item, kind) {
+        if (kind === "path" && (item.guides || item.clipping)) return;
+        var rec = TATA._censusDescribe(item, kind);
+        if (!rec) return;
+        rec.i = refs.length;
+        if (TATA._censusBlocked(item)) rec.skip = 1;
+        refs.push(item);
+        items.push(rec);
     }
 
-    var i, item, rec;
-    for (i = 0; i < doc.pathItems.length; i++) {
-        if (refs.length >= max) { truncated = true; break; }
-        try {
-            item = doc.pathItems[i];
-            if (item.guides || item.clipping || !inScope(item)) continue;
-            rec = TATA._censusDescribe(item, "path");
-            if (!rec) continue;
-            rec.i = refs.length;
-            if (TATA._censusBlocked(item)) rec.skip = 1;
-            refs.push(item);
-            sigs.push(TATA._censusSignature(rec));
-            items.push(rec);
-        } catch (e1) { }
-    }
-    for (i = 0; i < doc.textFrames.length; i++) {
-        if (refs.length >= max) { truncated = true; break; }
-        try {
-            item = doc.textFrames[i];
-            if (!inScope(item)) continue;
-            rec = TATA._censusDescribe(item, "text");
-            if (!rec) continue;
-            rec.i = refs.length;
-            if (TATA._censusBlocked(item)) rec.skip = 1;
-            refs.push(item);
-            sigs.push(TATA._censusSignature(rec));
-            items.push(rec);
-        } catch (e2) { }
+    var i, n;
+    if (whole) {
+        n = doc.pathItems.length;
+        for (i = 0; i < n; i++) {
+            if (refs.length >= max) { truncated = true; break; }
+            try { visit(doc.pathItems[i], "path"); } catch (e1) { }
+        }
+        n = doc.textFrames.length;
+        for (i = 0; i < n; i++) {
+            if (refs.length >= max) { truncated = true; break; }
+            try { visit(doc.textFrames[i], "text"); } catch (e2) { }
+        }
+    } else {
+        var nodes = TATA._censusSelection(doc, max * 2);
+        if (nodes.length === 0) return JSON.stringify({ error: "noselection" });
+        truncated = nodes.length >= max * 2;
+        for (i = 0; i < nodes.length; i++) {
+            if (refs.length >= max) { truncated = true; break; }
+            try { visit(nodes[i].item, nodes[i].kind); } catch (e3) { }
+        }
     }
 
-    TATA._census = { refs: refs, sigs: sigs, doc: doc.name, count: doc.pageItems.length };
-    return JSON.stringify({ doc: doc.name, scope: whole ? "document" : "artboard", truncated: truncated, items: items });
+    TATA._census = { refs: refs, recs: items, doc: doc.name, count: doc.pageItems.length };
+    return JSON.stringify({ doc: doc.name, scope: whole ? "document" : "selection", truncated: truncated, items: items });
 };
 
+// The value of one grouping field as it is now, in the form the scan stored.
+TATA._censusNow = function (item, field) {
+    var attrs;
+    if (field === "stroked") return item.stroked ? 1 : 0;
+    if (field === "sc") return item.stroked ? TATA._censusColor(item.strokeColor)[0] : "";
+    if (field === "sw") return Math.round(item.strokeWidth * 1000) / 1000;
+    if (field === "fc") return item.filled ? TATA._censusColor(item.fillColor)[0] : "";
+    attrs = item.textRange.characterAttributes;
+    if (field === "font") return attrs.textFont.family + " " + attrs.textFont.style;
+    if (field === "size") return Math.round(attrs.size * 1000) / 1000;
+    return null;
+};
+
+TATA._censusStored = function (rec, field) {
+    return field === "stroked" ? (rec.sc ? 1 : 0) : rec[field];
+};
+
+// The fields a whole check reads when the panel does not say which ones define
+// the group.
+TATA._censusAllFields = { path: ["sc", "sw", "fc"], text: ["font", "size", "fc"] };
+TATA._censusFieldKind = { stroked: "path", sc: "path", sw: "path", font: "text", size: "text" };
+
 // The document the last scan saw, or null when it has changed since. The name
-// and object count catch a switched or edited document; the signatures catch
-// a restyled object, which would otherwise still be selected or changed as
-// part of the group it has left.
-TATA._censusCurrent = function (ids) {
+// and object count catch a switched or edited document. Then each requested
+// object is read again for the fields that define its group (params.check),
+// so an object restyled since the scan is not selected or changed as part of
+// the group it has left. Without params.check every field is read.
+TATA._censusCurrent = function (ids, check) {
     if (app.documents.length === 0) return null;
     var doc = app.activeDocument;
     var c = TATA._census;
     if (!c || c.doc !== doc.name || c.count !== doc.pageItems.length) return null;
-    for (var i = 0; i < ids.length; i++) {
+    var i, j, rec, fields, field;
+    for (i = 0; i < ids.length; i++) {
         try {
-            var kind = c.sigs[ids[i]].indexOf("text|") === 0 ? "text" : "path";
-            if (TATA._censusSignature(TATA._censusDescribe(c.refs[ids[i]], kind)) !== c.sigs[ids[i]]) return null;
+            rec = c.recs[ids[i]];
+            fields = check || TATA._censusAllFields[rec.k];
+            for (j = 0; j < fields.length; j++) {
+                field = fields[j];
+                if (TATA._censusFieldKind[field] && TATA._censusFieldKind[field] !== rec.k) continue;
+                if (field === "sw" && !rec.sc) continue; // no stroke, so no width was recorded
+                if (TATA._censusNow(c.refs[ids[i]], field) !== TATA._censusStored(rec, field)) return null;
+            }
         } catch (e) { return null; }
     }
     return doc;
@@ -989,7 +1053,7 @@ TATA._censusCurrent = function (ids) {
 
 TATA.censusSelect = function (params) {
     var ids = params.ids || [];
-    var doc = TATA._censusCurrent(ids);
+    var doc = TATA._censusCurrent(ids, params.check);
     if (!doc) return JSON.stringify({ error: "stale" });
     var done = 0, missed = 0;
     doc.selection = null;
@@ -1002,7 +1066,7 @@ TATA.censusSelect = function (params) {
 // Evens out a near-miss: kind "stroke" sets the stroke width, "size" the font size (points).
 TATA.censusFix = function (params) {
     var ids = params.ids || [];
-    var doc = TATA._censusCurrent(ids);
+    var doc = TATA._censusCurrent(ids, params.check);
     if (!doc) return JSON.stringify({ error: "stale" });
     var value = parseFloat(params.value);
     if (!(value > 0)) return JSON.stringify({ error: "value" });

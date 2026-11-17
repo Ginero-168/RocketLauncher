@@ -21,6 +21,10 @@ the update check offers it to every 3.1.0 install.
 ### Fixed
 - Update in the editor updates the button it was opened from instead of adding a second one.
 - Selector: changing the scope during a survey no longer shows the other scope's results.
+- Selector no longer freezes Illustrator on large files. It surveys the selection by default (the Artboard scope is
+  gone), and a selection or document of more than 3,000 objects is not surveyed when the tab is shown: the panel says
+  how large it is and waits for the rescan button. Selecting a group or fixing a near-miss re-reads only the property
+  that defines the group (one read per object for a stroke width, none for all text) instead of 13.
 - Marketplace requests give up after 30 seconds instead of waiting until the panel is reloaded.
 - Documents, layers or fonts with quotes or line breaks in their names no longer break the Selector survey on
   Illustrator versions without native JSON.
@@ -36,7 +40,7 @@ the update check offers it to every 3.1.0 install.
   artboards, text, paths, a prompt, an RGB colour), comment toggle (also ⌘/), re-indent, a syntax check that marks
   the line and offers to hand the error to the AI, copy all, paste over everything, clear (undoable), font size and
   line wrapping. A status line shows the cursor position and line count.
-- Selector tab: lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
+- Selector tab: lists what is selected, or what the whole document holds, grouped by stroke colour and width, fill colour,
   and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
   much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
   Works offline and without AI. Locked and hidden objects are counted but never selected.
