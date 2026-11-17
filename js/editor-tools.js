@@ -383,6 +383,33 @@
         if (ask) ask.addEventListener('click', askAi);
     }
 
+    // Recent code opens as a dialog instead of taking room in the AI view.
+    let closeRecent = null;
+
+    function openRecent() {
+        const modal = byId('recent_code_modal');
+        if (!modal || typeof TATA.openDialog !== 'function') return;
+        if (closeRecent) closeRecent();
+        const first = modal.querySelector('.recent-code-item') || byId('btn_recent_close');
+        closeRecent = TATA.openDialog(modal, { focus: first });
+    }
+
+    function bindRecent() {
+        const opener = byId('btn_recent_code');
+        if (!opener || opener.dataset.bound === '1') return;
+        opener.dataset.bound = '1';
+        opener.addEventListener('click', openRecent);
+        const close = byId('btn_recent_close');
+        if (close) close.addEventListener('click', () => { if (closeRecent) closeRecent(); });
+        const list = byId('recent_code_list');
+        // Loading an item (js/scripting.js) also closes the dialog.
+        if (list) {
+            list.addEventListener('click', event => {
+                if (event.target.closest && event.target.closest('.recent-code-item') && closeRecent) closeRecent();
+            });
+        }
+    }
+
     function attach(editor) {
         if (!editor || editor === cm) return;
         cm = editor;
@@ -403,6 +430,7 @@
 
     function start() {
         bindToolbar();
+        bindRecent();
         if (window.cmEditor) attach(window.cmEditor);
     }
 

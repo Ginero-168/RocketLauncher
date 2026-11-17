@@ -185,6 +185,10 @@
 				<div id="chat_header" class="ai-header">
 					<span class="ai-mode">Code</span>
 					<span id="ai_model_name" class="ai-model"></span>
+					<button type="button" id="btn_recent_code" class="btn btn--icon btn--sm" lang="th" title="โค้ดล่าสุดที่ AI เขียน" aria-label="โค้ดล่าสุด" aria-haspopup="dialog" aria-controls="recent_code_modal">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3Zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12Z" /></svg>
+						<span id="recent_code_count" class="icon-badge" hidden></span>
+					</button>
 					<button type="button" id="btn_clear_chat" class="btn btn--icon btn--sm" title="Clear chat and context" aria-label="Clear chat">
 						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
 					</button>
@@ -196,18 +200,6 @@
 					<button type="button" id="btn_paste_api_key" class="btn btn--sm">Paste</button>
 					<button type="button" id="btn_save_api_key" class="btn btn--primary btn--sm">Save</button>
 				</div>
-
-				<details id="recent_code_section" class="recent-code">
-					<summary class="recent-code-header">
-						<span class="recent-code-label">Recent code</span>
-						<button type="button" id="btn_clear_recent" class="btn btn--icon btn--sm" title="Clear history" aria-label="Clear recent code">
-							<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z" /></svg>
-						</button>
-					</summary>
-					<div id="recent_code_list" class="recent-code-list">
-						<div class="recent-code-empty">No recent code yet</div>
-					</div>
-				</details>
 
 				<div class="chat-area" id="chat_history" role="log" aria-live="polite">
 					<div class="chat-message-row ai">
@@ -652,6 +644,21 @@
 			<div class="modal-actions">
 				<button type="button" id="btn_confirm_cancel" class="btn">Cancel</button>
 				<button type="button" id="btn_confirm_ok" class="btn btn--primary">OK</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Recent code the AI wrote (list drawn by js/scripting.js, dialog by js/editor-tools.js) -->
+	<div id="recent_code_modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="recent_code_title">
+		<div class="modal-content" lang="th">
+			<h3 id="recent_code_title" class="modal-title">โค้ดล่าสุด</h3>
+			<p class="control-hint">กดรายการเพื่อเปิดในตัวแก้โค้ด</p>
+			<div id="recent_code_list" class="recent-code-list">
+				<div class="recent-code-empty">No recent code yet</div>
+			</div>
+			<div class="modal-actions">
+				<button type="button" id="btn_clear_recent" class="btn btn--danger-quiet">ล้างประวัติ</button>
+				<button type="button" id="btn_recent_close" class="btn btn--primary">ปิด</button>
 			</div>
 		</div>
 	</div>

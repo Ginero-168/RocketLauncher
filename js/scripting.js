@@ -758,6 +758,11 @@
         if (!container) return;
         const list = getRecentCodes();
         container.textContent = '';
+        const badge = byId('recent_code_count');
+        if (badge) {
+            badge.textContent = list.length > 9 ? '9+' : String(list.length);
+            badge.hidden = list.length === 0;
+        }
 
         if (list.length === 0) {
             const empty = document.createElement('div');
@@ -824,10 +829,7 @@
         const btnClear = byId('btn_clear_recent');
         if (btnClear && btnClear.dataset.bound !== '1') {
             btnClear.dataset.bound = '1';
-            btnClear.addEventListener('click', event => {
-                // The button sits in the <summary>; do not fold the list too.
-                event.preventDefault();
-                event.stopPropagation();
+            btnClear.addEventListener('click', () => {
                 localStorage.removeItem(RECENT_CODE_KEY);
                 renderRecentCodes();
                 showToast('Recent code cleared');

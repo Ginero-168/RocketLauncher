@@ -28,7 +28,8 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 
 ### Changed
 - The editor and the AI are separate full-height views, switched with Code | AI at the top of the workbench.
-  When the AI writes code the panel switches to Code. Recent code moved to the AI view as a fold.
+  When the AI writes code the panel switches to Code. Recent code opens as a dialog from a
+  history button (with a count) in the AI view's header.
 - The panel has three tabs: Tool, Selector and Library. Library holds Style, Color and Keep behind a row of
   chips and reopens on the one used last.
 - Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place

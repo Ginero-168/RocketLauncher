@@ -486,52 +486,31 @@ body[data-tab="tab_button"].workbench-open .tab-actions {
 
 /* --------------------------------------------------------- recent code */
 
-/* A fold in the AI view (<details>). Block, not flex: older Chromium in CEP
-   does not lay out <details> as a flex container. */
-.recent-code {
-    display: block;
-    flex: none;
+/* Count on the history button in the AI header. */
+#btn_recent_code {
+    position: relative;
 }
 
-.recent-code[open] .recent-code-list {
-    max-height: 168px;
-    margin-top: var(--sp-3);
+.icon-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    box-shadow: 0 0 0 2px var(--c-bg);
+    border-radius: var(--r-pill);
+    background: var(--c-accent);
+    color: #001318;
+    font: 600 9px/15px var(--font-tech);
+    text-align: center;
+    pointer-events: none;
+}
+
+#recent_code_modal .recent-code-list {
+    max-height: 50vh;
+    margin: var(--sp-4) 0;
     overflow-y: auto;
-}
-
-.recent-code-header {
-    list-style: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.recent-code-header::-webkit-details-marker {
-    display: none;
-}
-
-.recent-code-header::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    margin-right: var(--sp-3);
-    border-right: 1.5px solid var(--c-text-3);
-    border-bottom: 1.5px solid var(--c-text-3);
-    transform: rotate(-45deg);
-    transition: transform var(--t-fast) ease;
-}
-
-.recent-code[open] .recent-code-header::before {
-    transform: rotate(45deg);
-}
-
-.recent-code-label {
-    flex: 1 1 auto;
-    color: var(--c-text-3);
-    font: 500 var(--fs-2xs)/1 var(--font-tech);
-    letter-spacing: var(--track-wide);
-    text-transform: uppercase;
 }
 
 .recent-code-list {

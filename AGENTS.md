@@ -39,6 +39,7 @@
   - `editor-tools.js` adds the editing toolbar (undo/redo, snippets, comment, re-indent, syntax check, copy,
     paste-over, clear, font size, wrap). It attaches when `scripting.js` fires `tata:editor-ready`. The syntax check
     compiles with Node's `vm.Script` and never runs the code.
+    It also owns the Recent code dialog (`#recent_code_modal`); `scripting.js` still draws the list and the count.
   - Selector (`#tab_selector`): the document census. It surveys again each time the tab is shown.
   - Library: Style, Color and Keep. They keep their own panels and ids (`tab_styles`, `tab_colors`, `tab_keep`);
     the one strip button `#tabbtn_library` points its `data-tab` at whichever is in use, and the `.subtabs` chips
