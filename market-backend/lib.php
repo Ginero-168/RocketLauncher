@@ -215,8 +215,14 @@ function rl_require_token()
     if ($config === null) {
         rl_json(array('ok' => false, 'error' => 'Marketplace is not set up'), 503);
     }
+    // Only wrong tokens are counted, and the count is checked before the
+    // comparison, so a blocked address learns nothing from further guesses.
+    if (rl_rate_limited('token-fail', 10, 600, false)) {
+        rl_json(array('ok' => false, 'error' => 'Too many wrong tokens, try again later'), 429);
+    }
     $given = rl_request_token();
     if ($given === '' || !hash_equals($config['upload_token'], $given)) {
+        rl_rate_limited('token-fail', 10, 600);
         rl_json(array('ok' => false, 'error' => 'Invalid upload token'), 401);
     }
 }
@@ -556,12 +562,12 @@ function rl_visitor_key()
 }
 
 // True when this address already did $limit of $bucket within $window
-// seconds; otherwise records the attempt. The counters are disposable: a
-// damaged file simply starts over.
-function rl_rate_limited($bucket, $limit, $window)
+// seconds; otherwise records the attempt unless $record is false. The
+// counters are disposable: a damaged file simply starts over.
+function rl_rate_limited($bucket, $limit, $window, $record = true)
 {
     $key = $bucket . ':' . substr(hash_hmac('sha256', rl_client_ip(), rl_secret()), 0, 24);
-    $result = rl_locked(function () use ($key, $limit, $window) {
+    $result = rl_locked(function () use ($key, $limit, $window, $record) {
         $path = rl_storage_dir() . '/limits.json';
         $data = rl_read_json_file($path, array());
         if (!is_array($data)) {
@@ -576,6 +582,9 @@ function rl_rate_limited($bucket, $limit, $window)
         }
         if (count($recent) >= $limit) {
             return true;
+        }
+        if (!$record) {
+            return false;
         }
         $recent[] = $now;
         $data[$key] = $recent;
