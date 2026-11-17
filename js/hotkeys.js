@@ -10,6 +10,12 @@
 
     let hotkeyListenersBound = false;
 
+    // A slot holds a grid button. Text dragged in from another app, or stored
+    // data that lost its id, is not one.
+    function isPin(entry) {
+        return !!entry && typeof entry === 'object' && entry.id != null && String(entry.id).trim() !== '';
+    }
+
     function initHotkeys() {
         const savedCount = localStorage.getItem('tata_hotkey_count');
         if (savedCount) hotkeyCount = parseInt(savedCount);
@@ -24,11 +30,7 @@
             }
         }
         if (!Array.isArray(hotkeys)) hotkeys = [];
-        hotkeys = hotkeys.map(entry => (
-            entry && typeof entry === 'object' && entry.id != null && String(entry.id).trim() !== ''
-                ? entry
-                : null
-        ));
+        hotkeys = hotkeys.map(entry => (isPin(entry) ? entry : null));
 
         while (hotkeys.length < hotkeyCount) {
             hotkeys.push(null);
@@ -173,6 +175,7 @@
             if (raw) {
                 try {
                     const data = JSON.parse(raw);
+                    if (!isPin(data)) return;
                     hotkeys[index] = data;
                     saveHotkeys();
                     renderHotkeys();
