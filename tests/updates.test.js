@@ -4,7 +4,6 @@ const path = require('path');
 
 const FIXTURE = `
     <span id="current_version"></span>
-    <span id="brand_serial"></span>
     <button id="btn_check_update">Check for updates</button>
     <p id="update_status"></p>
     <div id="update_available" hidden>
@@ -77,7 +76,6 @@ describe('update check (js/updates.js)', function () {
     test('the installed version comes from the extension manifest', function () {
         boot(ok(release('v3.1.0')));
         expect(document.getElementById('current_version').textContent).toBe('v3.1.0');
-        expect(document.getElementById('brand_serial').textContent).toBe('No. 3.1.0');
     });
 
     test('a newer release offers the macOS ZXP and its checksum on a Mac', async function () {
