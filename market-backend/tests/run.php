@@ -269,6 +269,7 @@ write_json($dir . '/storage/catalog.json', array('items' => array(
 write_json($dir . '/storage/users.json', array('users' => array(
     array('id' => 'u1', 'name' => 'Mike', 'google_sub' => 's1', 'picture' => 'https://lh3.googleusercontent.com/a/x'),
     array('id' => 'u2', 'name' => 'Nok', 'google_sub' => 's2'),
+    array('id' => 'u3', 'name' => 'Remi', 'google_sub' => 's3'),
 )));
 
 echo "Catalog\n";
@@ -391,6 +392,33 @@ $res = $up(array('type' => 'style', 'name' => 'Silver'), array('file' => array(f
 check('a member uploads a Graphic Style with its preview', $res['status'] === 201 && $res['json']['item']['preview'] === true && $res['json']['item']['owner_name'] === '');
 $silver = $res['json']['item']['id'];
 check('a member uploads a script', $up(array('type' => 'script', 'name' => 'Tidy'), array('file' => array(file_with($tmp, 'f.jsx', "app.redraw();\n"), 'button.jsx')))['status'] === 201);
+echo "Remix\n";
+$remiToken = panel_token($site, 'u3', 'Remi');
+$remix = function ($fields, $files) use ($base, $remiToken) {
+    return http('POST', $base . '/api/upload.php', array('fields' => array_merge(array('panel_token' => $remiToken), $fields), 'files' => $files));
+};
+$tidy = '';
+foreach (http('GET', $base . '/api/list.php?type=script')['json']['items'] as $listed) {
+    if ($listed['name'] === 'Tidy') {
+        $tidy = $listed['id'];
+    }
+}
+$res = $remix(array('type' => 'script', 'name' => 'Tidy copy', 'parent' => $tidy), array('file' => array(file_with($tmp, 'g.jsx', "app.redraw();\n"), 'button.jsx')));
+check('an unchanged copy is not a remix', $res['status'] === 409 && $res['json']['error'] === 'Change something before sharing a remix');
+check('a remix of something that is gone is refused', $remix(array('type' => 'script', 'name' => 'Ghost', 'parent' => 'ffffffffffffffff'), array('file' => array(file_with($tmp, 'j.jsx', "1;\n"), 'button.jsx')))['status'] === 409);
+check('a remix must stay the same kind', $remix(array('type' => 'color', 'name' => 'Mixed', 'colors' => '#000000', 'parent' => $tidy), array())['status'] === 409);
+check('a malformed parent id is refused', $remix(array('type' => 'script', 'name' => 'Odd', 'parent' => '../x'), array('file' => array(file_with($tmp, 'k.jsx', "2;\n"), 'button.jsx')))['status'] === 409);
+$res = $remix(array('type' => 'script', 'name' => 'Tidy twice', 'parent' => $tidy), array('file' => array(file_with($tmp, 'h.jsx', "app.redraw();\napp.redraw();\n"), 'button.jsx')));
+check('a remix carries the credit of its original', $res['status'] === 201 && $res['json']['item']['parent'] === $tidy && $res['json']['item']['credits'] === array(array('name' => 'Tidy', 'by' => 'Mike')), json_encode($res['json']));
+$twice = $res['json']['item']['id'];
+$res = $remix(array('type' => 'script', 'name' => 'Tidy thrice', 'parent' => $twice), array('file' => array(file_with($tmp, 'i.jsx', "app.redraw();\napp.redraw();\napp.redraw();\n"), 'button.jsx')));
+check('a remix of a remix keeps the whole chain, oldest first', $res['status'] === 201 && array_column($res['json']['item']['credits'], 'name') === array('Tidy', 'Tidy twice'));
+$counts = array();
+foreach (http('GET', $base . '/api/list.php?type=script')['json']['items'] as $listed) {
+    $counts[$listed['name']] = $listed['remixes'];
+}
+check('the catalog counts direct remixes', $counts['Tidy'] === 1 && $counts['Tidy twice'] === 1 && $counts['Tidy thrice'] === 0, json_encode($counts));
+echo "Uploads, continued\n";
 check('a member uploads a color set', $up(array('type' => 'color', 'name' => 'Sea', 'colors' => '#0af, 123456, nope'), array())['status'] === 201);
 $colors = null;
 foreach (read_json($dir . '/storage/catalog.json')['items'] as $item) {

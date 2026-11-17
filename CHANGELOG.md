@@ -12,9 +12,23 @@ All notable changes to the Rocket Launcher extension will be documented in this 
 - A full panel storage now shows an error instead of dropping the change silently.
 
 ### Added
+- Selector tab: lists what the artboard or document holds, grouped by stroke colour and width, fill colour,
+  and font and size. Clicking a group selects those objects in Illustrator. Small groups that sit within 15% of a
+  much larger one ("near-misses", such as one 1.1pt stroke among 1pt strokes) are shown with a one-click fix.
+  Works offline and without AI. Locked and hidden objects are counted but never selected.
+- Before installing a Marketplace script the panel scans its code and shows whether it touches local files, the
+  network or other programs, with the lines that caused each label. Network and system access need a tick first.
+- Remix: a Marketplace script can be installed straight into the editor. Uploading an edited copy records which
+  item it came from, and the credit chain is shown on the card, in the install dialog and on the website.
 - Settings → Your data: shows whether the safe copy is active and opens its folder.
 
 ### Changed
+- The panel has three tabs: Tool, Selector and Library. Library holds Style, Color and Keep behind a row of
+  chips and reopens on the one used last.
+- Tool, Edit and AI are one tab. The editor and the AI that writes into it open together as a workbench in place
+  of the button grid (New, or Edit on a button), with a Tools button to go back. Pressing the Tool tab again also
+  returns to the buttons; visiting another tab and coming back keeps the workbench open.
+- The Tool action row shows icons only below 480px, so five actions no longer run off the panel.
 - The Marketplace site now lives in `market-backend/` in this repository (was `RocketLauncher-backend`).
   It is published to the `market-deploy` branch for Hostinger and left out of the ZXP.
 - Removed `chat-backend/` and its deploy workflow; the panel has had no chat since 3.1.0.

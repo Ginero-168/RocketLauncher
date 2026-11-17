@@ -23,7 +23,22 @@
   - `scripting.js` — editor and Replicate AI assistant (CodeMirror is loaded on first use)
   - `color-tools.js`, `graphic-styles.js`, `keep.js` — Color, Style and Keep tabs
   - `market.js` — Marketplace; `settings.js`, `updates.js` — settings dialog and update check
+  - `census.js` — the Selector tab: document census (groups objects by stroke, fill and font; click selects the set). No AI, no
+    network. Host side: `censusScan` / `censusSelect` / `censusFix` at the end of `jsx/hostscript.jsx`, which keep
+    object references in the ExtendScript engine between calls and answer `{"error":"stale"}` when the document changed.
+  - `script-scan.js` — static scan of a script for file, network and system access; `script-review.js` — the
+    "before you install" dialog for Marketplace scripts. The scan reads text only; keep it conservative (anything
+    it cannot read is reported, never passed as clean).
   - `main.js`, `bootstrap.js` — startup
+- The strip has three tabs: **Tool**, **Selector**, **Library** (plus Market in the footer).
+  - Tool: the button grid. The script editor and the AI are one **workbench** inside it (`#workbench` holding
+    `#tab_editor` and `#tab_ai`), shown in place of the grid while `body.workbench-open` is set.
+    `TATA.activateTab('tab_editor' | 'tab_ai')` opens it; `TATA.activateTab('tab_button')` returns to the buttons.
+    `TATA.workbench.isOpen()` asks.
+  - Selector (`#tab_selector`): the document census. It surveys again each time the tab is shown.
+  - Library: Style, Color and Keep. They keep their own panels and ids (`tab_styles`, `tab_colors`, `tab_keep`);
+    the one strip button `#tabbtn_library` points its `data-tab` at whichever is in use, and the `.subtabs` chips
+    switch between them. `body[data-tab]` is still the section id, so `TATA.activateTab('tab_keep')` etc. work.
 - `js/host.js` is the single ExtendScript execution gateway (use `TATA.host.run/evalFile/evalCode`).
 - `jsx/hostscript.jsx` contains Illustrator-side `TATA.run` handlers.
 - Team chat was removed in 3.1.0; its backend folder and deploy workflow are gone from the repository.
@@ -48,6 +63,9 @@
 - PHP site behind the Marketplace tab (`js/market.js`, default URL https://rl.kirita.me). Merged in from the former
   `Ginero-168/RocketLauncher-backend` repository with its history (git subtree).
 - Tests: `cd market-backend && php tests/run.php` (PHP CLI with curl).
+- Remix: an upload may send `parent` (the item it was made from). The server copies the credit chain onto the new
+  item and refuses an unchanged copy. The panel remembers where each installed script came from in
+  `tata_market_origin` and sends `parent` when that script is uploaded.
 - Deploy: `deploy-market-backend.yml` republishes this folder as the root of the `market-deploy` branch, which
   Hostinger pulls. Never point Hostinger at `main`. `config.json` and `storage/` data exist only on the server.
 - The folder is excluded from the ZXP in `release-extension.yml`; keep it that way.

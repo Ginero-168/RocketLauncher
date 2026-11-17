@@ -131,8 +131,54 @@
 
 /* ============================================================= editor */
 
-#tab_editor.active {
+/* The workbench replaces the button grid inside the Tool tab: the editor
+   on top, the AI that writes into it below. It scrolls as one column when
+   the panel is too short for both. */
+.workbench {
+    display: none;
+}
+
+body[data-tab="tab_button"].workbench-open .workbench {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--sp-5);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--gutter);
+}
+
+body[data-tab="tab_button"].workbench-open #tab_button,
+body[data-tab="tab_button"].workbench-open .tab-actions {
+    display: none;
+}
+
+.workbench-pane {
+    display: flex;
+    flex-direction: column;
     gap: var(--sp-4);
+    min-height: 0;
+}
+
+/* Panes never shrink below their content (that made them overlap in a
+   short panel); the workbench scrolls instead. Spare height is shared 3:2. */
+.workbench-editor {
+    flex: 3 0 auto;
+    min-height: 260px;
+}
+
+.workbench-ai {
+    flex: 2 0 auto;
+    min-height: 180px;
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--c-line-2);
+}
+
+@media (max-width: 259px) {
+    body[data-tab="tab_button"].workbench-open .workbench {
+        padding: var(--sp-3);
+    }
 }
 
 .editor-header {
@@ -418,10 +464,6 @@
 
 /* ========================================================== AI chat */
 
-#tab_ai.active {
-    gap: var(--sp-4);
-    overflow: hidden;
-}
 
 .ai-header {
     display: flex;

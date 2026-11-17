@@ -235,6 +235,21 @@ body {
     }
 }
 
+/* ================================================= Library section row */
+
+.subtabs {
+    flex: none;
+    display: none;
+    justify-content: center;
+    padding: var(--sp-4) var(--gutter) 0;
+}
+
+body[data-tab="tab_styles"] .subtabs,
+body[data-tab="tab_colors"] .subtabs,
+body[data-tab="tab_keep"] .subtabs {
+    display: flex;
+}
+
 /* ===================================================== Tools action row */
 
 .tab-actions {
@@ -253,7 +268,8 @@ body[data-tab="tab_button"] .tab-actions {
     padding: 0 var(--sp-5);
 }
 
-@media (max-width: 339px) {
+/* Five actions with labels need about 480px; below that they are icons. */
+@media (max-width: 479px) {
     .tab-actions .btn-label {
         display: none;
     }

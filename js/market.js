@@ -217,6 +217,7 @@
             'Name is required': 'ต้องใส่ชื่อ',
             'At least one hex color is required': 'ต้องมีรหัสสีอย่างน้อย 1 สี',
             'File is empty or too large': 'ไฟล์ว่างหรือใหญ่เกินกำหนด',
+            'Change something before sharing a remix': 'ยังไม่ได้แก้อะไรจากต้นฉบับ แก้ก่อนแล้วค่อยแชร์เป็น Remix',
             'Expected a .jsx file': 'ต้องเป็นไฟล์ .jsx',
             'Expected a .ai file': 'ต้องเป็นไฟล์ .ai',
             'Preview must be a PNG or JPEG under 2 MB': 'รูปตัวอย่างต้องเป็น PNG หรือ JPEG ไม่เกิน 2 MB'
@@ -467,9 +468,17 @@
         sending = true;
         toast('กำลังอัปโหลด...', 'info');
         return postFields(settings.target, Object.assign({ panel_token: settings.token }, fields), files).then(() => {
-            toast('ขึ้น Marketplace แล้ว', 'success');
+            toast(fields.parent ? 'ขึ้น Marketplace แล้ว พร้อมเครดิตของต้นฉบับ' : 'ขึ้น Marketplace แล้ว', 'success');
             return true;
         }).catch(error => {
+            const reason = String(error && error.message ? error.message : error);
+            // The original has expired: share it on its own instead of failing.
+            if (fields.parent && reason === ORIGINAL_GONE) {
+                sending = false;
+                const plain = Object.assign({}, fields);
+                delete plain.parent;
+                return publish(plain, files);
+            }
             if (String(error && error.message ? error.message : error) === 'Panel session expired') {
                 localStorage.removeItem('tata_market_session');
                 paintAccount();
@@ -480,6 +489,35 @@
             sending = false;
             return result;
         });
+    }
+
+    // Which Marketplace item each installed script came from, so that sharing
+    // an edited copy is recorded as a remix with the original's credit.
+    const ORIGIN_KEY = 'tata_market_origin';
+    const ORIGINAL_GONE = 'The original is no longer in the Marketplace';
+
+    function origins() {
+        try {
+            const data = JSON.parse(localStorage.getItem(ORIGIN_KEY) || '{}');
+            return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function rememberOrigin(scriptId, marketId) {
+        if (!scriptId || !/^[a-f0-9]{16}$/.test(marketId || '')) return;
+        const map = origins();
+        map[scriptId] = marketId;
+        const keys = Object.keys(map);
+        // Old entries go first; 300 is far more than a panel holds.
+        while (keys.length > 300) delete map[keys.shift()];
+        try { localStorage.setItem(ORIGIN_KEY, JSON.stringify(map)); } catch (e) { /* storage full: lineage is optional */ }
+    }
+
+    function originOf(scriptId) {
+        const id = origins()[scriptId];
+        return /^[a-f0-9]{16}$/.test(id || '') ? id : '';
     }
 
     function uploadScriptItem(item) {
@@ -498,7 +536,10 @@
                 return;
             }
             const name = String(item.label || item.name || 'Script').trim() || 'Script';
-            publish({ type: 'script', name: name }, [{ field: 'file', filename: 'button.jsx', buffer: file.buffer }]);
+            const fields = { type: 'script', name: name };
+            const parent = originOf(item.id);
+            if (parent) fields.parent = parent;
+            publish(fields, [{ field: 'file', filename: 'button.jsx', buffer: file.buffer }]);
         });
     }
 
@@ -745,6 +786,14 @@
             foot.appendChild(action);
             button.appendChild(kind);
             button.appendChild(name);
+            if (Array.isArray(item.credits) && item.credits.length) {
+                const from = item.credits[item.credits.length - 1];
+                const credit = document.createElement('span');
+                credit.className = 'market-credit';
+                credit.lang = 'th';
+                credit.textContent = 'ดัดแปลงจาก ' + (from.name || '') + (from.by ? ' · ' + from.by : '');
+                button.appendChild(credit);
+            }
             button.appendChild(foot);
             button.addEventListener('click', () => chooseItem(item, button));
             list.appendChild(button);
@@ -831,11 +880,25 @@
             if (!code.trim()) throw new Error('สคริปต์ว่าง');
             if (code.length > SCRIPT_LIMIT) throw new Error('สคริปต์ใหญ่เกิน 2 MB');
             if (typeof TATA.saveUserScript !== 'function') throw new Error('ดาวน์โหลดได้เมื่อเปิดพาเนลใน Illustrator');
-            const icon = (TATA.ICONS && TATA.ICONS.stars) || '★';
-            // Source 'market': the code is shown and confirmed before every run.
-            TATA.saveUserScript(String(item.name || 'Script').slice(0, 80), icon, code, '', false, null, false, 'market');
-            toast('ดาวน์โหลดลง Tools แล้ว — จะแสดงโค้ดให้ยืนยันก่อนรัน', 'success');
-            return true;
+            const review = TATA.scriptReview
+                ? TATA.scriptReview.open({ name: item.name, by: item.owner_name, code: code, credits: item.credits })
+                : Promise.resolve('install');
+            return review.then(choice => {
+                if (!choice) return false;
+                const icon = (TATA.ICONS && TATA.ICONS.stars) || '★';
+                const base = String(item.name || 'Script').slice(0, 72);
+                const name = choice === 'remix' ? base + ' (remix)' : base;
+                // Source 'market': the code is shown and confirmed before every run.
+                const scriptId = TATA.saveUserScript(name, icon, code, '', false, null, false, 'market');
+                rememberOrigin(scriptId, item.id);
+                if (choice === 'remix' && typeof TATA.openEditorForItem === 'function') {
+                    TATA.openEditorForItem({ id: scriptId, label: name, icon: icon, code: code, color: '' });
+                    toast('เปิดในตัวแก้โค้ดแล้ว แก้แล้วกด Upload เพื่อแชร์เป็น Remix', 'success');
+                } else {
+                    toast('ดาวน์โหลดลง Tools แล้ว — จะแสดงโค้ดให้ยืนยันก่อนรัน', 'success');
+                }
+                return true;
+            });
         });
     }
 

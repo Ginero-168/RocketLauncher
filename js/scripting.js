@@ -128,6 +128,8 @@
     }
 
     function activeTabId() {
+        // The editor lives in the Tool tab's workbench (js/tabs.js).
+        if (TATA.workbench && TATA.workbench.isOpen()) return 'tab_editor';
         const panel = document.querySelector('.tab-content.active');
         return panel ? panel.id : '';
     }

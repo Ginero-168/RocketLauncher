@@ -50,6 +50,10 @@
             if (typeof TATA.keep.refresh === 'function') return TATA.keep.refresh();
         }
 
+        if (targetId === 'tab_selector' && TATA.census && typeof TATA.census.refresh === 'function') {
+            TATA.census.refresh();
+        }
+
         if (targetId === 'tab_editor') {
             if (TATA.ensureCodeMirror) {
                 TATA.ensureCodeMirror(() => {
@@ -74,7 +78,70 @@
         else if (end > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = end - strip.clientWidth;
     }
 
-    function activateTab(tabId) {
+    // The script editor and the AI are one workbench inside the Tool tab,
+    // shown in place of the button grid. 'tab_editor' and 'tab_ai' are kept
+    // as names that open it, so callers written for the old tabs still work.
+    const WORKBENCH = { tab_editor: 'editor', tab_ai: 'ai' };
+
+    function workbenchOpen() {
+        return !!document.body && document.body.classList.contains('workbench-open');
+    }
+
+    function setWorkbench(open) {
+        if (document.body) document.body.classList.toggle('workbench-open', !!open);
+    }
+
+    function focusWorkbench(part) {
+        if (part === 'ai') {
+            const prompt = document.getElementById('prompt_input');
+            if (prompt && typeof prompt.focus === 'function') {
+                try { prompt.focus(); } catch (e) { /* not focusable yet */ }
+            }
+        }
+    }
+
+    // Style, Color and Keep share one tab, "Library". Its strip button points
+    // at whichever of the three is in use, so each keeps its own panel, id
+    // and behaviour; the row of chips under the strip switches between them.
+    const LIBRARY = ['tab_styles', 'tab_colors', 'tab_keep'];
+    const LIBRARY_KEY = 'tata_library_tab';
+
+    function libraryButton() {
+        return document.getElementById('tabbtn_library');
+    }
+
+    function pointLibraryAt(tabId, remember) {
+        const button = libraryButton();
+        if (button) {
+            button.setAttribute('data-tab', tabId);
+            button.setAttribute('aria-controls', tabId);
+        }
+        document.querySelectorAll('[data-subtab]').forEach(chip => {
+            const on = chip.getAttribute('data-subtab') === tabId;
+            chip.classList.toggle('is-on', on);
+            chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        if (remember) {
+            try { localStorage.setItem(LIBRARY_KEY, tabId); } catch (e) { /* not essential */ }
+        }
+    }
+
+    /**
+     * @param {string} tabId
+     * @param {{user?: boolean}} [opts] user: the tab strip was used. Coming
+     *   back to Tool from another tab then keeps the workbench as it was;
+     *   pressing Tool while already there returns to the buttons.
+     */
+    function activateTab(tabId, opts) {
+        const part = WORKBENCH[tabId];
+        const current = document.body ? document.body.getAttribute('data-tab') : '';
+        if (part) {
+            tabId = 'tab_button';
+            setWorkbench(true);
+        } else if (tabId === 'tab_button' && (!(opts && opts.user) || current === 'tab_button')) {
+            setWorkbench(false);
+        }
+        if (LIBRARY.indexOf(tabId) !== -1) pointLibraryAt(tabId, true);
         const buttons = tabButtons();
         buttons.forEach(button => {
             const on = button.getAttribute('data-tab') === tabId;
@@ -99,6 +166,11 @@
         // CSS reads this (e.g. the Tools action row only shows on Tools).
         if (document.body) document.body.setAttribute('data-tab', tabId);
         revealActiveTab();
+        if (tabId === 'tab_button' && workbenchOpen()) {
+            applyTabSideEffects('tab_editor');
+            focusWorkbench(part);
+            return undefined;
+        }
         return applyTabSideEffects(tabId);
     }
 
@@ -109,7 +181,7 @@
         const index = buttons.findIndex(button => button.classList.contains('active'));
         const next = index + direction;
         if (index < 0 || next < 0 || next >= buttons.length) return false;
-        activateTab(buttons[next].getAttribute('data-tab'));
+        activateTab(buttons[next].getAttribute('data-tab'), { user: true });
         return true;
     }
 
@@ -129,7 +201,7 @@
         const button = buttons[next];
         if (!button) return;
         if (typeof button.focus === 'function') button.focus();
-        activateTab(button.getAttribute('data-tab'));
+        activateTab(button.getAttribute('data-tab'), { user: true });
     }
 
     function bindTabList(root) {
@@ -137,6 +209,12 @@
         if (!list || list.dataset.tabsBound === '1') return;
         list.dataset.tabsBound = '1';
         list.setAttribute('role', 'tablist');
+        let lastLibrary = '';
+        try { lastLibrary = localStorage.getItem(LIBRARY_KEY) || ''; } catch (e) { /* keep the default */ }
+        if (LIBRARY.indexOf(lastLibrary) !== -1) pointLibraryAt(lastLibrary, false);
+        document.querySelectorAll('[data-subtab]').forEach(chip => {
+            chip.addEventListener('click', () => activateTab(chip.getAttribute('data-subtab')));
+        });
         tabButtons(list).forEach(button => {
             const panelId = button.getAttribute('data-tab');
             if (!button.id) button.id = 'tabbtn_' + panelId;
@@ -167,7 +245,7 @@
         list.addEventListener('click', event => {
             const button = event.target.closest && event.target.closest('.tab-btn');
             if (!button || !list.contains(button)) return;
-            activateTab(button.getAttribute('data-tab'));
+            activateTab(button.getAttribute('data-tab'), { user: true });
         });
 
         list.addEventListener('keydown', event => {
@@ -184,10 +262,17 @@
             market.addEventListener('click', () => activateTab('tab_market'));
         }
 
+        const back = document.getElementById('btn_workbench_close');
+        if (back && back.dataset.bound !== '1') {
+            back.dataset.bound = '1';
+            back.addEventListener('click', () => activateTab('tab_button'));
+        }
+
         window.addEventListener('resize', () => revealActiveTab(list));
         revealActiveTab(list);
     }
 
+    TATA.workbench = { isOpen: () => workbenchOpen() && document.body.getAttribute('data-tab') === 'tab_button' };
     TATA.activateTab = activateTab;
     TATA.bindTabList = bindTabList;
     TATA.revealActiveTab = revealActiveTab;
