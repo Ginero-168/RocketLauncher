@@ -5,18 +5,42 @@
 // JSON Polyfill (Illustrator 2020+ includes native JSON; stringify fallback kept for safety)
 if (typeof JSON !== 'object') { JSON = {}; }
 if (!JSON.stringify) {
-    JSON.stringify = function (o) {
-        if (o === null) return 'null';
-        if (typeof o === 'number') return isFinite(o) ? String(o) : 'null';
-        if (typeof o === 'boolean') return String(o);
-        if (typeof o === 'object') {
-            if (o instanceof Array) {
-                var res = '['; for (var i = 0; i < o.length; i++) res += (i > 0 ? ',' : '') + JSON.stringify(o[i]); return res + ']';
+    JSON.stringify = (function () {
+        // A document or font name can hold quotes, backslashes or line breaks.
+        function quote(value) {
+            var s = String(value), out = '"';
+            for (var i = 0; i < s.length; i++) {
+                var c = s.charAt(i), code = s.charCodeAt(i);
+                if (c === '"' || c === '\\') out += '\\' + c;
+                else if (c === '\n') out += '\\n';
+                else if (c === '\r') out += '\\r';
+                else if (c === '\t') out += '\\t';
+                else if (code < 32 || code === 0x2028 || code === 0x2029) out += '\\u' + ('000' + code.toString(16)).slice(-4);
+                else out += c;
             }
-            var arr = []; for (var k in o) { if (o.hasOwnProperty(k)) arr.push('"' + k + '":' + JSON.stringify(o[k])); } return '{' + arr.join(',') + '}';
+            return out + '"';
         }
-        return '"' + String(o) + '"';
-    };
+        function skipped(v) { return v === undefined || typeof v === 'function'; }
+        function stringify(o) {
+            if (o === null) return 'null';
+            if (skipped(o)) return undefined;
+            if (typeof o === 'number') return isFinite(o) ? String(o) : 'null';
+            if (typeof o === 'boolean') return String(o);
+            if (typeof o === 'object') {
+                var parts = [], k;
+                if (Object.prototype.toString.call(o) === '[object Array]') {
+                    for (k = 0; k < o.length; k++) parts.push(skipped(o[k]) ? 'null' : stringify(o[k]));
+                    return '[' + parts.join(',') + ']';
+                }
+                for (k in o) {
+                    if (o.hasOwnProperty(k) && !skipped(o[k])) parts.push(quote(k) + ':' + stringify(o[k]));
+                }
+                return '{' + parts.join(',') + '}';
+            }
+            return quote(o);
+        }
+        return stringify;
+    })();
 }
 
 if (!JSON.parse) {
