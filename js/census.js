@@ -1,5 +1,5 @@
 /**
- * Document census: what the artboard or document holds, grouped by what the
+ * Document census: what the selection or document holds, grouped by what the
  * objects share (stroke colour and width, fill colour, font and size).
  * Clicking a group selects exactly those objects in Illustrator.
  *
@@ -16,6 +16,7 @@
     window.TATA = window.TATA || {};
 
     const MAX_ITEMS = 4000;
+    const AUTO_LIMIT = 3000;  // above this the panel waits to be asked before it scans
     const ROWS_PER_SECTION = 14;
     const NEAR = 0.15;        // relative distance that still counts as "meant to be the same"
     const MAJORITY = 3;       // a group this large can have near-misses
@@ -76,13 +77,13 @@
         const stroked = items.filter(item => item.k === 'path' && item.sc);
         const strokeRows = [];
         if (stroked.length) {
-            strokeRows.push({ id: 'stroke', depth: 0, label: 'เส้นทั้งหมด', sub: 'ทุกสี ทุกขนาด', swatch: '', ids: ids(stroked) });
+            strokeRows.push({ id: 'stroke', depth: 0, label: 'เส้นทั้งหมด', sub: 'ทุกสี ทุกขนาด', swatch: '', ids: ids(stroked), check: ['stroked'] });
         }
         bucket(stroked, item => item.sc).forEach(color => {
             const widths = bucket(color.items, item => item.sw);
             const swatch = color.items[0].sh || '';
             if (widths.length > 1) {
-                strokeRows.push({ id: 'stroke:' + color.key, depth: 1, label: 'สีเดียวกัน', sub: color.key + ' · ทุกขนาด', swatch: swatch, ids: ids(color.items) });
+                strokeRows.push({ id: 'stroke:' + color.key, depth: 1, label: 'สีเดียวกัน', sub: color.key + ' · ทุกขนาด', swatch: swatch, ids: ids(color.items), check: ['sc'] });
             }
             widths.forEach(width => {
                 strokeRows.push({
@@ -91,12 +92,14 @@
                     label: 'สีและขนาดเดียวกัน',
                     sub: color.key + ' · ' + num(width.key) + 'pt',
                     swatch: swatch,
-                    ids: ids(width.items)
+                    ids: ids(width.items),
+                    check: ['sc', 'sw']
                 });
             });
             nearMisses(widths, group => group.key, (small, big) => ({
                 id: 'near:stroke:' + color.key + ':' + small.key,
                 kind: 'stroke',
+                check: ['sc', 'sw'],
                 ids: ids(small.items),
                 value: big.key,
                 fixLabel: 'ปรับเป็น ' + num(big.key) + 'pt',
@@ -110,7 +113,7 @@
         const filled = items.filter(item => item.k === 'path' && item.fc);
         const fillRows = bucket(filled, item => item.fc).map(color => ({
             id: 'fill:' + color.key, depth: 0, label: 'สีพื้นเดียวกัน', sub: color.key,
-            swatch: color.items[0].fh || '', ids: ids(color.items)
+            swatch: color.items[0].fh || '', ids: ids(color.items), check: ['fc']
         }));
         section('fill', 'สีพื้น', fillRows, filled.length);
 
@@ -118,12 +121,12 @@
         const texts = items.filter(item => item.k === 'text');
         const textRows = [];
         if (texts.length) {
-            textRows.push({ id: 'text', depth: 0, label: 'ข้อความทั้งหมด', sub: 'ทุกฟอนต์', swatch: '', ids: ids(texts) });
+            textRows.push({ id: 'text', depth: 0, label: 'ข้อความทั้งหมด', sub: 'ทุกฟอนต์', swatch: '', ids: ids(texts), check: [] });
         }
         bucket(texts, item => item.font).forEach(font => {
             const sizes = bucket(font.items, item => item.size);
             if (sizes.length > 1) {
-                textRows.push({ id: 'text:' + font.key, depth: 1, label: 'ฟอนต์เดียวกัน', sub: font.key + ' · ทุกขนาด', swatch: '', ids: ids(font.items) });
+                textRows.push({ id: 'text:' + font.key, depth: 1, label: 'ฟอนต์เดียวกัน', sub: font.key + ' · ทุกขนาด', swatch: '', ids: ids(font.items), check: ['font'] });
             }
             sizes.forEach(size => {
                 textRows.push({
@@ -132,12 +135,14 @@
                     label: 'ฟอนต์และขนาดเดียวกัน',
                     sub: font.key + ' · ' + num(size.key) + 'pt',
                     swatch: '',
-                    ids: ids(size.items)
+                    ids: ids(size.items),
+                    check: ['font', 'size']
                 });
             });
             nearMisses(sizes, group => group.key, (small, big) => ({
                 id: 'near:size:' + font.key + ':' + small.key,
                 kind: 'size',
+                check: ['font', 'size'],
                 ids: ids(small.items),
                 value: big.key,
                 fixLabel: 'ปรับเป็น ' + num(big.key) + 'pt',
@@ -158,7 +163,7 @@
     // ------------------------------------------------------------------
     // Panel UI
     // ------------------------------------------------------------------
-    const view = { scope: 'artboard', report: null, picked: '', busy: false, truncated: false };
+    const view = { scope: 'selection', report: null, picked: '', busy: false, truncated: false, pending: null };
 
     function byId(id) {
         return document.getElementById(id);
@@ -212,8 +217,8 @@
             summary.textContent = text;
         }
         if (!report.total) {
-            list.appendChild(el('p', 'census-empty', view.scope === 'artboard'
-                ? 'ไม่พบเส้น สีพื้น หรือข้อความบน artboard นี้'
+            list.appendChild(el('p', 'census-empty', view.shown === 'selection'
+                ? 'ไม่พบเส้น สีพื้น หรือข้อความในสิ่งที่เลือก'
                 : 'ไม่พบเส้น สีพื้น หรือข้อความในเอกสารนี้'));
             return;
         }
@@ -225,7 +230,7 @@
             const actions = el('div', 'census-near-actions');
             const show = el('button', 'btn', 'ชี้ให้ดู');
             show.type = 'button';
-            show.addEventListener('click', () => select(found.id, found.ids));
+            show.addEventListener('click', () => select(found.id, found.ids, found.check));
             const fix = el('button', 'btn btn--primary', found.fixLabel);
             fix.type = 'button';
             fix.addEventListener('click', () => fixNear(found));
@@ -254,7 +259,7 @@
                 button.appendChild(swatch);
                 button.appendChild(text);
                 button.appendChild(el('span', 'census-count', String(row.ids.length)));
-                button.addEventListener('click', () => select(row.id, row.ids));
+                button.addEventListener('click', () => select(row.id, row.ids, row.check));
                 box.appendChild(button);
             });
             if (section.more > 0) box.appendChild(el('span', 'census-more', 'และอีก ' + section.more + ' ชุดที่เล็กกว่า'));
@@ -262,47 +267,84 @@
         });
     }
 
-    // A scan asked for while one runs (the scope chip changed, the document
-    // went stale) runs once the first finishes, so the list matches the chip.
-    function scan() {
+    function showMessage(text) {
+        view.report = null;
+        paint();
+        const list = byId('census_list');
+        const summary = byId('census_summary');
+        if (summary) summary.textContent = '';
+        if (list && text) list.appendChild(el('p', 'census-empty', text));
+        setStatus('', '');
+    }
+
+    function tooBig(size, scope) {
+        const selection = scope === 'selection';
+        const count = selection ? 'เกิน ' + AUTO_LIMIT : size.n.toLocaleString('en-US');
+        return (selection ? 'เลือกไว้ ' : 'เอกสารนี้มีวัตถุ ') + count + ' ชิ้น การสำรวจอาจทำให้ Illustrator ค้างนาน ' +
+            'กดปุ่มสำรวจใหม่เมื่อพร้อม' + (selection ? ' หรือเลือกให้น้อยลง' : ' หรือสำรวจเฉพาะที่เลือก');
+    }
+
+    // Asks for a survey. Without force a large selection or document is not
+    // scanned on its own (a scan is one blocking call into Illustrator); the
+    // rescan button forces it. A request made while one runs waits for it, and
+    // only the latest waiting request runs, so the list matches the chips.
+    function request(force) {
         if (view.busy) {
-            view.again = true;
+            view.pending = { force: !!force };
             return Promise.resolve();
         }
         view.busy = true;
-        view.again = false;
+        view.pending = null;
         view.picked = '';
-        setStatus('กำลังสำรวจ...', '');
-        return hostRun('censusScan', { scope: view.scope, max: MAX_ITEMS }).then(data => {
+        const scope = view.scope;
+        const sized = force ? Promise.resolve({ n: 0, over: false }) : hostRun('censusSize', { scope: scope, limit: AUTO_LIMIT });
+        return sized.then(size => {
+            // Asked again while the size was being read: that request decides.
+            if (view.pending) return;
+            if (!size) {
+                showMessage('');
+                return setStatus('สำรวจไม่ได้ เปิดพาเนลใน Illustrator แล้วลองอีกครั้ง', 'error');
+            }
+            if (size.error === 'nodoc') {
+                showMessage('');
+                return setStatus('ยังไม่ได้เปิดเอกสาร', 'error');
+            }
+            if (size.over) return showMessage(tooBig(size, scope));
+            setStatus('กำลังสำรวจ...', '');
+            return hostRun('censusScan', { scope: scope, max: MAX_ITEMS }).then(data => {
+                if (!data) {
+                    showMessage('');
+                    return setStatus('สำรวจไม่ได้ เปิดพาเนลใน Illustrator แล้วลองอีกครั้ง', 'error');
+                }
+                if (data.error === 'nodoc') {
+                    showMessage('');
+                    return setStatus('ยังไม่ได้เปิดเอกสาร', 'error');
+                }
+                if (data.error === 'noselection') {
+                    return showMessage('ยังไม่ได้เลือกวัตถุ เลือกวัตถุใน Illustrator แล้วกดปุ่มสำรวจใหม่ หรือกด "ทั้งเอกสาร"');
+                }
+                view.truncated = !!data.truncated;
+                view.shown = scope;
+                view.report = build(data.items);
+                paint();
+                setStatus(view.report.total ? 'กดชุดใดก็ได้เพื่อเลือกทั้งชุด' : '', '');
+            });
+        }).then(() => {
             view.busy = false;
-            if (view.again) return scan();
-            if (!data) {
-                view.report = null;
-                paint();
-                setStatus('สำรวจไม่ได้ เปิดพาเนลใน Illustrator แล้วลองอีกครั้ง', 'error');
-                return;
-            }
-            if (data.error === 'nodoc') {
-                view.report = null;
-                paint();
-                setStatus('ยังไม่ได้เปิดเอกสาร', 'error');
-                return;
-            }
-            view.truncated = !!data.truncated;
-            view.report = build(data.items);
-            paint();
-            setStatus(view.report.total ? 'กดชุดใดก็ได้เพื่อเลือกทั้งชุด' : '', '');
+            const next = view.pending;
+            view.pending = null;
+            if (next) return request(next.force);
         });
     }
 
     function stale() {
         setStatus('เอกสารเปลี่ยนไปแล้ว กำลังสำรวจใหม่...', '');
-        return scan();
+        return request(true);
     }
 
-    function select(id, list) {
+    function select(id, list, check) {
         if (view.busy) return;
-        hostRun('censusSelect', { ids: list }).then(data => {
+        hostRun('censusSelect', { ids: list, check: check }).then(data => {
             if (!data) return setStatus('เลือกไม่สำเร็จ', 'error');
             if (data.error === 'stale') return stale();
             view.picked = id;
@@ -315,11 +357,11 @@
 
     function fixNear(found) {
         if (view.busy) return;
-        hostRun('censusFix', { ids: found.ids, kind: found.kind, value: found.value }).then(data => {
+        hostRun('censusFix', { ids: found.ids, check: found.check, kind: found.kind, value: found.value }).then(data => {
             if (!data) return setStatus('ปรับไม่สำเร็จ', 'error');
             if (data.error === 'stale') return stale();
             const changed = data.changed || 0;
-            scan().then(() => setStatus('ปรับแล้ว ' + changed + ' ชิ้น (Undo ได้ใน Illustrator)', 'ok'));
+            request(true).then(() => setStatus('ปรับแล้ว ' + changed + ' ชิ้น (Undo ได้ใน Illustrator)', 'ok'));
         });
     }
 
@@ -331,21 +373,22 @@
         });
     }
 
-    // Called when the Selector tab is shown (js/tabs.js): the document may
-    // have changed since the last look, so it is surveyed again.
+    // Called when the Selector tab is shown (js/tabs.js): the selection or
+    // document may have changed since the last look, so it is surveyed again,
+    // unless it is large.
     function refresh() {
         paintScope();
-        return scan();
+        return request(false);
     }
 
     function bind() {
         const rescan = byId('btn_census_rescan');
-        if (rescan) rescan.addEventListener('click', scan);
+        if (rescan) rescan.addEventListener('click', () => request(true));
         document.querySelectorAll('[data-census-scope]').forEach(chip => {
             chip.addEventListener('click', () => {
-                view.scope = chip.dataset.censusScope === 'document' ? 'document' : 'artboard';
+                view.scope = chip.dataset.censusScope === 'document' ? 'document' : 'selection';
                 paintScope();
-                scan();
+                request(false);
             });
         });
     }
@@ -353,5 +396,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
     else bind();
 
-    TATA.census = { build: build, refresh: refresh, MAX_ITEMS: MAX_ITEMS };
+    TATA.census = { build: build, refresh: refresh, MAX_ITEMS: MAX_ITEMS, AUTO_LIMIT: AUTO_LIMIT };
 })();

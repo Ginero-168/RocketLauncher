@@ -25,8 +25,8 @@
   - `scripting.js` — editor and Replicate AI assistant (CodeMirror is loaded on first use)
   - `color-tools.js`, `graphic-styles.js`, `keep.js` — Color, Style and Keep tabs
   - `market.js` — Marketplace; `settings.js`, `updates.js` — settings dialog and update check
-  - `census.js` — the Selector tab: document census (groups objects by stroke, fill and font; click selects the set). No AI, no
-    network. Host side: `censusScan` / `censusSelect` / `censusFix` at the end of `jsx/hostscript.jsx`, which keep
+  - `census.js` — the Selector tab: census of the selection (default) or the whole document (groups objects by stroke, fill and font; click selects the set). No AI, no
+    network. Host side: `censusSize` / `censusScan` / `censusSelect` / `censusFix` at the end of `jsx/hostscript.jsx`, which keep
     object references in the ExtendScript engine between calls and answer `{"error":"stale"}` when the document changed.
   - `script-scan.js` — static scan of a script for file, network and system access; `script-review.js` — the
     "before you install" dialog for Marketplace scripts. The scan reads text only; keep it conservative (anything
@@ -42,7 +42,10 @@
     paste-over, clear, font size, wrap). It attaches when `scripting.js` fires `tata:editor-ready`. The syntax check
     compiles with Node's `vm.Script` and never runs the code.
     It also owns the Recent code dialog (`#recent_code_modal`); `scripting.js` still draws the list and the count.
-  - Selector (`#tab_selector`): the document census. It surveys again each time the tab is shown.
+  - Selector (`#tab_selector`): the census. It surveys again each time the tab is shown, unless the selection or
+    document is over `AUTO_LIMIT` (3,000 objects, asked of `censusSize` first); then only the rescan button scans.
+    A scan is one blocking call into Illustrator and reads about 28 properties per object, and select and fix pass
+    `check` (the fields that define the row) so the host re-reads only those. `tests/host-census.test.js` counts reads.
   - Library: Style, Color and Keep. They keep their own panels and ids (`tab_styles`, `tab_colors`, `tab_keep`);
     the one strip button `#tabbtn_library` points its `data-tab` at whichever is in use, and the `.subtabs` chips
     switch between them. `body[data-tab]` is still the section id, so `TATA.activateTab('tab_keep')` etc. work.
