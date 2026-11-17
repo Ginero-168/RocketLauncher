@@ -18,23 +18,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: market-deploy
   cancel-in-progress: false
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out full history
+      - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.2'
           extensions: curl
@@ -44,6 +44,18 @@ jobs:
         run: |
           find . -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/run.php
+
+  # Only this job can push, and it runs no third-party code.
+  publish:
+    needs: test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Publish market-backend/ as the market-deploy branch
         run: |
