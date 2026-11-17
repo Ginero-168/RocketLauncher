@@ -56,4 +56,4 @@ root of the `market-deploy` branch. Hostinger's Git deployment pulls that branch
 `main`. `config.json` and the data in `storage/` exist only on the server.
 
 ## License
-MIT
+Proprietary. See [LICENSE](LICENSE).

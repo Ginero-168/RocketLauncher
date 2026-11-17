@@ -27,5 +27,6 @@
         "extension"
     ],
     "author": "Rocket Launcher Team",
-    "license": "MIT"
+    "license": "SEE LICENSE IN LICENSE",
+    "private": true
 }
